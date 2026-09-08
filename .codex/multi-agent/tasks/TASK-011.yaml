@@ -35,24 +35,13 @@ read_scope:
   - tourism-service/src/main/java/com/guizhou/wudong/api/AdminController.java
   - tourism-service/src/main/java/com/guizhou/wudong/config/WebConfiguration.java
   - tourism-service/src/main/resources/application.yml
-write_scope:
-  - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
-  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminCatalogController.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogRequests.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogViews.java
-  - tourism-service/src/main/java/com/guizhou/wudong/config/AdminAccessConfiguration.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
-  - tourism-service/src/main/java/com/guizhou/wudong/config/WebConfiguration.java
-  - tourism-service/src/main/resources/application.yml
+write_scope: []
 restricted_actions:
   - 不实现订单、社区、内部 AI v2、真实地图、数据导入或前端；不修改 V1-V4 迁移、领域实体、现有 v1 Controller/Service/Repository。
   - 不新增数据库字段、假坐标、假路线、库存、房态、餐位或地图能力；地点维护不得改变 mapStatus=NOT_CONFIGURED 与 public places=[] 的契约。
   - 不在仓库写入 ADMIN_API_TOKEN 默认值、密钥或生产凭据；不得泄露 merchant 联系方式或内部异常。
   - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
-  - 使用 apply_patch；当前派发仅 primary:/root 可写，任何其他 writer 的后续写入立即使本派发 STALE；仅暂存 write_scope；不执行 reset、checkout 或 clean。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
