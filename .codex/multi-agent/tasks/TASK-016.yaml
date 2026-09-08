@@ -1,12 +1,12 @@
 task_id: TASK-016
-dispatch_id: dispatch-TASK-016-r2
+dispatch_id: dispatch-TASK-016-r3
 long_lived_responsibility_owner:
   agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
   write_authority_for_current_dispatch: false
 temporary_writer:
-  route: collaboration:/root/frontend_v2_writer
-  route_status: UNAVAILABLE
-  write_authority_for_current_dispatch: false
+  route: primary:/root
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: true
 objective: 实现 Web v2 首批公开业务链路：目录浏览、三类详情、正式订单确认与我的订单；保留既有首页前半段与 AI 相关 demo 边界。
 deliverables:
   - web/src/App.vue
@@ -51,7 +51,7 @@ write_scope:
   - web/src/composables/useVisitorOrders.js
   - web/src/pages/MyOrdersPage.vue
 restricted_actions:
-  - primary:/root 与 ExperienceDomainAgent 均不得写入本任务 scope；temporary writer collaboration:/root/frontend_v2_writer 当前路由不可用，任何人均不得写入本任务 scope。
+  - ExperienceDomainAgent 不得写入本任务 scope；仅 primary:/root 获得当前派发的写入权限。
   - 不修改 Community、Admin、AI 页面，demo.js 必须保留给现有 AI；不新增依赖、后端、迁移、Python 或小程序修改。
   - 不回退到本地假目录/假订单数据；失败或空目录必须显示真实空/错误状态。联系人不得持久化；无图只用中性占位。
   - 不新增或运行测试，不运行 npm install、npm build、dev server、浏览器、外部调用或推送；不执行 reset、checkout 或 clean。
@@ -86,7 +86,7 @@ acceptance:
   - 删除旧 v1 public services/bookings 业务链路；demo.js 保留给现有 AI；Community、Admin、AI 页面不改。
   - 不新增依赖，不运行测试、npm install、npm build、dev server、浏览器或外部调用。
 project_revision: project-r1
-task_revision: task-r2
+task_revision: task-r3
 base_revision: ba01ceb066ffbc205389ac262516a4308164feb4
 interface_revision: tourism-api-v2-draft-r2
 verification_profile: high_risk
@@ -95,9 +95,9 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: BLOCKED
-dispatch_state: STALE
-proceed: false
+task_state: ACTIVE
+dispatch_state: DISPATCHED
+proceed: true
 enforcement:
   write_scope: PROCESS_GOVERNED
   visitor_identity: PROCESS_GOVERNED
