@@ -8,8 +8,8 @@ function openScroll() { if (gateState.value === 'closed') gateState.value = 'ope
 function finishOpen() { if (gateState.value === 'opening') { sessionStorage.setItem(KEY, '1'); gateState.value = 'open'; emit('opened') } }
 </script>
 <template>
-  <section v-if="gateState !== 'open'" class="scroll-gate" :class="{ 'is-opening': gateState === 'opening', 'is-reduced': reducedMotion }" @animationend.self="finishOpen">
-    <div class="scroll-gate__panel scroll-gate__panel--left" aria-hidden="true"></div><div class="scroll-gate__panel scroll-gate__panel--right" aria-hidden="true"></div>
+  <section v-if="gateState !== 'open'" class="scroll-gate" :class="{ 'is-opening': gateState === 'opening', 'is-reduced': reducedMotion }">
+    <div class="scroll-gate__panel scroll-gate__panel--left" aria-hidden="true" @animationend="finishOpen"></div><div class="scroll-gate__panel scroll-gate__panel--right" aria-hidden="true" @animationend="finishOpen"></div>
     <div class="scroll-gate__center"><p>走进雷公山半山的乌东苗寨</p><button @click="openScroll">点击这里</button><small>开启画卷</small></div>
   </section>
 </template>
