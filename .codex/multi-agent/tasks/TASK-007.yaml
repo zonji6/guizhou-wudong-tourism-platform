@@ -1,5 +1,5 @@
 task_id: TASK-007
-dispatch_id: dispatch-TASK-007-r1
+dispatch_id: dispatch-TASK-007-r2
 agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
 objective: 完成任务 2 前端部分、任务 4、任务 6 和任务 7：稳定 UUID 与演示卡、Web 开卷五联首页、小程序五栏导航与工具首页；暂不实现任务 5 和任务 8 的 AI 工作台。
 deliverables:
@@ -8,6 +8,7 @@ deliverables:
   - web/src/components/common/SafeImage.vue
   - web/src/components/home/**
   - web/src/pages/HomePage.vue
+  - web/src/App.vue
   - web/src/style.css
   - miniprogram/utils/demo.js
   - miniprogram/app.js
@@ -32,6 +33,7 @@ write_scope:
   - web/src/components/common/SafeImage.vue
   - web/src/components/home/**
   - web/src/pages/HomePage.vue
+  - web/src/App.vue
   - web/src/style.css
   - miniprogram/utils/demo.js
   - miniprogram/app.js
@@ -60,8 +62,9 @@ acceptance:
   - Web 支持首次会话点击开卷、山水寨茶人五联、探景、下滑雾与叶片，且减少动态效果可用。
   - 小程序固定首页、游乌东、向导、寨里、我的，中央叶片为唯一入口。
   - 图片失败显示语义占位；不创建或运行测试、不构建、不推送。
+  - App.vue 只把新 HomePage 接入现有首页 hash 路由，并保持既有资源、社区、助手、预约和后台入口可达；本轮不实现任务 5 的 AI 工作台重构。
 project_revision: project-r1
-task_revision: task-r1
+task_revision: task-r2
 base_revision: b10ca9f
 verification_profile: standard
 permission_expiry:
@@ -69,8 +72,8 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: ACKNOWLEDGED
+task_state: READY
+dispatch_state: DISPATCHED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
