@@ -22,14 +22,13 @@ read_scope:
   - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogViews.java
   - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
   - tourism-service/src/main/java/com/guizhou/wudong/domain/**
-write_scope:
-  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalCatalogController.java
-  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalCatalogService.java
+write_scope: []
 restricted_actions:
   - 不修改 InternalAgentAccessConfiguration、InternalAgentController、v1 pending-bookings、目录、订单、社区、迁移、领域实体、Python、前端或小程序。
   - 不读取联系人或未发布资料；地点搜索始终复用 NOT_CONFIGURED+[]，不得因关键词伪造地点或路线。
   - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
   - 仅使用 apply_patch；当前派发仅 primary:/root 可写，任何其他 writer 写入立即使派发 STALE；仅暂存 write_scope，不执行 reset、checkout 或 clean。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
@@ -63,8 +62,19 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
+task_state: VERIFYING
+dispatch_state: RETURNED
+implementation_status: IMPLEMENTED_NOT_VERIFIED
+artifact_revision: 47b46781076feca68fe84a549f1132ed7e5ca4fd
+verification_target_artifact_revision: 47b46781076feca68fe84a549f1132ed7e5ca4fd
+changed_paths: 2
+implementation_evidence_fingerprint: sha256:773896d44604f2b2f84cf28ddaf62353f34d69c0cab3476597c0fcab3a3f26c6
+verification_target_evidence_fingerprint: sha256:773896d44604f2b2f84cf28ddaf62353f34d69c0cab3476597c0fcab3a3f26c6
+independent_static_review: REVIEW_PASS
+final_static_review: STATIC_PASS
+artifact_review: ARTIFACT_REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,worktree_clean:PASS,independent_static_review:PASS,final_static_review:PASS,artifact_review:PASS,tests:SKIPPED
 enforcement:
   write_scope: PROCESS_GOVERNED
   loopback_access: FROZEN_READ_ONLY
