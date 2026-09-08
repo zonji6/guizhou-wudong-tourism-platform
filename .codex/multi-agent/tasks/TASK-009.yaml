@@ -1,16 +1,18 @@
 task_id: TASK-009
 agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
-dispatch_id: dispatch-TASK-009-r3
-objective: 仅修复后台摘要与 Redis 现状的过度声明，保持其余已通过文案不变。
+dispatch_id: dispatch-TASK-009-r2
+objective: 收口贵州乌东答辩说明，准确区分已完成能力、演示降级与未完成验证。
 deliverables:
   - README.md
   - docs/答辩演示流程.md
+  - docs/项目进度.md
 workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
 branch: feat/wudong-frontend-redesign
 read_scope:
   - AGENTS.md
   - README.md
   - docs/答辩演示流程.md
+  - docs/项目进度.md
   - docs/需求文档.md
   - docs/开发文档.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
@@ -19,10 +21,11 @@ read_scope:
 write_scope:
   - README.md
   - docs/答辩演示流程.md
+  - docs/项目进度.md
 restricted_actions:
   - 不测试、不构建、不启动、不使用浏览器或外部调用、不推送。
   - 不修改 write_scope 外的任何文件，不执行 reset、checkout 或 clean。
-  - 不触碰主工作区用户的 .gitignore、research、resours、web/package-lock.json、docs/项目进度.md。
+  - 不触碰主工作区用户的 .gitignore、research、resours、web/package-lock.json。
   - 不宣称已运行测试、构建或端到端验证。
 read_first:
   - AGENTS.md
@@ -30,16 +33,21 @@ read_first:
   - docs/开发文档.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+  - .codex/multi-agent/tasks/TASK-008.yaml
 dependencies: []
 acceptance:
-  - 当前后台只是静态脱敏摘要样例，不对应本次会话，也不是 LangSmith Trace；真实会话级持久化摘要属后续五领域 v2。
-  - 当前 Redis 仅为已声明本机基础设施/持久化预留；LangGraph 仍为 InMemorySaver，关键词检索经 Java API，不得称 Redis 已支撑检索/会话。
-  - 答辩后台段只展示静态样例并主动说明上述边界，不要求查看当前不存在的对应会话标识、节点、来源或耗时字段。
+  - 对外名称统一为“贵州乌东”。
+  - Web 主链明确为首次点击开卷、山水寨茶人五联、下滑雾散/沿溪入寨、乌东向导。
+  - 小程序说明为五栏工具型：首页｜游乌东｜向导｜寨里｜我的。
+  - 仅配置 DeepSeek 后才称实时模型；未配置时明确演示降级；云端 Embedding 尚未提供时显示“关键词资料（演示）”。
+  - 未核验公开授权的照片仅用于本机演示。
+  - 六分钟答辩链为开卷、五联探景、雾散叶片、连续向导、真实 serviceId 进入预约二次确认、小程序五栏/我的、后台订单与脱敏摘要。
+  - 清楚区分已完成、演示降级与未完成；不得宣称已运行测试、构建或端到端验证。
   - 不测试、不构建、不启动、不使用浏览器或外部调用、不推送。
-  - 执行前校验 `git merge-base --is-ancestor a64891381aa11d1b1706b61ccbcf6f7bb6aa7143 HEAD`，且 `a64891381aa11d1b1706b61ccbcf6f7bb6aa7143..HEAD` 仅包含 `.codex/multi-agent/**` 控制提交；两份文档真实差异从该基线计算。
+  - 执行前校验 `git merge-base --is-ancestor 957f32efbf0f55e6dd548561951dc958a0b53ffe HEAD`，且 `957f32efbf0f55e6dd548561951dc958a0b53ffe..HEAD` 仅包含 `.codex/multi-agent/**` 控制提交；三份文档的真实差异从该基线计算。
 project_revision: project-r1
-task_revision: task-r3
-base_revision: a64891381aa11d1b1706b61ccbcf6f7bb6aa7143
+task_revision: task-r2
+base_revision: 957f32efbf0f55e6dd548561951dc958a0b53ffe
 verification_profile: express
 permission_expiry:
   - task_state: VERIFYING
