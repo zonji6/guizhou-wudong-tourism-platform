@@ -1,11 +1,15 @@
 <script setup>
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 const emit = defineEmits(['opened'])
 const KEY = 'wudong:scroll-opened'
 const gateState = ref(sessionStorage.getItem(KEY) === '1' ? 'open' : 'closed')
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
-function openScroll() { if (gateState.value === 'closed') { gateState.value = 'opening'; if (reducedMotion) finishOpen() } }
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)')
+const reducedMotion = ref(motionQuery.matches)
+function openScroll() { if (gateState.value === 'closed') { gateState.value = 'opening'; if (reducedMotion.value) finishOpen() } }
 function finishOpen() { if (gateState.value === 'opening') { sessionStorage.setItem(KEY, '1'); gateState.value = 'open'; emit('opened') } }
+function syncMotion(event) { reducedMotion.value = event.matches; if (event.matches) finishOpen() }
+onMounted(() => motionQuery.addEventListener('change', syncMotion))
+onBeforeUnmount(() => motionQuery.removeEventListener('change', syncMotion))
 </script>
 <template>
   <section v-if="gateState !== 'open'" class="scroll-gate" :class="{ 'is-opening': gateState === 'opening', 'is-reduced': reducedMotion }">

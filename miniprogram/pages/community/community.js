@@ -1,13 +1,5 @@
-const { posts } = require('../../utils/demo')
+const { posts, normalizePost } = require('../../utils/demo')
 const { request } = require('../../utils/api')
-
-const postById = posts.reduce((result, post) => ({ ...result, [post.id]: post }), {})
-const normalizePost = item => {
-  const id = String(item.id || '')
-  const fallback = postById[id] || {}
-  const apiCover = item.coverUrl && item.coverAlt ? item.coverUrl : ''
-  return { ...fallback, ...item, id: id || fallback.id || '', author: item.authorName || item.author || fallback.author || '', cover: apiCover || fallback.cover || '', coverAlt: apiCover ? item.coverAlt : fallback.coverAlt || '', text: item.content || item.text || fallback.text || '' }
-}
 
 Page({
   data: { posts, imageErrors: {} },

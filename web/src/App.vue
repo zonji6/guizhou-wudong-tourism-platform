@@ -27,7 +27,7 @@ const pageTitle = computed(() => ({
 }[route.value] || '贵州乌东文旅'))
 
 function go(path) { location.hash = path }
-function normalizePost(item) { return { ...item, author: item.authorName || item.author, cover: item.coverUrl || item.cover, coverAlt: item.coverAlt || item.imageAlt, text: item.content || item.text, likes: item.likes || 0 } }
+function normalizePost(item = {}) { const fallback = posts.find(post => post.id === String(item.id)) || {}; const completeCover = item.coverUrl && item.coverAlt; return { ...fallback, ...item, id: String(item.id || fallback.id || ''), author: item.authorName || item.author || fallback.author || '', cover: completeCover ? item.coverUrl : fallback.cover || '', coverAlt: completeCover ? item.coverAlt : fallback.coverAlt || '乌东社区分享配图暂缺', text: item.content || item.text || fallback.text || '', likes: item.likes ?? fallback.likes ?? 0 } }
 async function chooseService(item) { selected.value = item; go('/resource/' + item.id); try { selected.value = normalizeService(await request('/api/services/' + item.id)) } catch (_) {} }
 function openBooking(item = selected.value) { selected.value = item; bookingDone.value = false; pendingBooking.value = null; go('/booking') }
 function goAssistant() { go('/assistant') }
