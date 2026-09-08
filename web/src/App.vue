@@ -1,8 +1,9 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { allowedCardTypes, categories, posts, services } from './data/demo'
+import { allowedCardTypes, categories, normalizeService, posts, services } from './data/demo'
 import { aiWs, request } from './services/api'
 import HomePage from './pages/HomePage.vue'
+import SafeImage from './components/common/SafeImage.vue'
 
 const route = ref(location.hash.slice(1) || '/')
 const selected = ref(services[0])
@@ -17,6 +18,7 @@ const pendingBooking = ref(null)
 const activeCategory = ref('all')
 const orders = ref([{ id: 'WD20260908001', name: '苗寨古茶园 · 制茶品茗体验', date: '2026-09-20', people: 2, status: 'PENDING_CONFIRMATION', demoData: true }])
 const adminTab = ref('orders')
+const homeOpened = ref(sessionStorage.getItem('wudong:scroll-opened') === '1')
 
 const isAdmin = computed(() => route.value.startsWith('/admin'))
 const filteredServices = computed(() => activeCategory.value === 'all' ? serviceList.value : serviceList.value.filter(item => item.category === activeCategory.value))
@@ -25,8 +27,7 @@ const pageTitle = computed(() => ({
 }[route.value] || '贵州乌东文旅'))
 
 function go(path) { location.hash = path }
-function normalizeService(item) { return { ...item, title: item.name || item.title, image: item.imageUrl || item.image, intro: item.description || item.intro, price: item.price ?? 0, tags: item.tags || [], category: item.category || 'culture' } }
-function normalizePost(item) { return { ...item, author: item.authorName || item.author, cover: item.coverUrl || item.cover, text: item.content || item.text, likes: item.likes || 0 } }
+function normalizePost(item) { return { ...item, author: item.authorName || item.author, cover: item.coverUrl || item.cover, coverAlt: item.coverAlt || item.imageAlt, text: item.content || item.text, likes: item.likes || 0 } }
 async function chooseService(item) { selected.value = item; go('/resource/' + item.id); try { selected.value = normalizeService(await request('/api/services/' + item.id)) } catch (_) {} }
 function openBooking(item = selected.value) { selected.value = item; bookingDone.value = false; pendingBooking.value = null; go('/booking') }
 function goAssistant() { go('/assistant') }
@@ -102,19 +103,19 @@ onUnmounted(() => removeEventListener('hashchange', onHashChange))
 <template>
   <div class="app-shell" :class="{ 'admin-shell': isAdmin }">
     <template v-if="!isAdmin">
-      <header class="topbar">
+      <header v-if="route !== '/' || homeOpened" class="topbar">
         <a class="brand" href="#/">贵州乌东 <span>· 文旅</span></a>
         <nav><a href="#/resources">游乌东</a><a href="#/community">寨里</a><a href="#/assistant">乌东向导</a></nav>
         <button class="admin-link" @click="go('/admin')">运营后台</button>
       </header>
 
-      <HomePage v-if="route === '/'" :services="serviceList" :categories="categories" @navigate="navigateHome" @open-service="chooseService" />
+      <HomePage v-if="route === '/'" :services="serviceList" :categories="categories" @gate-change="homeOpened = $event" @navigate="navigateHome" @open-service="chooseService"><template #assistant><button class="primary" @click="go('/assistant')">为我安排乌东之行</button></template></HomePage>
 
-      <main v-else-if="route === '/resources'" class="page"><div class="page-intro"><p class="eyebrow">乌东体验清单</p><h1>{{ pageTitle }}</h1><p>从茶园、火塘到山谷慢行，每一项均为演示资源。</p></div><div class="filter"><button :class="{active: activeCategory === 'all'}" @click="activeCategory = 'all'">全部</button><button v-for="item in categories" :key="item.id" :class="{active: activeCategory === item.id}" @click="activeCategory = item.id">{{ item.label }}</button></div><div class="service-grid all"><article v-for="item in filteredServices" :key="item.id" class="service-card" @click="chooseService(item)"><img :src="item.image" :alt="item.imageAlt || item.title"><div><p>{{ categoryName(item.category) }} · {{ item.tags.join(' · ') }}</p><h3>{{ item.title }}</h3><span>¥{{ item.price }} 起 <i>演示数据</i></span></div></article></div></main>
+      <main v-else-if="route === '/resources'" class="page"><div class="page-intro"><p class="eyebrow">乌东体验清单</p><h1>{{ pageTitle }}</h1><p>从茶园、火塘到山谷慢行，每一项均为演示资源。</p></div><div class="filter"><button :class="{active: activeCategory === 'all'}" @click="activeCategory = 'all'">全部</button><button v-for="item in categories" :key="item.id" :class="{active: activeCategory === item.id}" @click="activeCategory = item.id">{{ item.label }}</button></div><div class="service-grid all"><article v-for="item in filteredServices" :key="item.id" class="service-card" @click="chooseService(item)"><SafeImage :src="item.image" :alt="item.imageAlt" :label="item.title" loading="lazy" /><div><p>{{ categoryName(item.category) }} · {{ item.tags.join(' · ') }}</p><h3>{{ item.title }}</h3><span>¥{{ item.price }} 起 <i>演示数据</i></span></div></article></div></main>
 
-      <main v-else-if="route.startsWith('/resource/')" class="page detail"><img class="detail-image" :src="selected.image" :alt="selected.title"><div class="detail-copy"><p class="eyebrow">{{ categoryName(selected.category) }} · 演示资源</p><h1>{{ selected.title }}</h1><div class="tag-row"><span v-for="tag in selected.tags" :key="tag">{{ tag }}</span></div><p class="intro">{{ selected.intro }}</p><div class="price">¥{{ selected.price }} <small>起 / 演示价格</small></div><button class="primary" @click="openBooking(selected)">预约这项体验</button></div></main>
+      <main v-else-if="route.startsWith('/resource/')" class="page detail"><SafeImage class="detail-image" :src="selected.image" :alt="selected.imageAlt" :label="selected.title" /><div class="detail-copy"><p class="eyebrow">{{ categoryName(selected.category) }} · 演示资源</p><h1>{{ selected.title }}</h1><div class="tag-row"><span v-for="tag in selected.tags" :key="tag">{{ tag }}</span></div><p class="intro">{{ selected.intro }}</p><div class="price">¥{{ selected.price }} <small>起 / 演示价格</small></div><button class="primary" @click="openBooking(selected)">预约这项体验</button></div></main>
 
-      <main v-else-if="route === '/community'" class="page"><div class="page-intro"><p class="eyebrow">寨里分享</p><h1>听当地人讲山的故事</h1><p>攻略与动态均为答辩演示内容。</p></div><div class="post-grid"><article v-for="post in postList" :key="post.id" class="post-card"><img :src="post.cover" :alt="post.title"><div><small>{{ post.author }}</small><h2>{{ post.title }}</h2><p>{{ post.text }}</p><span>♡ {{ post.likes }}</span></div></article></div></main>
+      <main v-else-if="route === '/community'" class="page"><div class="page-intro"><p class="eyebrow">寨里分享</p><h1>听当地人讲山的故事</h1><p>攻略与动态均为答辩演示内容。</p></div><div class="post-grid"><article v-for="post in postList" :key="post.id" class="post-card"><SafeImage :src="post.cover" :alt="post.coverAlt || '乌东寨里分享配图暂缺'" :label="post.title" loading="lazy" /><div><small>{{ post.author }}</small><h2>{{ post.title }}</h2><p>{{ post.text }}</p><span>♡ {{ post.likes }}</span></div></article></div></main>
 
       <main v-else-if="route === '/assistant'" class="page assistant-page"><div class="page-intro"><p class="eyebrow">乌东向导</p><h1>把你的心愿交给山茶</h1><p>仅展示可执行进度和结构化结果，不展示模型思维链。</p></div><section class="assistant-panel"><div class="suggestions"><button @click="assistantInput = '周末两位，安排两天一夜的苗族文化茶旅'; askAssistant()">两天一夜茶旅</button><button @click="assistantInput = '推荐适合亲子的苗绣体验'; askAssistant()">亲子苗绣</button><button @click="assistantInput = '我想体验贵州乌东的苗族文化和茶旅'; askAssistant()">苗寨茶旅</button></div><textarea v-model="assistantInput" aria-label="输入旅行需求" placeholder="例如：我想体验贵州乌东的苗族文化和茶旅"></textarea><button class="primary" @click="askAssistant">请 AI 规划</button><p v-if="assistantStage" class="progress">● {{ assistantStage }}</p><article v-if="assistantCard" class="agent-card"><p class="card-type">{{ assistantCard.type }}</p><h2>{{ assistantCard.title }}</h2><p>{{ assistantCard.text }}</p><ul v-if="assistantCard.items"><li v-for="item in assistantCard.items" :key="item">{{ item }}</li></ul><div v-if="assistantCard.chips" class="chip-row"><button v-for="chip in assistantCard.chips" :key="chip" @click="assistantInput = chip; askAssistant()">{{ chip }}</button></div><footer v-if="assistantCard.sources">资料来源：<span v-for="source in assistantCard.sources" :key="source">{{ source }}</span></footer></article></section></main>
 
