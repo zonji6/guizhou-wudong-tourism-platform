@@ -1,0 +1,31 @@
+project: guizhou-wudong-tourism-platform
+goal: 在三天内交付可本机演示的贵州乌冬衣食住行文旅综合服务平台。
+project_revision: project-r1
+user_facing:
+  language: zh-CN
+  status_path: docs/项目进度.md
+risk_policy:
+  default: lean-core
+  enabled_extensions:
+    - name: shared-interface-review
+      trigger: Java、AI、Web 与小程序共用 tourism-api-v1。
+      removal_condition: 本项目交付结束。
+reserved_authority:
+  - long-lived Agent creation, replacement, retirement, merge, or responsibility change
+  - long-lived permission change
+  - secrets or production access
+  - external writes or irreversible operations
+  - GitHub remote push
+structure:
+  java_service: tourism-service
+  ai_service: agent-service
+  web_client: web
+  miniprogram_client: miniprogram
+  infrastructure: infra
+  contract: docs/contracts/tourism-api-v1.md
+  control_root: .codex/multi-agent
+runtime_mode: LIMITED_CONCURRENT
+long_lived_provisioning: pending_real_thread_ids
+active_task_refs:
+  - .codex/multi-agent/tasks/TASK-001.yaml
+  - .codex/multi-agent/tasks/TASK-003.yaml

@@ -1,0 +1,48 @@
+task_id: TASK-003
+dispatch_id: dispatch-TASK-003-r1
+objective: 建立苗寨自然、温暖、民族文化质感的 Vue 门户、管理后台与原生微信小程序界面。
+deliverables:
+  - web/**
+  - miniprogram/**
+read_scope:
+  - AGENTS.md
+  - README.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/superpowers/specs/**
+  - docs/superpowers/plans/**
+write_scope:
+  - web/**
+  - miniprogram/**
+restricted_actions:
+  - 不创建或运行测试，不新增测试文件。
+  - 不使用真实 API Key、真实用户或真实订单数据。
+  - 不推送 GitHub，不修改 tourism-service、agent-service、docs/contracts 或协作控制文件。
+read_first:
+  - AGENTS.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/superpowers/specs/2026-09-08-udong-tourism-platform-design.md
+dependencies: []
+acceptance:
+  - Web 提供门户、资源详情、社区、AI 助手、预约结果和管理后台路由。
+  - 小程序提供首页、资源、详情、AI 助手、预约、订单和社区页面。
+  - UI 使用贵州乌冬苗族文化茶旅演示数据并明确演示属性。
+  - 仅渲染白名单 Agent 卡片，不暴露提示词、思维链或密钥。
+  - 不含测试文件、测试框架或测试命令。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 3d81f1e
+interface_revision: tourism-api-v1
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
