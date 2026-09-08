@@ -1,0 +1,72 @@
+task_id: TASK-012
+agent_id: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
+dispatch_id: dispatch-TASK-012-r1
+objective: 冻结 Assistant Card v2、每轮 RunContext 与可持久化 LangGraph 状态的隐私边界；不接线或修改现有图运行。
+deliverables:
+  - agent-service/app/contracts.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/graph/context.py
+  - agent-service/app/privacy.py
+  - docs/contracts/assistant-card-v2.md
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai
+branch: feat/wudong-task3-ai
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - agent-service/app/contracts.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+  - agent-service/app/llm/**
+  - agent-service/app/tools/**
+write_scope:
+  - agent-service/app/contracts.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/graph/context.py
+  - agent-service/app/privacy.py
+  - docs/contracts/assistant-card-v2.md
+restricted_actions:
+  - 不修改图节点、builder、streaming、main、LLM、Java、Web 或小程序；本任务只冻结模型与隐私边界，不得声称已接入现有节点或运行链。
+  - 不在 checkpoint 或可持久化 AgentState 写入 user_text、messages、联系人、visitorId、token、key、URL、原始检索内容、原始异常、完整参数或 CoT。
+  - 不新增或运行测试，不运行 Python、pytest、安装、构建、启动、外部调用或推送。
+  - 只用 apply_patch；只允许 status、name-only、diff --check、rg 静态检查；仅暂存 write_scope，不执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - agent-service/app/contracts.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+dependencies: []
+frozen_read_only_contract:
+  task_id: TASK-010
+  artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+  interface_revision: tourism-api-v2-draft-r2
+acceptance:
+  - Pydantic v2 严格模型使用 extra=forbid 与 camelCase API aliases；核心卡片、来源、动作、提案、条件、工具摘要不使用 dict[str, Any]。保留六类用户语义，cardVersion 固定 2.0；targetType 仅 PRODUCT/FOOD/STAY/PLACE/ROUTE_GUIDE，STAY targetId 为 roomTypeId。
+  - OrderProposal 仅 FOOD_ORDER 或 STAY_BOOKING，非持久化、无联系人、requiresVisitorConfirmation=true；商品仅推荐或跳转，前端独立确认后调用 Java public POST。
+  - 可持久化 AgentState 仅含 intent、confirmed_conditions、conversation_summary、card_revision、current_card、previous_card、public_tool_summaries、session_status；内部字段可 snake_case，但文档必须列清，且不得含任何敏感或原始输入/检索/异常/参数/CoT 字段。
+  - RunContext 单独承载本轮 thread_id、原始 user_text、page_action 与结构化公开选择条件，仅在单次图运行传递且不得写入 checkpoint。privacy.py 提供确定性清洗与截断函数，默认拒绝或移除敏感键、手机号样式、密钥/URL/内部参数；不得声称已接入现有节点。
+  - assistant-card-v2.md 精确冻结全部 DTO 字段与类型、六类 data payload、流事件公开字段、v1 过渡说明与本任务未接线边界。
+  - 仅修改 write_scope；不新增或运行测试，不运行 Python、pytest、安装、构建、服务或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: d94dd05d7ca97857265fff58092761ecdec665df
+interface_revision: assistant-card-v2-draft-r1
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  checkpoint_privacy: PROCESS_GOVERNED
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
