@@ -1,0 +1,73 @@
+task_id: TASK-017
+agent_id: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
+dispatch_id: dispatch-TASK-017-r1
+objective: 实现 Python v2 内部只读目录适配层；只为当前 Java 已实现的内部目录检索提供严格响应模型和异步客户端，不接入现有 LangGraph 或任何写能力。
+deliverables:
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai
+branch: feat/wudong-task3-ai
+read_scope:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\docs\contracts\tourism-api-v2.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\api\ApiEnvelope.java
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\api\CatalogViews.java
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\api\InternalCatalogController.java
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\service\InternalCatalogService.java
+  - agent-service/app/contracts.py
+  - agent-service/app/config.py
+  - agent-service/app/tools/tourism_client.py
+write_scope:
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+restricted_actions:
+  - 不接线或修改现有 LangGraph、app/contracts.py、config.py、tourism_client.py、路由、运行摘要或任何既有 AI 流程。
+  - 仅实现 GET /internal/agent/{products|foods|stays|places}/search 的只读适配；不得新增 POST、PUT、PATCH、DELETE、订单、路线攻略、状态、run-summary 或任何猜测性方法。
+  - 不改依赖、不新增或运行测试；不得启动服务、构建、curl、浏览器、数据库、Flyway、外部 API 或推送；不得执行 reset、checkout 或 clean。
+  - 异常仅允许稳定 code 与中文安全消息；不得暴露 URL、请求头、响应体、堆栈、密钥或原始异常文本。
+  - 仅使用 apply_patch；仅可暂存 write_scope，不得修改协作控制文件。
+read_first:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\docs\contracts\tourism-api-v2.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\api\ApiEnvelope.java
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\api\CatalogViews.java
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\api\InternalCatalogController.java
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\tourism-service\src\main\java\com\guizhou\wudong\service\InternalCatalogService.java
+  - agent-service/app/contracts.py
+  - agent-service/app/config.py
+  - agent-service/app/tools/tourism_client.py
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-010
+    artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-011
+    artifact_revision: 29caf0ba1f861d942218deaf5938e805759de48b
+  - task_id: TASK-012
+    artifact_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+  - task_id: TASK-015
+    artifact_revision: 47b46781076feca68fe84a549f1132ed7e5ca4fd
+acceptance:
+  - 新增严格 Pydantic 响应模型，覆盖成功/失败 ApiEnvelope、Product、FoodItem、StayProperty、RoomType、Place 与 MapPlacesResult；模型拒绝额外字段，tags 固定为 string[]，仅接受 catalogStatus=PUBLISHED 的目录与房型。
+  - tourism_v2_client 仅使用异步 httpx GET 调用 products、foods、stays、places 的 /internal/agent/*/search 路由；不含任何写方法或现有流程接线。
+  - 输入约束与 Java 一致：tag 查询参数可重复但标签值不得重复，且每个 tag 非空、无首尾空格、最长 80、不得含逗号；keywords 可省略，出现时非空、无首尾空格、最长 120；peopleCount 为单个正整数；roomTypeId 为单个规范 UUID；未知或重复的单值查询参数必须在客户端边界拒绝。
+  - products 与 foods 只接受 PUBLISHED 目录；stays 与其 roomTypes 都只接受 PUBLISHED；places 的 MapPlacesResult 保留 AVAILABLE、NOT_CONFIGURED、DEGRADED 语义，非 AVAILABLE 状态不接受非空 places。
+  - 对 HTTP、网络、非法 envelope 或模型校验失败，只返回稳定 code 和中文安全消息；不得把上游 URL、headers、body、stack、密钥或原始异常传给调用方。
+  - 仅作静态验收：scope、契约、无写路由、无敏感泄露与 git diff --check；不运行测试、构建、服务、外部 API、数据库或 Flyway。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  cross_worktree_contracts: FROZEN_READ_ONLY
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
