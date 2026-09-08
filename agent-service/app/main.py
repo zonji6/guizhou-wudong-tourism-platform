@@ -7,7 +7,7 @@ from app.contracts import AssistantRequest, AssistantResponse
 from app.rag.indexer import KnowledgeIndexer
 from app.streaming import run_assistant
 
-app = FastAPI(title="贵州乌冬文旅 AI 服务", version="0.1.0")
+app = FastAPI(title="贵州乌东文旅 AI 服务", version="0.1.0")
 
 
 @app.get("/health")

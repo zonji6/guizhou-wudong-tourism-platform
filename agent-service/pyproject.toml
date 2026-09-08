@@ -1,7 +1,7 @@
 [project]
 name = "wudong-agent-service"
 version = "0.1.0"
-description = "贵州乌冬文旅 AI 编排服务"
+description = "贵州乌东文旅 AI 编排服务"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115.0",
