@@ -35,26 +35,13 @@ read_scope:
   - web/src/components/home/**
   - web/src/style.css
   - web/package.json
-write_scope:
-  - web/src/App.vue
-  - web/src/services/api.js
-  - web/src/pages/HomePage.vue
-  - web/src/components/home/WudongJourney.vue
-  - web/src/pages/ResourcesPage.vue
-  - web/src/pages/ResourceDetailPage.vue
-  - web/src/pages/BookingPage.vue
-  - web/src/style.css
-  - web/src/router/hashRoutes.js
-  - web/src/services/visitorIdentity.js
-  - web/src/services/tourismApi.js
-  - web/src/composables/useCatalogBrowser.js
-  - web/src/composables/useVisitorOrders.js
-  - web/src/pages/MyOrdersPage.vue
+write_scope: []
 restricted_actions:
   - ExperienceDomainAgent 不得写入本任务 scope；仅 primary:/root 获得当前派发的写入权限。
   - 不修改 Community、Admin、AI 页面，demo.js 必须保留给现有 AI；不新增依赖、后端、迁移、Python 或小程序修改。
   - 不回退到本地假目录/假订单数据；失败或空目录必须显示真实空/错误状态。联系人不得持久化；无图只用中性占位。
   - 不新增或运行测试，不运行 npm install、npm build、dev server、浏览器、外部调用或推送；不执行 reset、checkout 或 clean。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
@@ -95,9 +82,21 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+implementation_status: IMPLEMENTED_NOT_RUNTIME_VERIFIED
+artifact_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+verification_target_artifact_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+changed_paths: 14
+raw_binary_diff_bytes: 110545
+implementation_evidence_fingerprint: sha256:00b0afe8893fb02f0f04fdd2cb5d4d65e198f2520b028c519928277b0316bfa9
+verification_target_evidence_fingerprint: sha256:00b0afe8893fb02f0f04fdd2cb5d4d65e198f2520b028c519928277b0316bfa9
+contract_privacy_review: REVIEW_PASS
+vue_design_review: REVIEW_PASS
+artifact_review: ARTIFACT_REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,worktree_clean:PASS,contract_privacy_review:PASS,vue_design_review:PASS,artifact_review:PASS,runtime:NOT_RUN
 enforcement:
   write_scope: PROCESS_GOVERNED
   visitor_identity: PROCESS_GOVERNED
