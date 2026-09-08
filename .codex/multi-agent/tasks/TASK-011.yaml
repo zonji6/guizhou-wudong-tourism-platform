@@ -1,0 +1,90 @@
+task_id: TASK-011
+agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+dispatch_id: dispatch-TASK-011-r1
+objective: 基于冻结的 tourism-api-v2 契约实现公开目录/地点查询、六类后台目录维护与 X-Admin-Token 鉴权，不实现订单、社区、内部 AI v2、真实地图、数据导入或前端。
+deliverables:
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogRequests.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/AdminAccessConfiguration.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/WebConfiguration.java
+  - tourism-service/src/main/resources/application.yml
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+branch: feat/wudong-task2-data
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - docs/contracts/tourism-api-v1.md
+  - docs/superpowers/specs/2026-09-09-wudong-backend-domain-design.md
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/**
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/NotFoundException.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicTourismController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/WebConfiguration.java
+  - tourism-service/src/main/resources/application.yml
+write_scope:
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogRequests.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/AdminAccessConfiguration.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/WebConfiguration.java
+  - tourism-service/src/main/resources/application.yml
+restricted_actions:
+  - 不实现订单、社区、内部 AI v2、真实地图、数据导入或前端；不修改 V1-V4 迁移、领域实体、现有 v1 Controller/Service/Repository。
+  - 不新增数据库字段、假坐标、假路线、库存、房态、餐位或地图能力；地点维护不得改变 mapStatus=NOT_CONFIGURED 与 public places=[] 的契约。
+  - 不在仓库写入 ADMIN_API_TOKEN 默认值、密钥或生产凭据；不得泄露 merchant 联系方式或内部异常。
+  - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
+  - 使用 apply_patch；仅暂存 write_scope；不执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/**
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/NotFoundException.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/WebConfiguration.java
+  - tourism-service/src/main/resources/application.yml
+dependencies: []
+frozen_read_only_contract:
+  task_id: TASK-010
+  artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+  interface_revision: tourism-api-v2-draft-r2
+acceptance:
+  - public 仅返回 PUBLISHED 的 products、foods、stays 加 roomTypes、room-types/{id} 与 places；categoryTag、tag、peopleCount、roomTypeId 严格遵从冻结契约，API tags 为 string[]，不外泄 merchant contact。
+  - 地图 public 响应固定 mapStatus=NOT_CONFIGURED 与 places=[]，不得伪造坐标或路线；admin 可维护地点但不得改变该地图状态。
+  - admin 六类目录提供 list、detail、create、patch、catalog-status；无物理删除；在线新建强制 demoData=true 与 UNPUBLISHED；严格字段白名单、缺失/null/未知字段与经纬度成对规则，关系字段 PATCH 不可改绑。
+  - ADMIN_API_TOKEN 无仓库默认值；未配置返回 503 ADMIN_NOT_CONFIGURED，缺失或不匹配返回 401 ADMIN_TOKEN_INVALID，使用常量时间字节比较；CORS 允许所需请求头且不影响 v1 路由。
+  - 错误 envelope 提供稳定 code 且不泄露内部异常；单项缺失返回 404 RESOURCE_NOT_FOUND。
+  - 只修改 write_scope；不新增或运行测试，不运行 Maven、构建、服务、Flyway、curl、浏览器或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  admin_token: PROCESS_GOVERNED
+  migration_execution: UNAVAILABLE
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
