@@ -1,6 +1,11 @@
 task_id: TASK-011
-agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
-dispatch_id: dispatch-TASK-011-r1
+dispatch_id: dispatch-TASK-011-r2
+long_lived_responsibility_owner:
+  agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: collaboration:/root/task010_helper
+  write_authority_for_current_dispatch: true
 objective: 基于冻结的 tourism-api-v2 契约实现公开目录/地点查询、六类后台目录维护与 X-Admin-Token 鉴权，不实现订单、社区、内部 AI v2、真实地图、数据导入或前端。
 deliverables:
   - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
@@ -47,7 +52,7 @@ restricted_actions:
   - 不新增数据库字段、假坐标、假路线、库存、房态、餐位或地图能力；地点维护不得改变 mapStatus=NOT_CONFIGURED 与 public places=[] 的契约。
   - 不在仓库写入 ADMIN_API_TOKEN 默认值、密钥或生产凭据；不得泄露 merchant 联系方式或内部异常。
   - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
-  - 使用 apply_patch；仅暂存 write_scope；不执行 reset、checkout 或 clean。
+  - 使用 apply_patch；当前派发仅 temporary_writer 可写，任何其他 writer 的后续写入立即使本派发 STALE；仅暂存 write_scope；不执行 reset、checkout 或 clean。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
@@ -71,19 +76,24 @@ acceptance:
   - 错误 envelope 提供稳定 code 且不泄露内部异常；单项缺失返回 404 RESOURCE_NOT_FOUND。
   - 只修改 write_scope；不新增或运行测试，不运行 Maven、构建、服务、Flyway、curl、浏览器或外部调用。
 project_revision: project-r1
-task_revision: task-r1
+task_revision: task-r2
 base_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
 interface_revision: tourism-api-v2-draft-r2
 verification_profile: high_risk
 permission_expiry:
-  - task_state: BLOCKED
   - task_state: VERIFYING
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: BLOCKED
-dispatch_state: STALE
-block_reason: CONCURRENT_WRITER_DETECTED; preserve task2-data draft for single-writer convergence and independent review before any new write dispatch.
+task_state: ACTIVE
+dispatch_state: DISPATCHED
+recovered_draft_input:
+  status: RECOVERED_DRAFT_INPUT
+  workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+  base_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+  changed_paths: 11
+  staging: empty
+  preservation: no reset, checkout, clean, overwrite, staging, or commit before single-writer convergence and review.
 enforcement:
   write_scope: PROCESS_GOVERNED
   admin_token: PROCESS_GOVERNED
