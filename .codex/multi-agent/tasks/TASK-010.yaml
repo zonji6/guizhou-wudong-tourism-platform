@@ -93,8 +93,15 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: READY
-dispatch_state: DISPATCHED
+task_state: VERIFYING
+dispatch_state: RETURNED
+implementation_status: IMPLEMENTED_NOT_VERIFIED
+artifact_revision: 476cca14e508a70e5deb4582e8899ff2edfe1433
+verification_target_artifact_revision: 476cca14e508a70e5deb4582e8899ff2edfe1433
+changed_paths: 19
+implementation_evidence_fingerprint: sha256:eb8d705ef2559b317ec8b8a2e845a44d4e14ba12c1a47975cf75e8fc3fa44ab0
+verification_target_evidence_fingerprint: sha256:eb8d705ef2559b317ec8b8a2e845a44d4e14ba12c1a47975cf75e8fc3fa44ab0
+checks: scope:PASS,diff:PASS,prohibited_static_scan:PASS,tests:SKIPPED
 enforcement:
   write_scope: PROCESS_GOVERNED
   migration_execution: UNAVAILABLE
