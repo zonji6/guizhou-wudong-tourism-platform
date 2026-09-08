@@ -76,12 +76,14 @@ base_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
 interface_revision: tourism-api-v2-draft-r2
 verification_profile: high_risk
 permission_expiry:
+  - task_state: BLOCKED
   - task_state: VERIFYING
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
+task_state: BLOCKED
+dispatch_state: STALE
+block_reason: CONCURRENT_WRITER_DETECTED; preserve task2-data draft for single-writer convergence and independent review before any new write dispatch.
 enforcement:
   write_scope: PROCESS_GOVERNED
   admin_token: PROCESS_GOVERNED
