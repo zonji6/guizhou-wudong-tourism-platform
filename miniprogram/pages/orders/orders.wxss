@@ -1,0 +1,1 @@
+.order { margin-top:20rpx; padding:24rpx; background:#fffdf8; }.order-head { display:flex; justify-content:space-between; color:#b56f3b; font-size:22rpx; }.order-name { margin:15rpx 0 9rpx; font-size:28rpx; font-weight:600; }

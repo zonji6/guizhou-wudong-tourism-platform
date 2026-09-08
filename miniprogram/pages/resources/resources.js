@@ -1,0 +1,2 @@
+const { services } = require('../../utils/demo')
+Page({ data: { services, active: 'all', categories: [{id:'all',name:'全部'}, {id:'culture',name:'苗韵茶旅'}, {id:'stay',name:'暖居民宿'}, {id:'food',name:'寨味餐食'}, {id:'travel',name:'山野出行'}] }, filter(e) { const active = e.currentTarget.dataset.id; this.setData({ active, services: active === 'all' ? services : services.filter(item => item.category === active) }) }, toDetail(e) { wx.navigateTo({ url:'/pages/detail/detail?id=' + e.currentTarget.dataset.id }) } })

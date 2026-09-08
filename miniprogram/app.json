@@ -1,0 +1,5 @@
+{
+  "pages": ["pages/index/index", "pages/resources/resources", "pages/detail/detail", "pages/assistant/assistant", "pages/booking/booking", "pages/orders/orders", "pages/community/community"],
+  "window": { "navigationBarTitleText": "贵州乌冬文旅", "navigationBarBackgroundColor": "#f7f3e9", "navigationBarTextStyle": "black", "backgroundColor": "#f7f3e9" },
+  "style": "v2"
+}

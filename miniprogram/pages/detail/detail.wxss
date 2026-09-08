@@ -1,0 +1,1 @@
+.cover { width:100%; height:480rpx; }.intro { color:#55675e; line-height:1.85; margin:30rpx 0; }.price { color:#b56f3b; font-size:48rpx; font-weight:700; }.price text { color:#718077; font-size:22rpx; font-weight:400; }

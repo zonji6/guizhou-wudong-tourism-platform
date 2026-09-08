@@ -1,0 +1,1 @@
+.post { display:flex; margin-top:22rpx; background:#fffdf8; }.post image { width:220rpx; height:190rpx; }.post-body { padding:18rpx; }.author, .likes { color:#b56f3b; font-size:21rpx; }.post-title { margin:9rpx 0; font-size:28rpx; font-weight:600; }.likes { margin-top:16rpx; }
