@@ -1,0 +1,48 @@
+task_id: TASK-004
+dispatch_id: dispatch-TASK-004-r1
+objective: 提供本机演示启动脚本、答辩流程和简短项目进度说明。
+deliverables:
+  - scripts/start-demo.ps1
+  - docs/答辩演示流程.md
+  - docs/项目进度.md
+read_scope:
+  - AGENTS.md
+  - README.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/superpowers/specs/**
+  - docs/superpowers/plans/**
+write_scope:
+  - scripts/start-demo.ps1
+  - docs/答辩演示流程.md
+  - docs/项目进度.md
+restricted_actions:
+  - 不创建或运行测试，不新增测试或冒烟脚本。
+  - 不访问密钥、不启动长期后台服务、不推送 GitHub。
+  - 不修改业务代码、接口契约或协作控制文件。
+read_first:
+  - AGENTS.md
+  - README.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+dependencies: []
+acceptance:
+  - 启动脚本覆盖 Docker 依赖、Java、Python 和 Vue 的本地启动命令并给出缺失依赖提示。
+  - 答辩流程围绕苗族文化茶旅、AI 行程、来源、待确认预约和后台轨迹。
+  - 文档清楚说明 API Key 后续由用户通过 .env 配置，不写入仓库。
+  - 不含测试或自动验收脚本。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: f163a35
+verification_profile: express
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: IMPLEMENTED
+dispatch_state: RETURNED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED

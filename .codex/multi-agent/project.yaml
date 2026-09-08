@@ -28,4 +28,6 @@ runtime_mode: LIMITED_CONCURRENT
 long_lived_provisioning: pending_real_thread_ids
 active_task_refs:
   - .codex/multi-agent/tasks/TASK-001.yaml
+  - .codex/multi-agent/tasks/TASK-002.yaml
   - .codex/multi-agent/tasks/TASK-003.yaml
+  - .codex/multi-agent/tasks/TASK-004.yaml

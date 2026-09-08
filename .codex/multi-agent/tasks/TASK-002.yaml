@@ -1,0 +1,48 @@
+task_id: TASK-002
+dispatch_id: dispatch-TASK-002-r1
+objective: 建立 FastAPI 文旅 AI 服务，提供 LangGraph 编排、DeepSeek、RAG、Redis 与 WebSocket 链路。
+deliverables:
+  - agent-service/**
+read_scope:
+  - AGENTS.md
+  - README.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/contracts/tourism-api-v1.md
+  - docs/superpowers/specs/**
+  - docs/superpowers/plans/**
+write_scope:
+  - agent-service/**
+restricted_actions:
+  - 不创建或运行测试，不新增测试文件。
+  - 不写入或输出 API Key，不调用需要用户密钥的外部服务。
+  - 不推送 GitHub，不修改 tourism-service、web、miniprogram、docs/contracts 或协作控制文件。
+read_first:
+  - AGENTS.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/superpowers/specs/2026-09-08-udong-tourism-platform-design.md
+dependencies:
+  - TASK-001: contract proposal required before integration
+acceptance:
+  - FastAPI 提供健康检查、知识入库入口、受控助手 HTTP 与 WebSocket 入口。
+  - LangGraph 固定实现快慢车道，输出仅为六种白名单卡片。
+  - 无 DeepSeek 或 Embedding 配置时清晰降级，不能编造知识、商家、价格或订单号。
+  - 仅通过 Java 内部 HTTP 工具读取资源或创建待确认预约。
+  - 不含测试文件、测试框架或测试命令。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: f163a35
+interface_revision: tourism-api-v1
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: IMPLEMENTED
+dispatch_state: RETURNED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED

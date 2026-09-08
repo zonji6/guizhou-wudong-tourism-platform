@@ -1,6 +1,6 @@
 task_id: TASK-003
-dispatch_id: dispatch-TASK-003-r1
-objective: 建立苗寨自然、温暖、民族文化质感的 Vue 门户、管理后台与原生微信小程序界面。
+dispatch_id: dispatch-TASK-003-r2
+objective: 将 Vue 门户、管理后台与原生微信小程序的主答辩链路接入 tourism-api-v1 和 AI WebSocket，并保留本机演示回退。
 deliverables:
   - web/**
   - miniprogram/**
@@ -28,11 +28,12 @@ acceptance:
   - Web 提供门户、资源详情、社区、AI 助手、预约结果和管理后台路由。
   - 小程序提供首页、资源、详情、AI 助手、预约、订单和社区页面。
   - UI 使用贵州乌冬苗族文化茶旅演示数据并明确演示属性。
+  - Web 与小程序在本地服务可用时调用 tourism-api-v1 的资源、社区、预约接口和 AI WebSocket；不可用时保留明确的演示回退。
   - 仅渲染白名单 Agent 卡片，不暴露提示词、思维链或密钥。
   - 不含测试文件、测试框架或测试命令。
 project_revision: project-r1
-task_revision: task-r1
-base_revision: 3d81f1e
+task_revision: task-r2
+base_revision: a7600c7
 interface_revision: tourism-api-v1
 verification_profile: high_risk
 permission_expiry:
@@ -40,8 +41,8 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: READY
-dispatch_state: DISPATCHED
+task_state: IMPLEMENTED
+dispatch_state: RETURNED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
