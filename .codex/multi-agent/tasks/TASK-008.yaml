@@ -1,0 +1,72 @@
+task_id: TASK-008
+agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
+dispatch_id: dispatch-TASK-008-r2
+objective: 仅修复冻结制品审查确认的五项问题：小程序输入布局与服务提示、Web 终态卡片完整性与上一版折叠、以及小程序预约响应完整性。
+deliverables:
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/assistant/assistant.wxss
+  - miniprogram/pages/booking/booking.js
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
+branch: feat/wudong-frontend-redesign
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v1.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/assistant/assistant.wxss
+  - miniprogram/pages/booking/booking.js
+write_scope:
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/assistant/assistant.wxss
+  - miniprogram/pages/booking/booking.js
+restricted_actions:
+  - 不修改上述五个 write_scope 之外的产品文件、Java、Python、契约、文档或 control。
+  - 不创建或运行测试，不构建、不启动、不推送。
+  - 不访问外部模型、API Key、生产凭据、真实用户或真实订单数据。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v1.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+dependencies:
+  - TASK-005: VERIFIED
+  - TASK-006: VERIFIED
+  - TASK-007: VERIFIED
+interface_revision: tourism-api-v1
+artifact_inputs:
+  - 92ab61b8b12dc3ce5798ebe7478c2ec218842013: r1 冻结制品基线
+acceptance:
+  - 小程序 composer 位于短对话、阶段、当前卡和上一版之后，固定在自定义底栏上方；service_recommendation 固定显示“请以服务方确认结果为准”。
+  - Web completed 仅在 acceptedCardSeq===seq 且本轮卡非 error 时成功收束；缺失、迟到或畸形 card_ready 时补 error 卡并失败收束；failed 无本轮 error 时也补齐错误卡。
+  - 每次接收非重复卡递增版本，上一版 details 使用该版本作为 key，跨轮 JSON 相同的 previousCard 仍默认折叠。
+  - 小程序预约 GET、创建与确认三路响应均在写状态前统一校验锁定 id/serviceId、合法状态、非空名称/日期/联系人/电话和正整数人数；确认还必须锁定同一 serviceId。
+  - 不测试、不构建、不启动、不推送，不访问外部模型或密钥。
+project_revision: project-r1
+task_revision: task-r2
+base_revision: 92ab61b8b12dc3ce5798ebe7478c2ec218842013
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: VERIFYING
+dispatch_state: RETURNED
+artifact_revision: 1d47230652796373456c8709c414142c1e84b795
+verification_target_artifact_revision: 1d47230652796373456c8709c414142c1e84b795
+implementation_evidence_fingerprint: sha256:9c5363696da59ca8404c1140f05d6ee0ec923879063df157fdb5352b8d43c017
+verification_target_evidence_fingerprint: sha256:9c5363696da59ca8404c1140f05d6ee0ec923879063df157fdb5352b8d43c017
+changed_paths: 5
+checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  external_model_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
