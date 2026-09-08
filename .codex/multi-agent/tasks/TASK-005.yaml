@@ -1,6 +1,6 @@
 task_id: TASK-005
 dispatch_id: dispatch-TASK-005-r1
-owner: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
 objective: 只完成实施计划任务 2 中的 Java 部分：新增 V3__rename_wudong_display_copy.sql，并修改 tourism-service/src/main/resources/application.yml。
 deliverables:
   - tourism-service/src/main/resources/db/migration/V3__rename_wudong_display_copy.sql

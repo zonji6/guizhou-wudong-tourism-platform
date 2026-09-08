@@ -1,6 +1,6 @@
 task_id: TASK-006
 dispatch_id: dispatch-TASK-006-r1
-owner: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
+agent_id: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
 objective: 完成实施计划任务 3 的 FastAPI、LangGraph、DeepSeek、关键词资料与服务动作完整主链。
 deliverables:
   - agent-service/**
