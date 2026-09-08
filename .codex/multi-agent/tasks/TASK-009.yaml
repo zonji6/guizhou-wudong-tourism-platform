@@ -53,7 +53,8 @@ verification_target_artifact_revision: ba01ceb066ffbc205389ac262516a4308164feb4
 changed_paths: 2
 implementation_evidence_fingerprint: sha256:2fbbf0853ca60324f3b19d8c35a0adbb1418a60bdb53b2350e406fa17f763bb5
 verification_target_evidence_fingerprint: sha256:2fbbf0853ca60324f3b19d8c35a0adbb1418a60bdb53b2350e406fa17f763bb5
-checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
+independent_static_review: REVIEW_PASS
+checks: scope:PASS,diff:PASS,copy:PASS,independent_static_review:PASS,tests:SKIPPED
 enforcement:
   write_scope: PROCESS_GOVERNED
   external_calls: UNAVAILABLE
