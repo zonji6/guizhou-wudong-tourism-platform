@@ -1,6 +1,6 @@
 task_id: TASK-009
 agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
-dispatch_id: dispatch-TASK-009-r1
+dispatch_id: dispatch-TASK-009-r2
 objective: 收口贵州乌东答辩说明，准确区分已完成能力、演示降级与未完成验证。
 deliverables:
   - README.md
@@ -44,18 +44,20 @@ acceptance:
   - 六分钟答辩链为开卷、五联探景、雾散叶片、连续向导、真实 serviceId 进入预约二次确认、小程序五栏/我的、后台订单与脱敏摘要。
   - 清楚区分已完成、演示降级与未完成；不得宣称已运行测试、构建或端到端验证。
   - 不测试、不构建、不启动、不使用浏览器或外部调用、不推送。
+  - 执行前校验 `git merge-base --is-ancestor 957f32efbf0f55e6dd548561951dc958a0b53ffe HEAD`，且 `957f32efbf0f55e6dd548561951dc958a0b53ffe..HEAD` 仅包含 `.codex/multi-agent/**` 控制提交；三份文档的真实差异从该基线计算。
 project_revision: project-r1
-task_revision: task-r1
-base_revision: 1d47230652796373456c8709c414142c1e84b795
+task_revision: task-r2
+base_revision: 957f32efbf0f55e6dd548561951dc958a0b53ffe
 verification_profile: express
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: ACKNOWLEDGED
+task_state: READY
+dispatch_state: DISPATCHED
 enforcement:
   write_scope: PROCESS_GOVERNED
   external_calls: UNAVAILABLE
   remote_push: PROCESS_GOVERNED
+  control_only_descendant: PROCESS_GOVERNED
