@@ -1,5 +1,1 @@
-{
-  "pages": ["pages/index/index", "pages/resources/resources", "pages/detail/detail", "pages/assistant/assistant", "pages/booking/booking", "pages/orders/orders", "pages/community/community"],
-  "window": { "navigationBarTitleText": "贵州乌冬文旅", "navigationBarBackgroundColor": "#f7f3e9", "navigationBarTextStyle": "black", "backgroundColor": "#f7f3e9" },
-  "style": "v2"
-}
+{"pages":["pages/index/index","pages/resources/resources","pages/assistant/assistant","pages/community/community","pages/profile/profile","pages/detail/detail","pages/booking/booking","pages/orders/orders"],"window":{"navigationBarTitleText":"贵州乌东","navigationBarBackgroundColor":"#f2efe5","navigationBarTextStyle":"black","backgroundColor":"#f2efe5"},"tabBar":{"custom":true,"color":"#718077","selectedColor":"#173f36","backgroundColor":"#f2efe5","borderStyle":"white","list":[{"pagePath":"pages/index/index","text":"首页"},{"pagePath":"pages/resources/resources","text":"游乌东"},{"pagePath":"pages/assistant/assistant","text":"向导"},{"pagePath":"pages/community/community","text":"寨里"},{"pagePath":"pages/profile/profile","text":"我的"}]},"style":"v2"}

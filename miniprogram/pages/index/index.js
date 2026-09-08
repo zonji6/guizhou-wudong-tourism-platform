@@ -1,11 +1,2 @@
 const { services } = require('../../utils/demo')
-const { request } = require('../../utils/api')
-Page({
-  data: { services, categories: [{ id:'culture', icon:'☘', name:'苗韵茶旅' }, { id:'stay', icon:'⌂', name:'暖居民宿' }, { id:'food', icon:'◌', name:'寨味餐食' }, { id:'travel', icon:'⌁', name:'山野出行' }] },
-  onLoad() { request('/api/services').then(items => this.setData({ services: items.map(normalize) })).catch(() => {}) },
-  toResources(e) { const category = e.currentTarget.dataset.category || ''; wx.navigateTo({ url: '/pages/resources/resources?category=' + category }) },
-  toDetail(e) { wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id }) },
-  toAssistant() { wx.navigateTo({ url: '/pages/assistant/assistant' }) },
-  toCommunity() { wx.navigateTo({ url: '/pages/community/community' }) }
-})
-function normalize(item) { return { ...item, title:item.name || item.title, image:item.imageUrl || item.image, intro:item.description || item.intro, tags:item.tags || [] } }
+Page({data:{services:services.slice(0,2),currentItinerary:null,heroImageFailed:false,categories:[{id:'culture',icon:'☘',name:'茶旅'},{id:'stay',icon:'⌂',name:'食宿'},{id:'travel',icon:'⌁',name:'路线'},{id:'all',icon:'◒',name:'导览'}]},onShow(){this.getTabBar()?.setData({selected:0});this.setData({currentItinerary:getApp().globalData.currentItinerary})},toResources(e){getApp().globalData.resourceCategory=e.currentTarget.dataset.category||'all';wx.switchTab({url:'/pages/resources/resources'})},toAssistant(){wx.switchTab({url:'/pages/assistant/assistant'})},toDetail(e){wx.navigateTo({url:'/pages/detail/detail?id='+encodeURIComponent(e.currentTarget.dataset.id)})},imageError(){this.setData({heroImageFailed:true})}})

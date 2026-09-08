@@ -1,0 +1,1 @@
+<view class="custom-tab-bar"><view wx:for="{{list}}" wx:key="pagePath" class="tab-item {{selected === index ? 'is-selected' : ''}} {{item.guide ? 'guide-leaf' : ''}}" data-index="{{index}}" bindtap="switchTab"><view wx:if="{{item.guide}}" class="leaf-mark" aria-hidden="true">◒</view><text>{{item.text}}</text></view></view>

@@ -1,0 +1,1 @@
+Page({data:{itinerary:null,orders:[]},onShow(){this.getTabBar()?.setData({selected:4});const app=getApp();this.setData({itinerary:app.globalData.currentItinerary,orders:app.globalData.orders||[]})},toOrders(){wx.navigateTo({url:'/pages/orders/orders'})}})

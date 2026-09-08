@@ -2,12 +2,13 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { allowedCardTypes, categories, posts, services } from './data/demo'
 import { aiWs, request } from './services/api'
+import HomePage from './pages/HomePage.vue'
 
 const route = ref(location.hash.slice(1) || '/')
 const selected = ref(services[0])
 const serviceList = ref(services)
 const postList = ref(posts)
-const assistantInput = ref('我想体验贵州乌冬的苗族文化和茶旅')
+const assistantInput = ref('我想体验贵州乌东的苗族文化和茶旅')
 const assistantStage = ref('')
 const assistantCard = ref(null)
 const booking = ref({ date: '2026-09-20', people: 2, contact: '答辩体验官' })
@@ -20,8 +21,8 @@ const adminTab = ref('orders')
 const isAdmin = computed(() => route.value.startsWith('/admin'))
 const filteredServices = computed(() => activeCategory.value === 'all' ? serviceList.value : serviceList.value.filter(item => item.category === activeCategory.value))
 const pageTitle = computed(() => ({
-  '/resources': '遇见乌冬', '/community': '寨里分享', '/assistant': '乌冬 AI 旅伴', '/booking': '确认预约'
-}[route.value] || '贵州乌冬文旅'))
+  '/resources': '游乌东', '/community': '寨里分享', '/assistant': '乌东向导', '/booking': '确认预约'
+}[route.value] || '贵州乌东文旅'))
 
 function go(path) { location.hash = path }
 function normalizeService(item) { return { ...item, title: item.name || item.title, image: item.imageUrl || item.image, intro: item.description || item.intro, price: item.price ?? 0, tags: item.tags || [], category: item.category || 'culture' } }
@@ -29,8 +30,9 @@ function normalizePost(item) { return { ...item, author: item.authorName || item
 async function chooseService(item) { selected.value = item; go('/resource/' + item.id); try { selected.value = normalizeService(await request('/api/services/' + item.id)) } catch (_) {} }
 function openBooking(item = selected.value) { selected.value = item; bookingDone.value = false; pendingBooking.value = null; go('/booking') }
 function goAssistant() { go('/assistant') }
+function navigateHome(action) { if (action.category) activeCategory.value = action.category; go(action.path) }
 function onHashChange() { route.value = location.hash.slice(1) || '/' }
-function categoryName(id) { return categories.find(item => item.id === id)?.label || '乌冬体验' }
+function categoryName(id) { return categories.find(item => item.id === id)?.label || '乌东体验' }
 
 function renderCard(card) {
   return allowedCardTypes.includes(card.type) ? card : { type: 'error', title: '内容暂不可展示', text: 'AI 返回了不支持的卡片类型。' }
@@ -101,21 +103,14 @@ onUnmounted(() => removeEventListener('hashchange', onHashChange))
   <div class="app-shell" :class="{ 'admin-shell': isAdmin }">
     <template v-if="!isAdmin">
       <header class="topbar">
-        <a class="brand" href="#/">贵州乌冬 <span>· 文旅</span></a>
-        <nav><a href="#/resources">遇见乌冬</a><a href="#/community">寨里分享</a><a href="#/assistant">AI 旅伴</a></nav>
+        <a class="brand" href="#/">贵州乌东 <span>· 文旅</span></a>
+        <nav><a href="#/resources">游乌东</a><a href="#/community">寨里</a><a href="#/assistant">乌东向导</a></nav>
         <button class="admin-link" @click="go('/admin')">运营后台</button>
       </header>
 
-      <main v-if="route === '/'" class="home-page">
-        <section class="hero">
-          <div class="hero-copy"><p class="eyebrow">GUIZHOU WUDONG · DEMO</p><h1>在山雾与茶香里<br><em>遇见苗寨的温度</em></h1><p>一段以茶为引、以苗寨为家的贵州乌冬慢旅行。</p><div class="actions"><button class="primary" @click="goAssistant">让 AI 帮我规划</button><button class="ghost" @click="go('/resources')">浏览乌冬体验</button></div></div>
-          <div class="hero-note">苗族文化茶旅体验<br><small>本页资源、价格均为答辩演示数据</small></div>
-        </section>
-        <section class="section"><div class="section-head"><p class="eyebrow">从一杯茶开始</p><h2>衣食住行，都有乌冬的山野味</h2></div><div class="category-grid"><button v-for="item in categories" :key="item.id" class="category-card" @click="activeCategory = item.id; go('/resources')"><b>{{ item.icon }}</b><span>{{ item.label }}</span><small>查看体验</small></button></div></section>
-        <section class="section featured"><div class="section-head inline"><div><p class="eyebrow">精选体验</p><h2>把时间留给山与人</h2></div><button class="text-button" @click="go('/resources')">查看全部 →</button></div><div class="service-grid"><article v-for="item in serviceList.slice(0, 3)" :key="item.id" class="service-card" @click="chooseService(item)"><img :src="item.image" :alt="item.title"><div><p>{{ categoryName(item.category) }}</p><h3>{{ item.title }}</h3><span>¥{{ item.price }} 起 <i>演示数据</i></span></div></article></div></section>
-      </main>
+      <HomePage v-if="route === '/'" :services="serviceList" :categories="categories" @navigate="navigateHome" @open-service="chooseService" />
 
-      <main v-else-if="route === '/resources'" class="page"><div class="page-intro"><p class="eyebrow">乌冬体验清单</p><h1>{{ pageTitle }}</h1><p>从茶园、火塘到山谷慢行，每一项均为演示资源。</p></div><div class="filter"><button :class="{active: activeCategory === 'all'}" @click="activeCategory = 'all'">全部</button><button v-for="item in categories" :key="item.id" :class="{active: activeCategory === item.id}" @click="activeCategory = item.id">{{ item.label }}</button></div><div class="service-grid all"><article v-for="item in filteredServices" :key="item.id" class="service-card" @click="chooseService(item)"><img :src="item.image" :alt="item.title"><div><p>{{ categoryName(item.category) }} · {{ item.tags.join(' · ') }}</p><h3>{{ item.title }}</h3><span>¥{{ item.price }} 起 <i>演示数据</i></span></div></article></div></main>
+      <main v-else-if="route === '/resources'" class="page"><div class="page-intro"><p class="eyebrow">乌东体验清单</p><h1>{{ pageTitle }}</h1><p>从茶园、火塘到山谷慢行，每一项均为演示资源。</p></div><div class="filter"><button :class="{active: activeCategory === 'all'}" @click="activeCategory = 'all'">全部</button><button v-for="item in categories" :key="item.id" :class="{active: activeCategory === item.id}" @click="activeCategory = item.id">{{ item.label }}</button></div><div class="service-grid all"><article v-for="item in filteredServices" :key="item.id" class="service-card" @click="chooseService(item)"><img :src="item.image" :alt="item.imageAlt || item.title"><div><p>{{ categoryName(item.category) }} · {{ item.tags.join(' · ') }}</p><h3>{{ item.title }}</h3><span>¥{{ item.price }} 起 <i>演示数据</i></span></div></article></div></main>
 
       <main v-else-if="route.startsWith('/resource/')" class="page detail"><img class="detail-image" :src="selected.image" :alt="selected.title"><div class="detail-copy"><p class="eyebrow">{{ categoryName(selected.category) }} · 演示资源</p><h1>{{ selected.title }}</h1><div class="tag-row"><span v-for="tag in selected.tags" :key="tag">{{ tag }}</span></div><p class="intro">{{ selected.intro }}</p><div class="price">¥{{ selected.price }} <small>起 / 演示价格</small></div><button class="primary" @click="openBooking(selected)">预约这项体验</button></div></main>
 
@@ -129,7 +124,7 @@ onUnmounted(() => removeEventListener('hashchange', onHashChange))
     </template>
 
     <template v-else>
-      <aside class="admin-aside"><a class="brand" href="#/">贵州乌冬 <span>运营</span></a><button :class="{active: adminTab === 'orders'}" @click="adminTab = 'orders'">预约订单</button><button :class="{active: adminTab === 'content'}" @click="adminTab = 'content'">资源与社区</button><button :class="{active: adminTab === 'traces'}" @click="adminTab = 'traces'">AI 运行摘要</button><a href="#/">← 返回游客端</a></aside>
+      <aside class="admin-aside"><a class="brand" href="#/">贵州乌东 <span>运营</span></a><button :class="{active: adminTab === 'orders'}" @click="adminTab = 'orders'">预约订单</button><button :class="{active: adminTab === 'content'}" @click="adminTab = 'content'">资源与社区</button><button :class="{active: adminTab === 'traces'}" @click="adminTab = 'traces'">AI 运行摘要</button><a href="#/">← 返回游客端</a></aside>
       <main class="admin-main"><div class="admin-head"><div><p class="eyebrow">本机答辩演示后台</p><h1>{{ adminTab === 'orders' ? '预约订单' : adminTab === 'content' ? '资源与社区' : 'AI 脱敏运行摘要' }}</h1></div><span class="demo-badge">演示数据</span></div><section v-if="adminTab === 'orders'" class="admin-table"><div class="table-row header"><span>订单号</span><span>体验项目</span><span>日期 / 人数</span><span>状态</span><span>操作</span></div><div v-for="order in orders" :key="order.id" class="table-row"><span>{{ order.id }}</span><span>{{ order.name }}</span><span>{{ order.date }} · {{ order.people }} 人</span><span><i class="status">{{ order.status }}</i></span><button :disabled="order.status === 'PENDING_CONFIRMATION'" @click="updateOrder(order)">{{ order.status === 'PENDING_CONFIRMATION' ? '等待游客确认' : order.status === 'CONFIRMED' ? '开始处理' : '完成订单' }}</button></div></section><section v-else-if="adminTab === 'content'" class="admin-content"><div v-for="item in serviceList.slice(0, 4)" :key="item.id" class="admin-resource"><img :src="item.image"><div><h3>{{ item.title }}</h3><p>{{ item.intro }}</p></div><button>编辑演示内容</button></div></section><section v-else class="trace-list"><article><span>会话 wd-demo-001</span><b>route → intent</b><p>识别为“苗族文化茶旅行程规划”</p><small>耗时 82ms · 已脱敏</small></article><article><span>会话 wd-demo-001</span><b>retrieve → itinerary</b><p>检索到《乌冬古茶园体验指南》《苗寨待客与长桌宴》</p><small>耗时 315ms · 来源摘要</small></article><article><span>会话 wd-demo-001</span><b>compose_card → completed</b><p>已生成 itinerary 卡片</p><small>耗时 41ms · 不含提示词与思维链</small></article></section></main>
     </template>
   </div>
