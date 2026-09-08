@@ -1,4 +1,4 @@
-def chunk_document(document_id: int, title: str, text: str, size: int = 500, overlap: int = 80) -> list[dict]:
+def chunk_document(document_id: str, title: str, text: str, size: int = 500, overlap: int = 80) -> list[dict]:
     """按中文字符切块，并始终保留可展示的来源。"""
     if not text.strip():
         return []

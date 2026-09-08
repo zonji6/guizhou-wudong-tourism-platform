@@ -20,8 +20,14 @@ class TourismClient:
             response.raise_for_status()
             return response.json().get("data", [])
 
+    async def search_knowledge(self, keywords: str = "") -> list[dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=5) as client:
+            response = await client.get(f"{self.base_url}/internal/agent/knowledge/search", params={"keywords": keywords})
+            response.raise_for_status()
+            return response.json().get("data", [])
+
     async def create_pending_booking(
-        self, service_id: str, travel_date: str | None, people: int | None, thread_id: str
+        self, service_id: str, travel_date: str, people: int, contact_name: str, contact_phone: str, thread_id: str
     ) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=5) as client:
             response = await client.post(
@@ -29,12 +35,16 @@ class TourismClient:
                 json={
                     "serviceId": service_id,
                     "travelDate": travel_date,
-                    "peopleCount": people or 1,
-                    "contactName": "演示游客",
-                    "contactPhone": "13800000000",
-                    "note": "来自 AI 规划卡片",
+                    "peopleCount": people,
+                    "contactName": contact_name,
+                    "contactPhone": contact_phone,
+                    "note": "来自乌东向导的待确认预约",
                     "threadId": thread_id,
                 },
             )
             response.raise_for_status()
             return response.json().get("data", {})
+
+
+def service_card_item(item: dict[str, Any]) -> dict[str, Any]:
+    return {"serviceId": str(item["id"]), "title": item.get("name", "乌东体验"), "summary": item.get("description", ""), "price": item.get("price"), "demoData": item.get("demoData", True)}
