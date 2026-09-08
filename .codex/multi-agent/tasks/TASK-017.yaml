@@ -23,15 +23,14 @@ read_scope:
   - agent-service/app/contracts.py
   - agent-service/app/config.py
   - agent-service/app/tools/tourism_client.py
-write_scope:
-  - agent-service/app/tools/tourism_v2_contracts.py
-  - agent-service/app/tools/tourism_v2_client.py
+write_scope: []
 restricted_actions:
   - 不接线或修改现有 LangGraph、app/contracts.py、config.py、tourism_client.py、路由、运行摘要或任何既有 AI 流程。
   - 仅实现 GET /internal/agent/{products|foods|stays|places}/search 的只读适配；不得新增 POST、PUT、PATCH、DELETE、订单、路线攻略、状态、run-summary 或任何猜测性方法。
   - 不改依赖、不新增或运行测试；不得启动服务、构建、curl、浏览器、数据库、Flyway、外部 API 或推送；不得执行 reset、checkout 或 clean。
   - 异常仅允许稳定 code 与中文安全消息；不得暴露 URL、请求头、响应体、堆栈、密钥或原始异常文本。
   - 仅 primary:/root 获得当前派发的写入权限；IntelligenceDomainAgent 不得写入本任务 scope。仅使用 apply_patch；仅可暂存 write_scope，不得修改协作控制文件。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\docs\contracts\tourism-api-v2.md
@@ -70,9 +69,21 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+implementation_status: IMPLEMENTED_NOT_RUNTIME_VERIFIED
+artifact_revision: 6acbc6c5a0ffde0c5c9eafcb76123575b540df44
+verification_target_artifact_revision: 6acbc6c5a0ffde0c5c9eafcb76123575b540df44
+changed_paths: 2
+raw_binary_diff_bytes: 17006
+implementation_evidence_fingerprint: sha256:6dde16bfbebebce2d32c929a0f32531f45de4514a2204b902000b75930b6c596
+verification_target_evidence_fingerprint: sha256:6dde16bfbebebce2d32c929a0f32531f45de4514a2204b902000b75930b6c596
+contract_review: REVIEW_PASS
+security_review: REVIEW_PASS
+artifact_review: ARTIFACT_REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,worktree_clean:PASS,contract_review:PASS,security_review:PASS,artifact_review:PASS,runtime:NOT_RUN
 enforcement:
   write_scope: PROCESS_GOVERNED
   cross_worktree_contracts: FROZEN_READ_ONLY
