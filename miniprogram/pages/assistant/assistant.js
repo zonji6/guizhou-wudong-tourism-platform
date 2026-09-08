@@ -1,35 +1,15 @@
-const allowed = ['itinerary', 'service_recommendation', 'knowledge_answer', 'clarifying_question', 'pending_booking', 'error']
+const { createPhases, normalizeCard, applyEvent, settlePhases } = require('../../utils/assistant')
+const { demoAssistantCard } = require('../../utils/demo')
+const stringId = value => typeof value === 'string' && value.trim() ? value : ''
 Page({
-  data: { input: '我想体验贵州乌东的苗族文化和茶旅', stage: '', card: null },
-  onShow() { this.getTabBar()?.setData({ selected: 2 }) },
-  change(e) { this.setData({ input: e.detail.value }) },
-  quick(e) { this.setData({ input: e.currentTarget.dataset.text }); this.ask() },
-  ask() {
-    this.setData({ card: null, stage: '正在理解你的旅行心愿…' })
-    setTimeout(() => this.setData({ stage: '正在检索贵州乌东茶旅资料…' }), 550)
-    setTimeout(() => this.setData({ stage: '正在匹配茶园、苗寨与民宿…' }), 1050)
-    const fallback = setTimeout(() => {
-      const asksDetails = !/(\d+).{0,4}(人|位)|周末|明天|日期/.test(this.data.input)
-      const card = asksDetails ? { type:'clarifying_question', title:'为你把茶旅安排得刚刚好', text:'想先确认一下：计划哪天出发、几位同行，以及更偏好半日体验还是两天一夜慢游？', chips:['周末，两位', '两天一夜', '带孩子同行'] } : { type:'itinerary', title:'苗族文化茶旅 · 两天一夜', text:'从一盏山茶开始，走进乌东的苗寨日常。', items:['Day 1｜古茶园采茶与制茶品茗', 'Day 1｜苗寨长桌宴与火塘夜话', 'Day 2｜苗绣纹样手作与山谷慢行'], sources:['《乌东古茶园体验指南》', '《苗寨待客与长桌宴》'] }
-      this.setData({ card: allowed.includes(card.type) ? card : { type:'error', title:'内容暂不可展示', text:'AI 返回了不支持的卡片类型。' }, stage:'方案已生成' })
-    }, 1550)
-    try {
-      const socket = wx.connectSocket({ url: getApp().globalData.aiWsUrl })
-      socket.onOpen(() => socket.send({ data: JSON.stringify({ thread_id:`mini-${Date.now()}`, user_text:this.data.input }) }))
-      socket.onMessage(({ data }) => {
-        let event
-        try { event = JSON.parse(data) } catch (_) { return }
-        const name = event.event || event.type
-        if (name === 'node_started') this.setData({ stage:event.message || '正在规划乌东行程…' })
-        if (name === 'tool_finished') this.setData({ stage:event.message || '正在匹配贵州乌东资源…' })
-        if (name === 'card_ready') {
-          const card = event.card || (event.data && event.data.card) || event.data
-          if (card && card.type) { clearTimeout(fallback); this.setData({ card:allowed.includes(card.type) ? card : { type:'error', title:'内容暂不可展示', text:'AI 返回了不支持的卡片类型。' }, stage:'方案已生成' }) }
-        }
-        if (name === 'failed') { clearTimeout(fallback); this.setData({ card:{ type:'error', title:'AI 服务暂不可用', text:event.message || '已保留演示资源浏览与预约功能。' }, stage:'服务已降级' }) }
-      })
-      socket.onError(() => socket.close())
-    } catch (_) {}
-  },
-  toBooking() { wx.navigateTo({ url:'/pages/booking/booking?id=1' }) }
+  data:{input:'我想体验贵州乌东的苗族文化和茶旅',messages:[],phases:createPhases(),currentCard:null,previousCard:null,isBusy:false,mode:'live',requestSeq:0,sourcesOpen:false,previousOpen:false},
+  onShow(){wx.setNavigationBarTitle({title:'乌东向导'});this.getTabBar()?.setData({selected:2});const s=getApp().globalData.assistantSession;this.setData({messages:s.messages||[],currentCard:s.currentCard||null,previousCard:s.previousCard||null})},
+  onUnload(){this.close(getApp().globalData.assistantSession.activeSocket)},
+  sync(extra={}){Object.assign(getApp().globalData.assistantSession,{messages:this.data.messages,currentCard:this.data.currentCard,previousCard:this.data.previousCard},extra)},
+  close(socket){if(socket)socket.close()},current(seq,socket){return seq===this.data.requestSeq&&socket===getApp().globalData.assistantSession.activeSocket},
+  accept(seq,socket,raw){if(!this.current(seq,socket))return;const card=normalizeCard(raw),key=JSON.stringify([card.type,card.title,card.summary,card.data]);const s=getApp().globalData.assistantSession;if(s.cardKey===key)return;s.cardKey=key;this.setData({previousCard:this.data.currentCard||this.data.previousCard,currentCard:card,sourcesOpen:false,previousOpen:false});this.sync({cardKey:key});},
+  fail(seq,socket,message){if(!this.current(seq,socket))return;this.setData({currentCard:{type:'error',title:'乌东向导暂不可用',summary:message,data:{demoAvailable:true},sources:[]},isBusy:false,mode:'error',phases:settlePhases(this.data.phases,true)});this.sync({activeSocket:null});this.close(socket)},
+  ask(){const text=this.data.input.trim();if(!text)return;const s=getApp().globalData.assistantSession,seq=this.data.requestSeq+1,old=s.activeSocket;this.setData({requestSeq:seq,isBusy:true,mode:'live',phases:createPhases()});this.close(old);const messages=[...this.data.messages,{role:'user',content:text}];this.setData({messages});this.sync({messages,activeSocket:null});const socket=wx.connectSocket({url:getApp().globalData.aiWsUrl});s.activeSocket=socket;socket.onOpen(()=>{if(this.current(seq,socket))socket.send({data:JSON.stringify({thread_id:s.threadId,user_text:text})})});socket.onMessage(({data})=>{let e;try{e=JSON.parse(data)}catch(_){return}if(!this.current(seq,socket))return this.close(socket);if(e.type==='task_started')this.setData({phases:createPhases()});if(['node_started','tool_finished'].includes(e.type))this.setData({phases:applyEvent(this.data.phases,e)});if(e.type==='card_ready')this.accept(seq,socket,e.card);if(e.type==='completed'){this.setData({isBusy:false,phases:settlePhases(this.data.phases,false)});this.sync({activeSocket:null});this.close(socket)}if(e.type==='failed')this.fail(seq,socket,e.message||'请稍后重试。')});socket.onError(()=>this.fail(seq,socket,'本机 AI 服务暂未准备好。'));socket.onClose(()=>{if(this.current(seq,socket)&&this.data.isBusy)this.fail(seq,socket,'连接已断开。')})},
+  showDemo(){if(this.data.currentCard?.data?.demoAvailable!==true)return;const s=getApp().globalData.assistantSession;this.setData({requestSeq:this.data.requestSeq+1,isBusy:false,mode:'demo',phases:settlePhases(this.data.phases,false)});this.close(s.activeSocket);s.activeSocket=null;this.setData({previousCard:this.data.currentCard,currentCard:normalizeCard(demoAssistantCard)});this.sync()},
+  change(e){this.setData({input:e.detail.value})},quick(e){this.setData({input:e.currentTarget.dataset.text});this.ask()},toggleSources(){this.setData({sourcesOpen:!this.data.sourcesOpen})},togglePrevious(){this.setData({previousOpen:!this.data.previousOpen})},openService(e){const id=stringId(e.currentTarget.dataset.serviceId);if(id)wx.navigateTo({url:`/pages/detail/detail?id=${encodeURIComponent(id)}`})},bookService(e){const id=stringId(e.currentTarget.dataset.serviceId),booking=this.data.currentCard?.data?.booking;if(!id)return;getApp().globalData.pendingBooking=stringId(booking?.id)&&stringId(booking?.serviceId)?booking:null;wx.navigateTo({url:`/pages/booking/booking?id=${encodeURIComponent(id)}`})}
 })
