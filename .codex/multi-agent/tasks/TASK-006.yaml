@@ -26,8 +26,9 @@ read_first:
   - docs/contracts/tourism-api-v1.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
-dependencies:
-  - TASK-001: tourism-api-v1 制品已在基线 b10ca9f 可读；本任务不修改其契约。
+dependencies: []
+artifact_inputs:
+  - "b10ca9f: docs/contracts/tourism-api-v1.md 已存在且本任务只读，不修改共享契约"
 acceptance:
   - 字符串文档 ID 与 serviceId 别名正确映射；图使用缓存的 InMemorySaver。
   - astream v2 通过 custom 与 updates 传递真实事件，最终卡只发一次，错误卡以 failed 结束。
@@ -45,7 +46,7 @@ permission_expiry:
   - task_state: CANCELLED
   - task_state: STALE
 task_state: READY
-dispatch_state: PENDING
+dispatch_state: DISPATCHED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
