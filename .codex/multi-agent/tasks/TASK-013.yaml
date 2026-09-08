@@ -1,0 +1,94 @@
+task_id: TASK-013
+dispatch_id: dispatch-TASK-013-r1
+long_lived_responsibility_owner:
+  agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: collaboration:/root/task010_helper/task010_static_review
+  route_status: UNAVAILABLE
+  write_authority_for_current_dispatch: false
+objective: 实现三类公开订单、/api/me 匿名访客边界与后台订单状态维护；不扩展到支付、库存、餐位、房态、AI/internal、社区、地图或前端。
+deliverables:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/VisitorIdentity.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/OrderRequests.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/OrderViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicOrderController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminOrderController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/OrderRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/OrderService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+branch: feat/wudong-task2-data
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/**
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/VisitorIdentity.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
+write_scope:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/VisitorIdentity.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/OrderRequests.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/OrderViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicOrderController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminOrderController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/OrderRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/OrderService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+restricted_actions:
+  - 不修改 TASK-011 的其他文件、V1-V4 迁移、领域实体、v1 Controller/Service/Repository、Python、前端或小程序。
+  - 不实现 DELETE、支付、库存、餐位、房态、AI/internal 路由、社区、地图、导入或前端；不以内存过滤或手机号查询订单。
+  - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
+  - 仅使用 apply_patch；仅暂存 write_scope；不执行 reset、checkout 或 clean；任何非唯一 writer 写入立即使派发 STALE。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/**
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-010
+    artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-011
+    artifact_revision: 29caf0ba1f861d942218deaf5938e805759de48b
+    status: FROZEN_READ_ONLY
+acceptance:
+  - X-Visitor-Id 缺失返回 400 VISITOR_ID_REQUIRED，非规范 UUID 返回 400 VISITOR_ID_INVALID；public 三类 POST 与 /api/me 三列表必需，SQL 直接按 visitor_id WHERE，public/me 投影不含 visitorId、contactName、contactPhone、sourceThreadId。
+  - Product POST 严格字段白名单，商品与商家均 PUBLISHED，quantity 为正整数，pickupPoint 与公开目录完全一致，初始 PENDING_PICKUP；Food 的 visitAt/peopleCount 合法且初始 PENDING_VISIT；Stay 的房型、住宿、商家均 PUBLISHED，peopleCount 不大于 maxGuests，初始 PENDING_CONFIRMATION。联系人仅由公开确认页请求持久化；note/sourceThreadId 可选；demoData=true；不实现支付、库存、餐位或房态。
+  - 目标不存在返回 404 RESOURCE_NOT_FOUND，存在但未发布返回 409 CATALOG_NOT_PUBLISHED，容量超限返回 409 CAPACITY_EXCEEDED；日期、时间、UUID、长度、unknown 与 null 必须严格解析。
+  - admin 复用 TASK-011 token 保护，三类订单提供 GET ?status= 与 PATCH /{id}/status；admin 投影包含履约联系人和 visitor/sourceThread。商品 pending→picked/cancel，餐食 pending→completed/cancel，住宿 pending→confirmed/cancel、confirmed→completed/cancel；跨类型、跳跃、重复与终态转移均为 409 INVALID_STATUS_TRANSITION。
+  - ApiRequestException 携带 HttpStatus、稳定 code 与安全中文 message；ApiExceptionHandler 精确返回动态状态，不泄露内部异常，且保持 TASK-011/v1 源码兼容。
+  - 无 DELETE、AI/internal、社区、地图或前端；仅改 write_scope；不新增或运行测试，不运行 Maven、构建、服务、Flyway、curl、浏览器或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 29caf0ba1f861d942218deaf5938e805759de48b
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: BLOCKED
+dispatch_state: STALE
+block_reason: TEMPORARY_WRITER_ROUTE_UNAVAILABLE; no active collaboration route for the user-specified sole writer, and no replacement or new agent is authorized.
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  visitor_identity: PROCESS_GOVERNED
+  admin_token: PROCESS_GOVERNED
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
