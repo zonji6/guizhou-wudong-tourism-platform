@@ -119,8 +119,14 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: ACKNOWLEDGED
+task_state: VERIFYING
+dispatch_state: RETURNED
+artifact_revision: 92ab61b8b12dc3ce5798ebe7478c2ec218842013
+verification_target_artifact_revision: 92ab61b8b12dc3ce5798ebe7478c2ec218842013
+implementation_evidence_fingerprint: sha256:1994dcb35ca18e2e6b14aacbc2abe4f580908f0a6bfb58731a1237b3e4bd6599
+verification_target_evidence_fingerprint: sha256:1994dcb35ca18e2e6b14aacbc2abe4f580908f0a6bfb58731a1237b3e4bd6599
+changed_paths: 20
+checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
