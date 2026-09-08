@@ -1,255 +1,93 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AssistantWorkspace from './components/assistant/AssistantWorkspace.vue'
-import { categories, normalizeService, posts, services } from './data/demo'
+import { useCatalogBrowser } from './composables/useCatalogBrowser'
+import { useVisitorOrders } from './composables/useVisitorOrders'
+import { posts, services as demoServices } from './data/demo'
 import AdminPage from './pages/AdminPage.vue'
 import BookingPage from './pages/BookingPage.vue'
 import CommunityPage from './pages/CommunityPage.vue'
 import HomePage from './pages/HomePage.vue'
+import MyOrdersPage from './pages/MyOrdersPage.vue'
 import ResourceDetailPage from './pages/ResourceDetailPage.vue'
 import ResourcesPage from './pages/ResourcesPage.vue'
+import { catalogPath, confirmPath, detailPath, parseHashRoute } from './router/hashRoutes'
 import { request } from './services/api'
+import { createOrder, getCatalog, getRoomType } from './services/tourismApi'
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const STATIC_ROUTES = new Set(['/', '/resources', '/community', '/assistant', '/booking', '/admin'])
-const ADMIN_TABS = new Set(['orders', 'content', 'ai-summary'])
-const CATEGORY_IDS = new Set(['all', ...categories.map(item => item.id)])
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const route = ref(parseHashRoute())
+const homeOpened = ref(sessionStorage.getItem('wudong:scroll-opened') === '1')
+const postList = ref(posts)
+const joinedServiceIds = ref([])
+const adminTab = ref('orders')
+const adminActionError = ref('')
+const adminUpdatingOrderId = ref('')
 
-function currentHashRoute() {
-  return location.hash.slice(1) || '/'
+const {
+  items: catalogItems,
+  selected: catalogSelected,
+  loading: catalogLoading,
+  error: catalogError,
+  loadList,
+  loadDetail,
+  cancel: cancelCatalog
+} = useCatalogBrowser()
+
+const {
+  orders: visitorOrders,
+  errors: visitorOrderErrors,
+  loading: visitorOrderLoading,
+  identityError,
+  loadAll: loadAllOrders,
+  retry: retryOrders
+} = useVisitorOrders()
+
+const bookingTarget = ref(null)
+const bookingLoading = ref(false)
+const bookingError = ref('')
+const bookingActionError = ref('')
+const bookingSubmitting = ref(false)
+const createdOrder = ref(null)
+let bookingSequence = 0
+
+const isAdmin = computed(() => route.value.name === 'admin')
+const pageKind = computed(() => route.value.kind || 'product')
+
+function go(path) {
+  if (typeof path !== 'string' || !path.startsWith('/')) return
+  if ((location.hash.slice(1) || '/') === path) {
+    syncCurrentRoute()
+    return
+  }
+  location.hash = path
+}
+
+function navigateIntent(action) {
+  if (!action || typeof action !== 'object') return
+  if (action.path === '/resources' && action.category === 'food') return go(catalogPath('food'))
+  if (action.path === '/resources' && action.category === 'stay') return go(catalogPath('stay'))
+  if (action.path === '/resources' && action.category === 'travel') return go('/assistant')
+  if (action.path === '/resources' && action.category === 'culture') return go(catalogPath('product'))
+  go(typeof action.path === 'string' ? action.path : '/')
+}
+
+function routeLegacyAssistantItem(item) {
+  const serviceId = typeof item === 'string' ? item : (item?.serviceId || item?.id)
+  const service = demoServices.find(value => value.id === serviceId)
+  if (service?.category === 'food') return go(catalogPath('food'))
+  if (service?.category === 'stay') return go(catalogPath('stay'))
+  go(catalogPath('product'))
+}
+
+function joinLegacyAssistantItem(serviceId) {
+  if (typeof serviceId !== 'string' || !UUID_PATTERN.test(serviceId)) return
+  if (!demoServices.some(item => item.id === serviceId)) return
+  if (!joinedServiceIds.value.includes(serviceId)) joinedServiceIds.value.push(serviceId)
 }
 
 function validString(value) {
   return typeof value === 'string' && value.trim().length > 0
-}
-
-function decodeResourceId(path) {
-  const match = typeof path === 'string' ? path.match(/^\/resource\/([^/]+)$/) : null
-  if (!match) return ''
-  try {
-    const decoded = decodeURIComponent(match[1])
-    return UUID_PATTERN.test(decoded) ? decoded : ''
-  } catch (_) {
-    return ''
-  }
-}
-
-const initialRoute = currentHashRoute()
-const initialResourceId = decodeResourceId(initialRoute)
-const route = ref(initialRoute)
-const routeServiceId = ref(initialResourceId)
-const serviceList = ref(services)
-const postList = ref(posts)
-const selected = ref(services.find(item => item.id === initialResourceId) || null)
-const resourceLoading = ref(Boolean(initialResourceId) && !selected.value)
-const activeCategory = ref('all')
-const homeOpened = ref(sessionStorage.getItem('wudong:scroll-opened') === '1')
-const joinedServiceIds = ref([])
-const orders = ref([])
-const adminTab = ref('orders')
-
-const booking = ref({ date: '', people: 1, contact: '', phone: '' })
-const pendingBooking = ref(null)
-const bookingDone = ref(false)
-const bookingLoading = ref(false)
-const bookingLoadError = ref('')
-const bookingActionError = ref('')
-const bookingSubmitting = ref(false)
-const bookingConfirming = ref(false)
-const adminActionError = ref('')
-const adminUpdatingOrderId = ref('')
-
-let resourceRequestSeq = 0
-let bookingLoadSeq = 0
-let bookingActionSeq = 0
-
-const filteredServices = computed(() => activeCategory.value === 'all'
-  ? serviceList.value
-  : serviceList.value.filter(item => item.category === activeCategory.value))
-const isAdmin = computed(() => route.value === '/admin')
-const isResourceRoute = computed(() => Boolean(routeServiceId.value) && decodeResourceId(route.value) === routeServiceId.value)
-const isKnownRoute = computed(() => STATIC_ROUTES.has(route.value) || isResourceRoute.value)
-
-function go(path) {
-  if (!validString(path)) return
-  location.hash = path
-}
-
-function categoryLabel(id) {
-  return categories.find(item => item.id === id)?.label || '乌东体验'
-}
-
-async function loadResource(id) {
-  const seq = ++resourceRequestSeq
-  const fallback = serviceList.value.find(item => item.id === id) || null
-  selected.value = fallback
-  resourceLoading.value = !fallback
-  try {
-    const result = await request(`/api/services/${encodeURIComponent(id)}`)
-    if (seq !== resourceRequestSeq || routeServiceId.value !== id) return
-    if (result?.id !== id) throw new Error('service_id_mismatch')
-    selected.value = normalizeService(result)
-  } catch (_) {
-    if (seq === resourceRequestSeq && routeServiceId.value === id) selected.value = fallback
-  } finally {
-    if (seq === resourceRequestSeq && routeServiceId.value === id) resourceLoading.value = false
-  }
-}
-
-function onHashChange() {
-  const nextRoute = currentHashRoute()
-  if (route.value === '/booking' && nextRoute !== '/booking') {
-    ++bookingLoadSeq
-    ++bookingActionSeq
-    bookingLoading.value = false
-    bookingSubmitting.value = false
-    bookingConfirming.value = false
-  }
-  route.value = nextRoute
-  const id = decodeResourceId(nextRoute)
-  routeServiceId.value = id
-
-  if (nextRoute.startsWith('/resource/')) {
-    selected.value = null
-    resourceLoading.value = Boolean(id)
-    if (id) loadResource(id)
-  }
-}
-
-function openServiceById(value) {
-  const id = typeof value === 'string'
-    ? value
-    : (typeof value?.id === 'string' ? value.id : '')
-  if (!validString(id) || !UUID_PATTERN.test(id)) return
-
-  const fallback = serviceList.value.find(item => item.id === id) || null
-  selected.value = fallback
-  const target = `/resource/${encodeURIComponent(id)}`
-  if (route.value === target) {
-    routeServiceId.value = id
-    loadResource(id)
-    return
-  }
-  go(target)
-}
-
-function navigateIntent(action) {
-  if (CATEGORY_IDS.has(action?.category)) activeCategory.value = action.category
-  const path = validString(action?.path) && STATIC_ROUTES.has(action.path) ? action.path : '/'
-  go(path)
-}
-
-function resetBookingState(item, loading = false) {
-  const seq = ++bookingLoadSeq
-  ++bookingActionSeq
-  selected.value = item
-  pendingBooking.value = null
-  bookingDone.value = false
-  bookingLoading.value = loading
-  bookingLoadError.value = ''
-  bookingActionError.value = ''
-  bookingSubmitting.value = false
-  bookingConfirming.value = false
-  booking.value = { date: '', people: 1, contact: '', phone: '' }
-  go('/booking')
-  return seq
-}
-
-function openBooking(item) {
-  if (!validString(item?.id) || !UUID_PATTERN.test(item.id)) return
-  const current = serviceList.value.find(service => service.id === item.id) || item
-  resetBookingState(current)
-}
-
-function normalizeBooking(item, fallbackDemoData) {
-  const demoData = typeof item?.demoData === 'boolean'
-    ? item.demoData
-    : (typeof fallbackDemoData === 'boolean' ? fallbackDemoData : true)
-  const people = Number(item?.peopleCount ?? item?.people ?? 0)
-  return {
-    id: validString(item?.id) ? item.id : '',
-    serviceId: validString(item?.serviceId) ? item.serviceId : '',
-    name: validString(item?.serviceName)
-      ? item.serviceName
-      : (validString(item?.name) ? item.name : '乌东体验'),
-    date: validString(item?.travelDate)
-      ? item.travelDate
-      : (validString(item?.date) ? item.date : ''),
-    people: Number.isFinite(people) ? people : 0,
-    contact: typeof item?.contactName === 'string'
-      ? item.contactName
-      : (typeof item?.contact === 'string' ? item.contact : ''),
-    phone: typeof item?.contactPhone === 'string'
-      ? item.contactPhone
-      : (typeof item?.phone === 'string' ? item.phone : ''),
-    status: typeof item?.status === 'string' ? item.status : '',
-    demoData
-  }
-}
-
-function hasCompleteBookingSummary(item) {
-  return validString(item?.name)
-    && validString(item?.date)
-    && Number.isInteger(item?.people)
-    && item.people > 0
-    && validString(item?.contact)
-    && validString(item?.phone)
-}
-
-async function bookServiceFromAssistant(payload) {
-  const serviceId = typeof payload?.serviceId === 'string' ? payload.serviceId : ''
-  if (!validString(serviceId) || !UUID_PATTERN.test(serviceId)) return
-  const item = serviceList.value.find(value => value.id === serviceId)
-  if (!item) return
-
-  const hasHandoff = payload?.pendingBooking && typeof payload.pendingBooking === 'object'
-  if (!hasHandoff) {
-    resetBookingState(item)
-    return
-  }
-
-  const handoffId = typeof payload.pendingBooking.id === 'string' ? payload.pendingBooking.id : ''
-  if (!validString(handoffId) || !UUID_PATTERN.test(handoffId)) return
-  const seq = resetBookingState(item, true)
-
-  try {
-    const fullBooking = await request(`/api/bookings/${encodeURIComponent(handoffId)}`)
-    if (seq !== bookingLoadSeq) return
-    if (fullBooking?.id !== handoffId || fullBooking?.serviceId !== serviceId || fullBooking?.status !== 'PENDING_CONFIRMATION') {
-      throw new Error('pending_booking_mismatch')
-    }
-    const normalized = normalizeBooking(fullBooking, payload.pendingBooking.demoData ?? item.demoData)
-    if (!hasCompleteBookingSummary(normalized)) throw new Error('pending_booking_incomplete')
-    pendingBooking.value = normalized
-    booking.value = {
-      date: normalized.date,
-      people: normalized.people,
-      contact: normalized.contact,
-      phone: normalized.phone
-    }
-  } catch (_) {
-    if (seq === bookingLoadSeq) {
-      pendingBooking.value = null
-      bookingLoadError.value = '无法读取这笔待确认预约，请返回后重试。'
-    }
-  } finally {
-    if (seq === bookingLoadSeq) bookingLoading.value = false
-  }
-}
-
-function returnToAssistant() {
-  ++bookingLoadSeq
-  ++bookingActionSeq
-  bookingLoading.value = false
-  bookingSubmitting.value = false
-  bookingConfirming.value = false
-  go('/assistant')
-}
-
-function joinServiceById(serviceId) {
-  if (!validString(serviceId) || !UUID_PATTERN.test(serviceId)) return
-  if (!serviceList.value.some(item => item.id === serviceId)) return
-  if (!joinedServiceIds.value.includes(serviceId)) joinedServiceIds.value.push(serviceId)
 }
 
 function normalizePost(item = {}) {
@@ -287,233 +125,268 @@ function normalizePost(item = {}) {
   }
 }
 
-async function submitBooking() {
-  if (bookingSubmitting.value || pendingBooking.value) return
-  const serviceId = typeof selected.value?.id === 'string' ? selected.value.id : ''
-  const travelDate = typeof booking.value.date === 'string' ? booking.value.date : ''
-  const peopleCount = Number(booking.value.people)
-  const contactName = typeof booking.value.contact === 'string' ? booking.value.contact.trim() : ''
-  const contactPhone = typeof booking.value.phone === 'string' ? booking.value.phone.trim() : ''
+async function loadCommunity() {
+  try {
+    const result = await request('/api/posts')
+    if (Array.isArray(result)) postList.value = result.map(normalizePost).filter(item => item.id)
+  } catch (_) {
+    // 社区页沿用既有演示内容；目录与正式订单不使用这条回退链。
+  }
+}
 
-  if (!validString(serviceId) || !UUID_PATTERN.test(serviceId)) return
-  if (!validString(travelDate) || !Number.isInteger(peopleCount) || peopleCount < 1 || !contactName || !contactPhone) {
-    bookingActionError.value = '请完整填写日期、人数、联系人和电话。'
+async function loadBookingTarget(kind, id) {
+  const sequence = ++bookingSequence
+  bookingTarget.value = null
+  createdOrder.value = null
+  bookingLoading.value = true
+  bookingError.value = ''
+  bookingActionError.value = ''
+  bookingSubmitting.value = false
+  try {
+    const result = kind === 'stay' ? await getRoomType(id) : await getCatalog(kind, id)
+    if (sequence !== bookingSequence) return
+    if (result.id !== id) throw new Error('服务详情与当前订单地址不一致。')
+    bookingTarget.value = result
+  } catch (reason) {
+    if (sequence === bookingSequence) bookingError.value = reason?.message || '服务信息暂时无法读取。'
+  } finally {
+    if (sequence === bookingSequence) bookingLoading.value = false
+  }
+}
+
+function cancelBooking() {
+  bookingSequence += 1
+  bookingLoading.value = false
+  bookingSubmitting.value = false
+}
+
+function syncCurrentRoute() {
+  const next = parseHashRoute()
+  route.value = next
+
+  if (next.name === 'catalog') {
+    cancelBooking()
+    loadList(next.kind)
+    return
+  }
+  if (next.name === 'detail') {
+    cancelBooking()
+    loadDetail(next.kind, next.id)
+    return
+  }
+  cancelCatalog()
+  if (next.name === 'confirm') {
+    loadBookingTarget(next.kind, next.id)
+    return
+  }
+  cancelBooking()
+  if (next.name === 'orders') loadAllOrders()
+}
+
+function openCatalogItem(item) {
+  if (!item || typeof item.id !== 'string' || !UUID_PATTERN.test(item.id)) return
+  go(detailPath(pageKind.value, item.id))
+}
+
+function openConfirm(kind, target) {
+  if (!target || typeof target.id !== 'string' || !UUID_PATTERN.test(target.id)) return
+  go(confirmPath(kind, target.id))
+}
+
+function retryCurrentResource() {
+  if (route.value.name === 'catalog') return loadList(route.value.kind)
+  if (route.value.name === 'detail') return loadDetail(route.value.kind, route.value.id)
+  if (route.value.name === 'confirm') return loadBookingTarget(route.value.kind, route.value.id)
+}
+
+function validPositiveInteger(value) {
+  return Number.isInteger(Number(value)) && Number(value) > 0
+}
+
+function validateOrderForm(kind, form, target) {
+  if (!form.contactName?.trim() || !form.contactPhone?.trim()) return '请填写联系人和联系电话。'
+  if (form.contactName.trim().length > 80 || form.contactPhone.trim().length > 32) return '联系人或电话超过长度限制。'
+  if (String(form.note || '').trim().length > 500) return '备注不能超过 500 字。'
+  if (kind === 'product' && !validPositiveInteger(form.quantity)) return '购买数量必须是正整数。'
+  if (kind === 'food' && (!form.visitAt || !validPositiveInteger(form.peopleCount))) return '请填写到店时间和人数。'
+  if (kind === 'stay') {
+    if (!form.checkInDate || !validPositiveInteger(form.peopleCount)) return '请填写入住日期和人数。'
+    if (Number(target.maxGuests) > 0 && Number(form.peopleCount) > Number(target.maxGuests)) return `该房型最多入住 ${target.maxGuests} 人。`
+  }
+  return ''
+}
+
+function matchesCreatedOrder(kind, order, targetId) {
+  if (!order || typeof order.id !== 'string' || !UUID_PATTERN.test(order.id)) return false
+  if (typeof order.demoData !== 'boolean' || !validString(order.createdAt) || !validString(order.updatedAt)) return false
+  if (kind === 'product') {
+    return order.productId === targetId
+      && order.status === 'PENDING_PICKUP'
+      && validString(order.productName)
+      && validPositiveInteger(order.quantity)
+      && validString(order.pickupPoint)
+  }
+  if (kind === 'food') {
+    return order.foodItemId === targetId
+      && order.status === 'PENDING_VISIT'
+      && validString(order.foodItemName)
+      && validString(order.visitAt)
+      && validPositiveInteger(order.peopleCount)
+  }
+  return order.roomTypeId === targetId
+    && order.status === 'PENDING_CONFIRMATION'
+    && validString(order.roomTypeName)
+    && validString(order.checkInDate)
+    && validPositiveInteger(order.peopleCount)
+}
+
+async function submitOrder(form) {
+  if (bookingSubmitting.value || !bookingTarget.value || route.value.name !== 'confirm') return
+  const validationError = validateOrderForm(route.value.kind, form, bookingTarget.value)
+  if (validationError) {
+    bookingActionError.value = validationError
     return
   }
 
   bookingActionError.value = ''
   bookingSubmitting.value = true
-  const actionSeq = ++bookingActionSeq
+  const sequence = bookingSequence
   try {
-    const result = await request('/api/bookings', {
-      method: 'POST',
-      body: JSON.stringify({ serviceId, travelDate, peopleCount, contactName, contactPhone })
-    })
-    if (actionSeq !== bookingActionSeq) return
-    const normalized = normalizeBooking(result, selected.value.demoData)
-    if (!UUID_PATTERN.test(normalized.id)
-      || normalized.serviceId !== serviceId
-      || normalized.status !== 'PENDING_CONFIRMATION'
-      || !hasCompleteBookingSummary(normalized)) {
-      throw new Error('created_booking_mismatch')
+    const result = await createOrder(route.value.kind, route.value.id, form, bookingTarget.value)
+    if (sequence !== bookingSequence) return
+    if (!matchesCreatedOrder(route.value.kind, result, route.value.id)) {
+      throw new Error('服务端返回的订单与本次提交不一致，请前往“我的订单”核对。')
     }
-    pendingBooking.value = normalized
-    booking.value = {
-      date: normalized.date,
-      people: normalized.people,
-      contact: normalized.contact,
-      phone: normalized.phone
-    }
-  } catch (_) {
-    if (actionSeq === bookingActionSeq) {
-      pendingBooking.value = null
-      bookingActionError.value = '暂时无法创建预约，请稍后重试。'
-    }
+    createdOrder.value = result
+  } catch (reason) {
+    if (sequence === bookingSequence) bookingActionError.value = reason?.message || '订单提交失败，请稍后重试。'
   } finally {
-    if (actionSeq === bookingActionSeq) bookingSubmitting.value = false
-  }
-}
-
-async function confirmBooking() {
-  if (bookingConfirming.value) return
-  const pending = pendingBooking.value
-  const bookingId = typeof pending?.id === 'string' ? pending.id : ''
-  if (!validString(bookingId) || !UUID_PATTERN.test(bookingId) || pending.status !== 'PENDING_CONFIRMATION') return
-
-  bookingActionError.value = ''
-  bookingConfirming.value = true
-  const actionSeq = ++bookingActionSeq
-  try {
-    const result = await request(`/api/bookings/${encodeURIComponent(bookingId)}/confirm`, { method: 'POST' })
-    if (actionSeq !== bookingActionSeq) return
-    const normalized = normalizeBooking(result, pending.demoData)
-    if (normalized.id !== bookingId
-      || normalized.serviceId !== pending.serviceId
-      || normalized.status !== 'CONFIRMED'
-      || !hasCompleteBookingSummary(normalized)) {
-      throw new Error('confirmed_booking_mismatch')
-    }
-    orders.value = [normalized, ...orders.value.filter(item => item.id !== bookingId)]
-    pendingBooking.value = normalized
-    bookingDone.value = true
-  } catch (_) {
-    if (actionSeq === bookingActionSeq) bookingActionError.value = '确认预约失败，请稍后重试。'
-  } finally {
-    if (actionSeq === bookingActionSeq) bookingConfirming.value = false
-  }
-}
-
-async function updateOrder(order) {
-  if (adminUpdatingOrderId.value) return
-  const orderId = typeof order?.id === 'string' ? order.id : ''
-  const nextStatus = order?.status === 'CONFIRMED'
-    ? 'PROCESSING'
-    : (order?.status === 'PROCESSING' ? 'COMPLETED' : '')
-  if (!validString(orderId) || !UUID_PATTERN.test(orderId) || !nextStatus) return
-
-  adminActionError.value = ''
-  adminUpdatingOrderId.value = orderId
-  try {
-    const result = await request(`/api/admin/bookings/${encodeURIComponent(orderId)}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: nextStatus })
-    })
-    if (result?.id !== orderId || result?.serviceId !== order.serviceId || result?.status !== nextStatus) {
-      throw new Error('order_status_mismatch')
-    }
-    const normalized = normalizeBooking(result, order.demoData)
-    orders.value = orders.value.map(item => item.id === orderId ? normalized : item)
-  } catch (_) {
-    adminActionError.value = '订单状态更新失败，请稍后重试。'
-  } finally {
-    adminUpdatingOrderId.value = ''
+    if (sequence === bookingSequence) bookingSubmitting.value = false
   }
 }
 
 function changeAdminTab(tab) {
-  if (!ADMIN_TABS.has(tab)) return
+  if (!['orders', 'content', 'ai-summary'].includes(tab)) return
   adminActionError.value = ''
   adminTab.value = tab
 }
 
-async function loadInitialData() {
-  try {
-    const result = await request('/api/services')
-    if (Array.isArray(result)) {
-      const normalized = result.map(normalizeService).filter(item => validString(item.id))
-      if (normalized.length) serviceList.value = normalized
-    }
-  } catch (_) {}
-
-  if (routeServiceId.value) loadResource(routeServiceId.value)
-
-  try {
-    const result = await request('/api/posts')
-    if (Array.isArray(result)) postList.value = result.map(normalizePost).filter(item => validString(item.id))
-  } catch (_) {}
+function updateLegacyOrder() {
+  adminActionError.value = '正式三类订单的运营处理将在后续后台任务中接入。'
 }
 
 onMounted(() => {
-  addEventListener('hashchange', onHashChange)
-  onHashChange()
-  loadInitialData()
+  addEventListener('hashchange', syncCurrentRoute)
+  syncCurrentRoute()
+  loadCommunity()
 })
 
 onUnmounted(() => {
-  removeEventListener('hashchange', onHashChange)
+  removeEventListener('hashchange', syncCurrentRoute)
+  cancelCatalog()
+  cancelBooking()
 })
 </script>
 
 <template>
   <div :class="{ 'admin-shell': isAdmin }">
     <template v-if="!isAdmin">
-      <header v-if="route !== '/' || homeOpened" class="topbar">
+      <header v-if="route.name !== 'home' || homeOpened" class="topbar">
         <a class="brand" href="#/">贵州乌东</a>
         <nav aria-label="主导航">
-          <a href="#/resources">游乌东</a>
+          <a href="#/resources/products">乌东好物</a>
+          <a href="#/resources/foods">在地风味</a>
+          <a href="#/resources/stays">山居住宿</a>
           <a href="#/community">寨里</a>
           <a href="#/assistant">乌东向导</a>
         </nav>
-        <button type="button" class="admin-link" @click="go('/admin')">运营后台</button>
+        <div class="topbar__actions">
+          <a class="topbar__mobile-link" href="#/community">寨里</a>
+          <a class="topbar__mobile-link" href="#/assistant">向导</a>
+          <a href="#/orders">我的订单</a>
+          <button type="button" class="admin-link" @click="go('/admin')">运营后台</button>
+        </div>
       </header>
 
       <HomePage
-        v-if="route === '/'"
-        :services="serviceList"
-        :categories="categories"
+        v-if="route.name === 'home'"
         @gate-change="homeOpened = $event"
         @navigate="navigateIntent"
-        @open-service="openServiceById"
       >
         <template #assistant>
           <AssistantWorkspace
             embedded
             :joined-service-ids="joinedServiceIds"
-            @open-service="openServiceById"
-            @join-service="joinServiceById"
-            @book-service="bookServiceFromAssistant"
+            @open-service="routeLegacyAssistantItem"
+            @join-service="joinLegacyAssistantItem"
+            @book-service="routeLegacyAssistantItem"
           />
         </template>
       </HomePage>
 
       <ResourcesPage
-        v-else-if="route === '/resources'"
-        :services="filteredServices"
-        :categories="categories"
-        :active-category="activeCategory"
-        @filter="activeCategory = $event"
-        @open-service="openServiceById"
+        v-else-if="route.name === 'catalog'"
+        :kind="route.kind"
+        :items="catalogItems"
+        :loading="catalogLoading"
+        :error="catalogError"
+        @switch-kind="go(catalogPath($event))"
+        @open-item="openCatalogItem"
+        @retry="retryCurrentResource"
       />
 
       <ResourceDetailPage
-        v-else-if="isResourceRoute && !resourceLoading"
-        :service="selected"
-        :category-label="categoryLabel(selected?.category)"
-        @book="openBooking"
+        v-else-if="route.name === 'detail'"
+        :kind="route.kind"
+        :item="catalogSelected"
+        :loading="catalogLoading"
+        :error="catalogError"
+        @confirm="openConfirm"
+        @retry="retryCurrentResource"
       />
 
-      <main v-else-if="isResourceRoute" class="page route-empty-state" aria-live="polite">
-        <p class="eyebrow">沿溪寻找这项体验</p>
-        <h1>正在读取服务详情</h1>
-      </main>
+      <CommunityPage v-else-if="route.name === 'community'" :posts="postList" />
 
-      <CommunityPage v-else-if="route === '/community'" :posts="postList" />
-
-      <main v-else-if="route === '/assistant'" class="page assistant-page">
+      <main v-else-if="route.name === 'assistant'" class="page assistant-page">
         <AssistantWorkspace
           :joined-service-ids="joinedServiceIds"
-          @open-service="openServiceById"
-          @join-service="joinServiceById"
-          @book-service="bookServiceFromAssistant"
+          @open-service="routeLegacyAssistantItem"
+          @join-service="joinLegacyAssistantItem"
+          @book-service="routeLegacyAssistantItem"
         />
       </main>
 
       <BookingPage
-        v-else-if="route === '/booking'"
-        :service="selected"
-        :booking="booking"
-        :pending="pendingBooking"
-        :done="bookingDone"
-        :latest-order="orders[0]"
+        v-else-if="route.name === 'confirm'"
+        :kind="route.kind"
+        :target="bookingTarget"
         :loading="bookingLoading"
-        :load-error="bookingLoadError"
-        :action-error="bookingActionError"
+        :error="bookingError"
         :submitting="bookingSubmitting"
-        :confirming="bookingConfirming"
-        @update-booking="booking = $event"
-        @submit="submitBooking"
-        @confirm="confirmBooking"
-        @open-admin="go('/admin')"
-        @return-assistant="returnToAssistant"
+        :action-error="bookingActionError"
+        :order="createdOrder"
+        @submit="submitOrder"
+        @retry="retryCurrentResource"
+        @go-orders="go('/orders')"
       />
 
-      <main v-else-if="!isKnownRoute" class="page route-empty-state">
+      <MyOrdersPage
+        v-else-if="route.name === 'orders'"
+        :orders="visitorOrders"
+        :errors="visitorOrderErrors"
+        :loading="visitorOrderLoading"
+        :identity-error="identityError"
+        @retry="retryOrders"
+        @reload="loadAllOrders"
+      />
+
+      <main v-else class="page route-empty-state">
         <p class="eyebrow">这条山路暂时走不通</p>
         <h1>没有找到这个页面</h1>
-        <p>链接可能不完整，请从首页或“游乌东”重新进入。</p>
+        <p>链接可能不完整，请从首页或公开目录重新进入。</p>
         <div class="route-empty-state__actions">
           <a class="primary" href="#/">返回首页</a>
-          <a class="ghost" href="#/resources">游乌东</a>
+          <a class="ghost" href="#/resources/products">看看乌东好物</a>
         </div>
       </main>
     </template>
@@ -521,12 +394,12 @@ onUnmounted(() => {
     <AdminPage
       v-else
       :tab="adminTab"
-      :orders="orders"
-      :services="serviceList"
+      :orders="[]"
+      :services="demoServices"
       :action-error="adminActionError"
       :updating-order-id="adminUpdatingOrderId"
       @change-tab="changeAdminTab"
-      @update-order="updateOrder"
+      @update-order="updateLegacyOrder"
       @return-home="go('/')"
     />
   </div>
