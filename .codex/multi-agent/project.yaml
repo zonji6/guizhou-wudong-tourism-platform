@@ -28,3 +28,4 @@ runtime_mode: LIMITED_CONCURRENT
 long_lived_provisioning: complete
 active_task_refs:
   - .codex/multi-agent/tasks/TASK-008.yaml
+  - .codex/multi-agent/tasks/TASK-009.yaml
