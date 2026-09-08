@@ -102,8 +102,8 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: READY
-dispatch_state: DISPATCHED
+task_state: ACTIVE
+dispatch_state: ACKNOWLEDGED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
