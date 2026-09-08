@@ -1,26 +1,13 @@
 task_id: TASK-008
 agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
-dispatch_id: dispatch-TASK-008-r1
-objective: 完成实施计划任务 5 与任务 8，即 Web 与微信小程序 AI 工作台、业务薄页面、安全图片、加入行程与真实待确认预约闭环。
+dispatch_id: dispatch-TASK-008-r2
+objective: 仅修复冻结制品审查确认的五项问题：小程序输入布局与服务提示、Web 终态卡片完整性与上一版折叠、以及小程序预约响应完整性。
 deliverables:
   - web/src/composables/useAssistantSession.js
   - web/src/components/assistant/AssistantWorkspace.vue
-  - web/src/pages/ResourcesPage.vue
-  - web/src/pages/ResourceDetailPage.vue
-  - web/src/pages/CommunityPage.vue
-  - web/src/pages/BookingPage.vue
-  - web/src/pages/AdminPage.vue
-  - web/src/App.vue
-  - web/src/style.css
-  - miniprogram/utils/assistant.js
-  - miniprogram/pages/assistant/**
-  - miniprogram/pages/detail/detail.js
-  - miniprogram/pages/detail/detail.wxml
-  - miniprogram/pages/detail/detail.wxss
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/assistant/assistant.wxss
   - miniprogram/pages/booking/booking.js
-  - miniprogram/pages/booking/booking.wxml
-  - miniprogram/pages/booking/booking.wxss
-  - miniprogram/pages/orders/orders.wxml
 workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
 branch: feat/wudong-frontend-redesign
 read_scope:
@@ -28,105 +15,50 @@ read_scope:
   - docs/contracts/tourism-api-v1.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
-  - agent-service/app/contracts.py
-  - agent-service/app/streaming.py
-  - agent-service/app/graph/nodes.py
-  - tourism-service/src/main/java/**
   - web/src/composables/useAssistantSession.js
   - web/src/components/assistant/AssistantWorkspace.vue
-  - web/src/pages/ResourcesPage.vue
-  - web/src/pages/ResourceDetailPage.vue
-  - web/src/pages/CommunityPage.vue
-  - web/src/pages/BookingPage.vue
-  - web/src/pages/AdminPage.vue
-  - web/src/App.vue
-  - web/src/style.css
-  - miniprogram/utils/assistant.js
-  - miniprogram/pages/assistant/**
-  - miniprogram/pages/detail/detail.js
-  - miniprogram/pages/detail/detail.wxml
-  - miniprogram/pages/detail/detail.wxss
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/assistant/assistant.wxss
   - miniprogram/pages/booking/booking.js
-  - miniprogram/pages/booking/booking.wxml
-  - miniprogram/pages/booking/booking.wxss
-  - miniprogram/pages/orders/orders.wxml
 write_scope:
   - web/src/composables/useAssistantSession.js
   - web/src/components/assistant/AssistantWorkspace.vue
-  - web/src/pages/ResourcesPage.vue
-  - web/src/pages/ResourceDetailPage.vue
-  - web/src/pages/CommunityPage.vue
-  - web/src/pages/BookingPage.vue
-  - web/src/pages/AdminPage.vue
-  - web/src/App.vue
-  - web/src/style.css
-  - miniprogram/utils/assistant.js
-  - miniprogram/pages/assistant/**
-  - miniprogram/pages/detail/detail.js
-  - miniprogram/pages/detail/detail.wxml
-  - miniprogram/pages/detail/detail.wxss
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/assistant/assistant.wxss
   - miniprogram/pages/booking/booking.js
-  - miniprogram/pages/booking/booking.wxml
-  - miniprogram/pages/booking/booking.wxss
-  - miniprogram/pages/orders/orders.wxml
 restricted_actions:
-  - 不修改 demo 数据、HomePage、SafeImage、Java、Python、契约、文档或 control 之外的产品文件。
+  - 不修改上述五个 write_scope 之外的产品文件、Java、Python、契约、文档或 control。
   - 不创建或运行测试，不构建、不启动、不推送。
   - 不访问外部模型、API Key、生产凭据、真实用户或真实订单数据。
-  - 不展示英文 type、document_id、节点、工具参数、联系人或思维链。
-  - 不把断线、模型错误、预约确认或后台 PATCH 失败伪装为成功。
-  - 不在子代理中执行 Git；由长期 Experience Agent 统一审阅并提交。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v1.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
-  - agent-service/app/contracts.py
-  - agent-service/app/streaming.py
-  - agent-service/app/graph/nodes.py
 dependencies:
   - TASK-005: VERIFIED
   - TASK-006: VERIFIED
   - TASK-007: VERIFIED
 interface_revision: tourism-api-v1
-execution_constraints:
-  temporary_subagents:
-    - web: 仅处理 Web 范围，不执行 Git。
-    - miniprogram: 仅处理小程序范围，不执行 Git。
-  integration_owner: ExperienceDomainAgent 统一审阅并提交。
+artifact_inputs:
+  - 92ab61b8b12dc3ce5798ebe7478c2ec218842013: r1 冻结制品基线
 acceptance:
-  - Web 会话状态在模块顶层单例：稳定 threadId、messages、四阶段、active/previous card、mode、requestSeq 与唯一 activeSocket；新请求先令旧 seq 失效再关旧连接。删除 setTimeout 假进度和假成功。
-  - 两端按扁平事件 type 消费 task_started、node_started、tool_finished、card_ready、completed、failed；客户端在终态主动关闭自己持有的 WebSocket/SocketTask；旧序号与重复 error/close 不污染当前轮。未发生阶段终态为 skipped。
-  - 六类 AgentCard 只消费 type/title/summary/data/sources；行程、服务、预约读取真实嵌套字段；来源默认折叠且只显示 title；英文 type、document_id、节点、工具参数、联系人、思维链不展示。
-  - 当前卡在新请求开始时保留，新卡到达后才移动为默认折叠“上一版”；去重仅限同 seq；上一版不提供详情、加入、预约等旧动作。
-  - 断线或模型 error 不自动回退；仅 error.data.demoAvailable=true 时显示按钮，用户点击后载入两端同构 demoAssistantCard，持续显示演示模式、逐项 demoData 和 keyword_demo 标签。
-  - 所有详情、加入、预约动作只使用非空字符串 serviceId；无 ID 不渲染动作。小程序加入行程过滤纯文本节点并按天写 currentItinerary。
-  - Web 把资源、详情、社区、预约、后台迁为薄页面；首页插槽和独立助手共享同一会话与 joinedServiceIds；保持 hash 路由与首页沉浸结构。App 适配 HomePage 可能传服务对象或字符串 ID。
-  - Web 与小程序所有游客和后台图片统一使用 SafeImage 或等价图片失败色块：列表 lazy、详情 eager；alt 只读 imageAlt/coverAlt，不以标题冒充画面。特别修复预约和后台裸 img；小程序 detail/booking 有实际占位尺寸。
-  - 普通预约仅用户提交后 POST /api/bookings，使用日期、人数、联系人、电话四个真实输入；成功响应统一映射 serviceName/travelDate/peopleCount。失败只显示错误，不生成本地 ID 或推进状态。
-  - AI pending_booking 已在 Java 建单：Web/小程序先以同一 ID GET /api/bookings/{id}，读取中/失败状态互斥；成功后只 POST /api/bookings/{id}/confirm，绝不再次创建。确认失败不加入订单、不改 CONFIRMED。
-  - 后台 PATCH 失败不本地推进。静态初始演示订单可显示，但不把失败写操作伪装成功。
-  - 小程序使用 globalData.assistantSession 的稳定 threadId/messages/card；必须保存具体 SocketTask 并调用该实例 close，不使用 wx.closeSocket；onShow selected=2，标题“乌东向导”。
-  - pendingBooking 定义为一次性页面交接并在读取后清空，不存联系人或电话；不要同时当长期首页摘要。若没有 currentItinerary，消费后首页继续提示消失属于本轮明确边界，不新增跨页敏感状态。
-  - 字符串 UUID 查找，找不到显示不可操作空态，不默认第一项或 id=1。
-  - 不修改 demo 数据、HomePage、SafeImage、Java/Python/契约/文档/control 之外产品文件；不创建或运行测试，不构建、不启动、不推送，不访问外部模型或密钥。
+  - 小程序 composer 位于短对话、阶段、当前卡和上一版之后，固定在自定义底栏上方；service_recommendation 固定显示“请以服务方确认结果为准”。
+  - Web completed 仅在 acceptedCardSeq===seq 且本轮卡非 error 时成功收束；缺失、迟到或畸形 card_ready 时补 error 卡并失败收束；failed 无本轮 error 时也补齐错误卡。
+  - 每次接收非重复卡递增版本，上一版 details 使用该版本作为 key，跨轮 JSON 相同的 previousCard 仍默认折叠。
+  - 小程序预约 GET、创建与确认三路响应均在写状态前统一校验锁定 id/serviceId、合法状态、非空名称/日期/联系人/电话和正整数人数；确认还必须锁定同一 serviceId。
+  - 不测试、不构建、不启动、不推送，不访问外部模型或密钥。
 project_revision: project-r1
-task_revision: task-r1
-base_revision: e3a4e28794e06c8c306eecf62062c886b2293a49
+task_revision: task-r2
+base_revision: 92ab61b8b12dc3ce5798ebe7478c2ec218842013
 verification_profile: high_risk
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: VERIFYING
-dispatch_state: RETURNED
-artifact_revision: 92ab61b8b12dc3ce5798ebe7478c2ec218842013
-verification_target_artifact_revision: 92ab61b8b12dc3ce5798ebe7478c2ec218842013
-implementation_evidence_fingerprint: sha256:1994dcb35ca18e2e6b14aacbc2abe4f580908f0a6bfb58731a1237b3e4bd6599
-verification_target_evidence_fingerprint: sha256:1994dcb35ca18e2e6b14aacbc2abe4f580908f0a6bfb58731a1237b3e4bd6599
-changed_paths: 20
-checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
+task_state: READY
+dispatch_state: DISPATCHED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
