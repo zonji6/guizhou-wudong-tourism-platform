@@ -4,7 +4,7 @@ const emit = defineEmits(['opened'])
 const KEY = 'wudong:scroll-opened'
 const gateState = ref(sessionStorage.getItem(KEY) === '1' ? 'open' : 'closed')
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
-function openScroll() { if (gateState.value === 'closed') gateState.value = 'opening' }
+function openScroll() { if (gateState.value === 'closed') { gateState.value = 'opening'; if (reducedMotion) finishOpen() } }
 function finishOpen() { if (gateState.value === 'opening') { sessionStorage.setItem(KEY, '1'); gateState.value = 'open'; emit('opened') } }
 </script>
 <template>

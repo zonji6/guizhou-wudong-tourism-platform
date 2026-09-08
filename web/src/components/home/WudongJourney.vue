@@ -4,7 +4,8 @@ import SafeImage from '../common/SafeImage.vue'
 defineProps({ sections: Array, categories: Array })
 const emit = defineEmits(['journey-entered', 'navigate'])
 const boundary = ref(null); const fogState = ref('idle'); let observer
-function enterJourney() { if (fogState.value === 'idle') fogState.value = 'passing' }
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+function enterJourney() { if (fogState.value === 'idle') { fogState.value = 'passing'; if (reducedMotion) finishFogTransition() } }
 function finishFogTransition() { if (fogState.value === 'passing') { fogState.value = 'cleared'; emit('journey-entered') } }
 onMounted(() => { observer = new IntersectionObserver(entries => entries.forEach(entry => entry.isIntersecting && enterJourney()), { threshold: .2 }); observer.observe(boundary.value) })
 onBeforeUnmount(() => observer?.disconnect())
