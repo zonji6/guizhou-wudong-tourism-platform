@@ -40,8 +40,9 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: IMPLEMENTED
+task_state: STALE
 dispatch_state: RETURNED
+stale_reason: "旧调度无真实 Agent 绑定且已由当前基线和新任务取代"
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE

@@ -1,0 +1,76 @@
+task_id: TASK-007
+dispatch_id: dispatch-TASK-007-r5
+agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
+objective: 仅修复 reduced motion 动态切换、Web 社区归一化与小程序未知 API 项回退的质量审查失败，不扩展到任务 5/8。
+deliverables:
+  - web/src/components/home/ScrollGate.vue
+  - web/src/components/home/WudongJourney.vue
+  - web/src/data/demo.js
+  - web/src/App.vue
+  - miniprogram/utils/demo.js
+  - miniprogram/pages/community/community.js
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
+branch: feat/wudong-frontend-redesign
+read_scope:
+  - AGENTS.md
+  - web/src/components/home/ScrollGate.vue
+  - web/src/components/home/WudongJourney.vue
+  - web/src/data/demo.js
+  - web/src/App.vue
+  - miniprogram/utils/demo.js
+  - miniprogram/pages/community/community.js
+  - .codex/multi-agent/verification/TASK-007.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+write_scope:
+  - web/src/components/home/ScrollGate.vue
+  - web/src/components/home/WudongJourney.vue
+  - web/src/data/demo.js
+  - web/src/App.vue
+  - miniprogram/utils/demo.js
+  - miniprogram/pages/community/community.js
+restricted_actions:
+  - 不创建或运行测试，不构建，不推送。
+  - 不改 style、预约或后台裸图，不提前实施任务 5/8。
+  - 不修改 Java、Python、docs 或 control 之外的协作文件。
+  - 不访问或写入 API Key、真实用户或真实订单数据。
+read_first:
+  - AGENTS.md
+  - .codex/multi-agent/verification/TASK-007.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+dependencies: []
+artifact_inputs:
+  - dd2c17670a65e3e174a6eabe3c53d9642decc927: r4 实现制品基线
+combined_review: QUALITY_REVIEW_REJECT
+deferred_findings:
+  - safeimage_partial: 预约与后台裸图属于任务 5 薄页面与 SafeImage 迁移范围，本任务不扩展。
+acceptance:
+  - 两组件监听 MediaQueryList 变化；事件触发时重新读取当前 matches；动画进行中切为 reduce 会立即 finish；卸载移除监听；正常与初始 reduce 均仍确定完成。
+  - Web 社区归一化按稳定 ID 合并 posts fallback，只有 coverUrl 与 coverAlt 成对时采用 API 图；否则保留策展图或非空“乌东社区分享配图暂缺”。
+  - 小程序 normalizeService 对无同 ID fallback 的 API 项仍保留 category/categoryLabel，并给无图项非空、含乌东与类别语义的 imageAlt；已锁定六项精确 alt 不变。
+  - 小程序 normalizePost 按稳定 ID 合并，API coverUrl/coverAlt 必须成对；未知无图项 coverAlt 非空“乌东社区分享配图暂缺”。
+  - 不改 style、预约/后台裸图或任务 5/8；不测试、不构建、不启动、不推送。
+project_revision: project-r1
+task_revision: task-r5
+base_revision: dd2c17670a65e3e174a6eabe3c53d9642decc927
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: VERIFIED
+dispatch_state: VERIFIED
+artifact_revision: e10f759c1ea30ebb66eba8d6124339e18b3db22c
+changed_paths: 5
+implementation_evidence_fingerprint: sha256:8d91b7b377bde0fd928f31e2e4564a73bf014ac5a3082767a390f692ef3ba344
+evidence_fingerprint: sha256:8d91b7b377bde0fd928f31e2e4564a73bf014ac5a3082767a390f692ef3ba344
+verification_ref: .codex/multi-agent/verification/TASK-007.md
+verification_result: PASS
+checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  external_model_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED

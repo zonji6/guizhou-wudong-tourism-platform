@@ -1,2 +1,56 @@
-agents: []
-# 长期 Agent 的创建请求已发出；在桌面端返回真实 thread_id 前不得登记或派发。
+agents:
+  - role: CoordinatorAgent
+    agent_id: agent-532eb20b-f9c4-4701-9615-ab69e6729c21
+    thread_id: 01a081df-8fe2-77d2-81ae-73b85e26b34d
+    status: active
+    responsibility: 维护任务包、权限、依赖、接口版本与确定性集成，不实现业务功能。
+    allowed_capability:
+      - 修改已批准的协作控制文件
+      - 分派已批准的任务包
+      - 集成已通过独立验收的制品
+    workspace: D:\AI_Project\Codex_project\乌冬
+    supersedes: null
+  - role: VerificationAgent
+    agent_id: agent-71824b65-850c-4080-a681-bcdf257421e2
+    thread_id: 01a081df-d6e3-7a61-84b5-c2b76fa524d3
+    status: active
+    responsibility: 依据锁定验收标准独立执行静态规格、代码与制品审阅，不实现或修复功能。
+    allowed_capability:
+      - 只读检查实现制品、Git 差异与验收标准
+      - 写入协作验收记录
+      - 返回 PASS、REJECT、BLOCKED 或 INCONCLUSIVE
+    workspace: D:\AI_Project\Codex_project\乌冬
+    supersedes: null
+  - role: TourismBusinessDomainAgent
+    agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+    thread_id: 01a081e0-41c9-75b3-876b-62398b7763c3
+    status: active
+    responsibility: 负责 Spring Boot、MySQL、本机依赖以及 Java 与 AI 的受控业务接口。
+    allowed_capability:
+      - 读取已批准的项目文档与共享接口
+      - 写入任务批准的 tourism-service、infra 与契约路径
+      - 在专属工作树提交本地实现
+    workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+    supersedes: null
+  - role: IntelligenceDomainAgent
+    agent_id: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
+    thread_id: 01a081e0-746a-7880-bbab-4b81d974216c
+    status: active
+    responsibility: 负责 FastAPI、LangGraph、DeepSeek、RAG、Redis、WebSocket 与 LangSmith 边界。
+    allowed_capability:
+      - 读取已批准的项目文档与共享接口
+      - 写入任务批准的 agent-service 路径
+      - 在专属工作树提交本地实现
+    workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai
+    supersedes: null
+  - role: ExperienceDomainAgent
+    agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
+    thread_id: 01a081e0-8db8-7d01-af6d-fcee8f9dda75
+    status: active
+    responsibility: 负责 Vue Web 门户、管理后台和原生微信小程序体验。
+    allowed_capability:
+      - 读取已批准的产品、视觉与共享接口文档
+      - 写入任务批准的 web 与 miniprogram 路径
+      - 在专属工作树提交本地实现
+    workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
+    supersedes: null

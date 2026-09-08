@@ -1,5 +1,5 @@
 project: guizhou-wudong-tourism-platform
-goal: 在三天内交付可本机演示的贵州乌冬衣食住行文旅综合服务平台。
+goal: 在三天内交付可本机演示的贵州乌东衣食住行文旅综合服务平台。
 project_revision: project-r1
 user_facing:
   language: zh-CN
@@ -25,9 +25,5 @@ structure:
   contract: docs/contracts/tourism-api-v1.md
   control_root: .codex/multi-agent
 runtime_mode: LIMITED_CONCURRENT
-long_lived_provisioning: pending_real_thread_ids
-active_task_refs:
-  - .codex/multi-agent/tasks/TASK-001.yaml
-  - .codex/multi-agent/tasks/TASK-002.yaml
-  - .codex/multi-agent/tasks/TASK-003.yaml
-  - .codex/multi-agent/tasks/TASK-004.yaml
+long_lived_provisioning: complete
+active_task_refs: []
