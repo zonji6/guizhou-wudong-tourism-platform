@@ -1,24 +1,22 @@
-# TASK-007 独立静态验收记录
+# TASK-007 r5 独立静态验收记录
 
 - task_id：`TASK-007`
-- dispatch_id：`dispatch-TASK-007-r2`
-- 基线：`b10ca9f52787d13d9d839eabef4ba96e42ee87ae`
-- 制品：`46e0a2e7e76771793875eaa9df8f09989646c347`
-- 证据指纹：`sha256:761eab11c85ee4f4af8be5408bce2640aab839237e5a8f7e6e58ab8eda958793`
+- dispatch_id：`dispatch-TASK-007-r5`
+- 基线：`dd2c17670a65e3e174a6eabe3c53d9642decc927`
+- 制品：`e10f759c1ea30ebb66eba8d6124339e18b3db22c`
+- 证据指纹：`sha256:8d91b7b377bde0fd928f31e2e4564a73bf014ac5a3082767a390f692ef3ba344`
 - tests：SKIPPED
 - build：SKIPPED
 - runtime：NOT_EXECUTED
 
-| 验收项 | 结论 | 静态证据 |
+| 锁定项 | 结论 | 独立静态证据 |
 | --- | --- | --- |
-| 范围与差异 | PASS | `git diff --name-status b10ca9f..46e0a2e7` 的 32 个路径均落在 TASK-007 r2 写范围；`git diff --check` 无输出。 |
-| 游客可见文案统一 | FAIL | `git grep '乌冬' 46e0a2e7 -- web miniprogram` 仍命中 `miniprogram/pages/assistant/*`、`pages/detail/detail.wxml`、`pages/orders/orders.wxml`。 |
-| 稳定 UUID 与演示边界 | PASS | Web 与小程序 `utils/data demo` 使用相同 UUID；演示资源均带 `demoData` 或可见演示标识；本任务未接入自动加载的 `demoAssistantCard`。 |
-| 首次开卷状态机 | FAIL | `ScrollGate.vue` 的 `@animationend.self="finishOpen"` 绑定在 `.scroll-gate`，但 `style.css` 只给 `.scroll-gate__panel--left/right` 定义 `open-left/open-right` 动画。子元素冒泡事件被 `.self` 排除，`finishOpen()` 不会执行，`gateState` 停在 `opening`，不会写入 sessionStorage 或发出 `opened`。 |
-| 五联、探景与动作 | PASS | `scenes.js` 固定 mountain/water/village/tea/people；寨窄联为 `village`、展开为 `village-aerial`，茶为 `tea`；`SceneExplorer` 具备关闭、遮罩关闭与动作事件。 |
-| 雾、叶片与减少动态 | PASS | 雾只由 `WudongJourney` 的 IntersectionObserver 触发，动画结束才发出 `journey-entered`；叶片仅据此显示；减少动态仍保留非零 `.18s` 动画时长。 |
-| SafeImage、路由与模板 | PASS | `SafeImage` 在空源或 `error` 时输出带 `role=img`、`aria-label` 的占位；`App.vue` 仅以 `HomePage` 替换首页并保留资源、详情、社区、助手、预约和后台 hash 路由。 |
-| 小程序五栏与工具首页 | FAIL | 首页、资源、社区、我的分别设置 0/1/3/4 选中态，资源分类会一次性清空且异步回包按当前 active 重筛；资源/社区有语义占位。但 `custom-tab-bar` 切换只调用 `switchTab`，既有 `pages/assistant/assistant.js` 没有 `onShow()` 设置 `selected:2`，向导 tab 的选中态不正确。 |
-| 指纹绑定 | PASS | `.codex/multi-agent/tasks/TASK-007.yaml` 的 `artifact_revision` 与 `evidence_fingerprint` 精确匹配锁定制品与给定指纹。 |
+| 制品、范围与指纹 | PASS | `dd2c176..e10f759` 为祖先区间，包含 `1aa587e`、`e10f759` 两个连续提交，`git diff --name-only` 仅列出 5 个路径，均在 r5 写范围；`TASK-007.yaml` 的制品与指纹精确匹配；`git diff --check` 无输出。 |
+| 动态 reduced-motion 状态收束 | PASS | `ScrollGate.vue` 与 `WudongJourney.vue` 都创建 `MediaQueryList`，在挂载时订阅 `change`、卸载时移除监听，并从 `event.matches` 重读状态；进入 reduce 时分别调用受状态保护的 `finishOpen()`、`finishFogTransition()`。初始 reduce 在进入 opening/passing 后立即收束，正常模式仍由对应动画结束事件收束。 |
+| 开卷事件绑定 | PASS | 开卷的 `animationend` 监听已绑定到实际动画元素 `.scroll-gate__panel--left/right`，不再将子元素事件交给带 `.self` 的父元素过滤；首次到达的事件收束状态，后续事件由状态守卫安全忽略。 |
+| Web 社区图片对与稳定回退 | PASS | `App.vue` 以字符串稳定 ID 查找 `posts` 回退项；只有 `coverUrl` 与 `coverAlt` 同时存在时采用 API 图，否则保留策展封面或非空 `乌东社区分享配图暂缺`。 |
+| 小程序服务未知项与图片语义 | PASS | `normalizeService()` 保留 API `category`，为无同 ID 回退项提供 `categoryLabels` 与非空 `乌东{类别}实景暂缺`；API 图仍要求 `imageUrl/imageAlt` 成对。基线与制品的六项预置服务 `imageAlt` 文本未变。 |
+| 小程序社区图片对 | PASS | `normalizePost()` 以稳定 ID 合并，只有 `coverUrl/coverAlt` 成对才使用 API 图；未知且无图项目回退为非空 `乌东社区分享配图暂缺`，`community.js` 复用该规范化函数。 |
+| 未越界 | PASS | 变更未触及 CSS、预约、后台裸图或任务 5/8 工作台路径；未引入测试、构建、服务或外部调用。 |
 
-结论：REJECT。未执行测试、构建、服务、浏览器或微信开发者工具。
+结论：PASS。以上为制品文本静态验收；未执行运行时验证。
