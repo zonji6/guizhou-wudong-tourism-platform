@@ -1,1 +1,177 @@
-<view class="page"><view class="eyebrow">乌东向导</view><view class="title">把你的心愿交给山茶</view><view class="suggestions"><text data-text="周末两位，安排两天一夜的苗族文化茶旅" bindtap="quick">两天一夜茶旅</text><text data-text="推荐适合亲子的苗绣体验" bindtap="quick">亲子苗绣</text></view><textarea class="ask" value="{{input}}" bindinput="change" placeholder="例如：我想体验贵州乌东的苗族文化和茶旅"/><view class="primary" bindtap="ask">为我安排乌东之行</view><view class="phases" wx:if="{{isBusy}}"><text wx:for="{{phases}}" wx:key="key">{{item.label}} {{item.state==='active'?'进行中':item.state==='done'?'已完成':'跳过'}}</text></view><view wx:if="{{currentCard}}" class="agent-card"><text wx:if="{{mode==='demo'}}" class="demo">演示模式</text><view class="card-title">{{currentCard.title}}</view><view>{{currentCard.summary}}</view><text wx:if="{{currentCard.data.retrievalMode==='keyword_demo'}}" class="demo">关键词资料（演示）</text><view wx:for="{{currentCard.data.days}}" wx:key="index" class="day"><view>{{item.title || ('第'+(index+1)+'天')}}</view><view wx:for="{{item.items}}" wx:for-item="entry" wx:key="index"><text>{{entry.title}}</text><text wx:if="{{entry.demoData}}" class="demo">演示数据</text><view wx:if="{{entry.serviceId}}"><text data-service-id="{{entry.serviceId}}" bindtap="openService">查看详情</text><text data-service-id="{{entry.serviceId}}" bindtap="bookService">预约</text></view></view><view wx:if="{{currentCard.data.days.length}}" class="book-link" bindtap="addItinerary">加入行程</view></view><view wx:for="{{currentCard.data.services}}" wx:key="serviceId"><view>{{item.title}}</view><view wx:if="{{item.serviceId}}"><text data-service-id="{{item.serviceId}}" bindtap="openService">查看详情</text><text data-service-id="{{item.serviceId}}" bindtap="bookService">预约</text></view></view><view wx:if="{{currentCard.data.booking}}"><view>待确认预约：{{currentCard.data.booking.name || currentCard.data.booking.serviceName}}</view><text wx:if="{{currentCard.data.booking.demoData}}" class="demo">演示数据</text><text wx:if="{{currentCard.data.booking.serviceId}}" data-service-id="{{currentCard.data.booking.serviceId}}" bindtap="bookService">继续确认</text></view><view wx:if="{{currentCard.type==='error' && currentCard.data.demoAvailable}}" class="book-link" bindtap="showDemo">查看演示结果</view><view wx:if="{{currentCard.sources.length}}" class="sources" bindtap="toggleSources">参考了 {{currentCard.sources.length}} 条乌东资料<view wx:if="{{sourcesOpen}}" wx:for="{{currentCard.sources}}" wx:key="title">{{item.title}}</view></view></view><view wx:if="{{previousCard}}" class="sources" bindtap="togglePrevious">上一版<view wx:if="{{previousOpen}}">{{previousCard.title}} {{previousCard.summary}}</view></view></view>
+<view class="page assistant-page">
+  <view class="assistant-heading">
+    <view class="eyebrow">乌东向导</view>
+    <view class="title">把你的心愿交给山茶</view>
+    <view class="heading-note">说说日期、人数和偏好，向导会依据当前资料和平台服务给出建议。</view>
+  </view>
+
+  <view class="suggestions" aria-label="示例问法">
+    <button class="suggestion" data-text="周末两位，安排两天一夜的苗族文化茶旅" bindtap="quick">两天一夜茶旅</button>
+    <button class="suggestion" data-text="推荐适合亲子的苗绣体验" bindtap="quick">亲子苗绣</button>
+  </view>
+
+  <view class="composer">
+    <textarea
+      class="ask"
+      value="{{input}}"
+      bindinput="change"
+      maxlength="500"
+      placeholder="例如：我想体验贵州乌东的苗族文化和茶旅"
+    />
+    <button class="primary ask-button" bindtap="ask" loading="{{isBusy}}">
+      {{isBusy ? '重新按这个需求安排' : '为我安排乌东之行'}}
+    </button>
+  </view>
+
+  <view wx:if="{{visibleMessages.length}}" class="conversation" aria-label="本次对话">
+    <view wx:for="{{visibleMessages}}" wx:key="index" class="message message--{{item.role}}">
+      <text class="message-speaker">{{item.role === 'user' ? '我' : '乌东向导'}}</text>
+      <text class="message-content">{{item.content}}</text>
+    </view>
+  </view>
+
+  <view class="phase-panel" aria-label="向导协作进度">
+    <view class="section-caption">本轮协作进度</view>
+    <view class="phases">
+      <view wx:for="{{phases}}" wx:key="key" class="phase phase--{{item.state}}">
+        <view class="phase-dot" aria-hidden="true"></view>
+        <view class="phase-copy">
+          <text class="phase-name">{{item.label}}</text>
+          <text class="phase-state">{{item.stateLabel}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{currentCard}}" class="agent-card">
+    <view class="card-meta">
+      <text wx:if="{{mode === 'demo'}}" class="demo">演示模式</text>
+      <text wx:if="{{currentCard.data.retrievalMode === 'keyword_demo'}}" class="demo">关键词资料（演示）</text>
+    </view>
+    <view class="card-title">{{currentCard.title}}</view>
+    <view wx:if="{{currentCard.summary}}" class="card-summary">{{currentCard.summary}}</view>
+
+    <block wx:if="{{currentCard.type === 'itinerary'}}">
+      <view wx:for="{{currentCard.data.days}}" wx:key="index" class="day-card">
+        <view class="day-heading">
+          <text class="day-number">{{item.dayLabel}}</text>
+          <text wx:if="{{item.theme}}" class="day-theme">{{item.theme}}</text>
+        </view>
+        <view wx:for="{{item.items}}" wx:for-item="entry" wx:key="index" class="itinerary-item">
+          <view class="itinerary-time">{{entry.time || '行程节点'}}</view>
+          <view class="itinerary-copy">
+            <view class="item-title">{{entry.title}}</view>
+            <view wx:if="{{entry.summary}}" class="item-summary">{{entry.summary}}</view>
+            <text wx:if="{{entry.isDemo}}" class="demo">演示数据</text>
+            <view wx:if="{{entry.actionServiceId}}" class="card-actions">
+              <button class="text-action" data-service-id="{{entry.actionServiceId}}" bindtap="openService">查看详情</button>
+              <button class="text-action text-action--warm" data-service-id="{{entry.actionServiceId}}" bindtap="bookService">预约</button>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{currentCard.data.notice}}" class="notice">{{currentCard.data.notice}}</view>
+      <button wx:if="{{currentCard.joinableCount > 0}}" class="secondary-action" bindtap="addItinerary">加入行程</button>
+    </block>
+
+    <block wx:elif="{{currentCard.type === 'service_recommendation'}}">
+      <view wx:for="{{currentCard.data.services}}" wx:key="index" class="service-card">
+        <view class="service-row">
+          <view class="service-copy">
+            <view class="item-title">{{item.title}}</view>
+            <view wx:if="{{item.summary}}" class="item-summary">{{item.summary}}</view>
+            <view wx:if="{{item.hasPrice}}" class="service-price">¥{{item.price}} 起</view>
+          </view>
+          <text wx:if="{{item.isDemo}}" class="demo">演示数据</text>
+        </view>
+        <view wx:if="{{item.actionServiceId}}" class="card-actions card-actions--three">
+          <button class="text-action" data-service-id="{{item.actionServiceId}}" bindtap="openService">查看详情</button>
+          <button class="text-action" data-service-id="{{item.actionServiceId}}" bindtap="joinService">加入行程</button>
+          <button class="text-action text-action--warm" data-service-id="{{item.actionServiceId}}" bindtap="bookService">预约</button>
+        </view>
+      </view>
+    </block>
+
+    <block wx:elif="{{currentCard.type === 'pending_booking'}}">
+      <view wx:if="{{currentCard.data.booking}}" class="booking-card">
+        <view class="section-caption">待确认预约</view>
+        <view class="booking-name">{{currentCard.data.booking.serviceName || '乌东体验'}}</view>
+        <view wx:if="{{currentCard.data.booking.travelDate}}" class="booking-line">日期：{{currentCard.data.booking.travelDate}}</view>
+        <view wx:if="{{currentCard.data.booking.peopleCount}}" class="booking-line">人数：{{currentCard.data.booking.peopleCount}} 人</view>
+        <view wx:if="{{currentCard.data.booking.status}}" class="booking-line">状态：待你在确认页核对</view>
+        <text wx:if="{{currentCard.data.booking.isDemo}}" class="demo">演示数据</text>
+        <button
+          wx:if="{{currentCard.data.booking.actionServiceId && currentCard.data.booking.actionBookingId}}"
+          class="secondary-action secondary-action--warm"
+          data-service-id="{{currentCard.data.booking.actionServiceId}}"
+          bindtap="bookService"
+        >继续确认</button>
+      </view>
+    </block>
+
+    <block wx:elif="{{currentCard.type === 'clarifying_question'}}">
+      <button
+        wx:if="{{currentCard.data.actionServiceId}}"
+        class="secondary-action"
+        data-service-id="{{currentCard.data.actionServiceId}}"
+        bindtap="bookService"
+      >前往预约页补全信息</button>
+    </block>
+
+    <button wx:if="{{currentCard.canShowDemo}}" class="secondary-action" bindtap="showDemo">查看演示结果</button>
+
+    <view wx:if="{{currentCard.sourceCount > 0}}" class="sources">
+      <button class="source-toggle" bindtap="toggleSources">
+        参考了 {{currentCard.sourceCount}} 条乌东资料
+        <text>{{sourcesOpen ? '收起' : '展开'}}</text>
+      </button>
+      <view wx:if="{{sourcesOpen}}" class="source-list">
+        <view wx:for="{{currentCard.sources}}" wx:key="index" class="source-title">{{item.title}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{previousCard}}" class="previous-card">
+    <button class="previous-toggle" bindtap="togglePrevious">
+      <view>
+        <view class="section-caption">上一版</view>
+        <view class="previous-title">{{previousCard.title}}</view>
+      </view>
+      <text>{{previousOpen ? '收起' : '展开查看'}}</text>
+    </button>
+    <view wx:if="{{previousOpen}}" class="previous-content">
+      <view wx:if="{{previousCard.summary}}" class="card-summary">{{previousCard.summary}}</view>
+
+      <block wx:if="{{previousCard.type === 'itinerary'}}">
+        <view wx:for="{{previousCard.data.days}}" wx:key="index" class="previous-section">
+          <view class="item-title">{{item.dayLabel}}<text wx:if="{{item.theme}}"> · {{item.theme}}</text></view>
+          <view wx:for="{{item.items}}" wx:for-item="entry" wx:key="index" class="previous-line">
+            {{entry.time}} {{entry.title}}<text wx:if="{{entry.isDemo}}" class="demo">演示数据</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{previousCard.type === 'service_recommendation'}}">
+        <view wx:for="{{previousCard.data.services}}" wx:key="index" class="previous-section">
+          <view class="item-title">{{item.title}}</view>
+          <view wx:if="{{item.summary}}" class="previous-line">{{item.summary}}</view>
+          <text wx:if="{{item.isDemo}}" class="demo">演示数据</text>
+        </view>
+      </block>
+
+      <block wx:elif="{{previousCard.type === 'pending_booking' && previousCard.data.booking}}">
+        <view class="previous-section">
+          <view class="item-title">{{previousCard.data.booking.serviceName || '乌东体验'}}</view>
+          <view class="previous-line">{{previousCard.data.booking.travelDate}} · {{previousCard.data.booking.peopleCount}} 人</view>
+          <text wx:if="{{previousCard.data.booking.isDemo}}" class="demo">演示数据</text>
+        </view>
+      </block>
+
+      <view wx:if="{{previousCard.sourceCount > 0}}" class="previous-sources">
+        <view class="section-caption">参考资料</view>
+        <view wx:for="{{previousCard.sources}}" wx:key="index" class="source-title">{{item.title}}</view>
+      </view>
+      <view class="readonly-note">上一版仅供对照，不再提供详情、加入或预约操作。</view>
+    </view>
+  </view>
+</view>

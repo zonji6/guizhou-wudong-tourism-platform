@@ -1,86 +1,314 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { demoAssistantCard } from '../data/demo'
 import { aiWs } from '../services/api'
 
-const CARD_TYPES = new Set(['itinerary', 'service_recommendation', 'knowledge_answer', 'clarifying_question', 'pending_booking', 'error'])
-const threadId = `web-${crypto.randomUUID()}`
+const CARD_TYPES = new Set([
+  'itinerary',
+  'service_recommendation',
+  'knowledge_answer',
+  'clarifying_question',
+  'pending_booking',
+  'error'
+])
+
+function createThreadId() {
+  const randomId = globalThis.crypto?.randomUUID?.()
+  return `web-${randomId || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`
+}
+
+function createPhases() {
+  return [
+    { id: 'understanding', label: '需求理解', state: 'idle' },
+    { id: 'knowledge', label: '知识检索', state: 'idle' },
+    { id: 'service', label: '服务协同', state: 'idle' },
+    { id: 'itinerary', label: '行程生成', state: 'idle' }
+  ]
+}
+
+function normalizeCard(raw) {
+  if (!CARD_TYPES.has(raw?.type)) {
+    return {
+      type: 'error',
+      title: '内容暂不可展示',
+      summary: '向导返回了不支持的内容，请重新描述你的需求。',
+      data: {},
+      sources: []
+    }
+  }
+
+  const sources = Array.isArray(raw.sources)
+    ? raw.sources
+        .filter(source => typeof source?.title === 'string' && source.title.trim())
+        .map(source => ({ title: source.title.trim() }))
+    : []
+
+  return {
+    type: raw.type,
+    title: typeof raw.title === 'string' ? raw.title : '',
+    summary: typeof raw.summary === 'string' ? raw.summary : '',
+    data: raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : {},
+    sources
+  }
+}
+
+function cardFingerprint(card) {
+  return JSON.stringify(card)
+}
+
+const threadId = createThreadId()
 const messages = ref([])
-const phases = ref(makePhases())
+const stages = ref(createPhases())
 const activeCard = ref(null)
 const previousCard = ref(null)
 const mode = ref('idle')
+const isBusy = ref(false)
+const activityText = ref('说说你想怎样游乌东')
 const requestSeq = ref(0)
 let activeSocket = null
+let acceptedCardSeq = -1
+let acceptedCardFingerprint = ''
 
-function makePhases() { return ['需求理解', '知识检索', '服务协同', '行程生成'].map(label => ({ label, state: 'idle' })) }
-function isCurrent(seq, socket) { return seq === requestSeq.value && socket === activeSocket }
-function validServiceId(value) { return typeof value === 'string' && value.trim() }
-function safeCard(raw) {
-  if (!CARD_TYPES.has(raw?.type)) return { type: 'error', title: '内容暂不可展示', summary: '向导返回了不支持的内容。', data: {}, sources: [] }
-  return { type: raw.type, title: raw.title || '', summary: raw.summary || '', data: raw.data || {}, sources: Array.isArray(raw.sources) ? raw.sources.map(source => ({ title: source?.title || '' })) : [] }
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0
 }
-function cardFingerprint(card) { return JSON.stringify({ type: card.type, title: card.title, summary: card.summary, data: card.data }) }
-function close(socket = activeSocket) {
-  if (socket && socket.readyState < WebSocket.CLOSING) socket.close()
-  if (socket === activeSocket) activeSocket = null
+
+function resetPhases() {
+  stages.value = createPhases()
 }
-function settle(seq, socket, outcome) {
-  if (!isCurrent(seq, socket)) return
-  phases.value = phases.value.map(phase => ({ ...phase, state: phase.state === 'active' ? (outcome === 'completed' ? 'done' : 'failed') : phase.state === 'idle' ? 'skipped' : phase.state }))
-  mode.value = outcome === 'completed' ? 'idle' : 'error'
-  close(socket)
+
+function setPhase(id, state) {
+  const phase = stages.value.find(item => item.id === id)
+  if (phase) phase.state = state
 }
-function acceptCard(seq, socket, raw) {
-  if (!isCurrent(seq, socket)) return
-  const card = safeCard(raw)
-  if (activeCard.value && cardFingerprint(activeCard.value) === cardFingerprint(card)) return
-  previousCard.value = activeCard.value
+
+function finishPhaseIfActive(id) {
+  const phase = stages.value.find(item => item.id === id)
+  if (phase?.state === 'active') phase.state = 'done'
+}
+
+function closeAssistantSocket(socket) {
+  if (!socket) return
+
+  try {
+    const connecting = globalThis.WebSocket?.CONNECTING ?? 0
+    const open = globalThis.WebSocket?.OPEN ?? 1
+    if (socket.readyState === open) {
+      socket.close()
+      return
+    }
+    if (socket.readyState === connecting && typeof socket.addEventListener === 'function') {
+      socket.addEventListener('open', () => {
+        try { socket.close() } catch (_) {}
+      }, { once: true })
+    }
+  } catch (_) {}
+}
+
+function isCurrentRequest(seq, socket) {
+  return seq === requestSeq.value && socket === activeSocket
+}
+
+function acceptCard(raw, seq) {
+  if (seq !== requestSeq.value) return null
+
+  const card = normalizeCard(raw)
+  const fingerprint = cardFingerprint(card)
+  if (acceptedCardSeq === seq && acceptedCardFingerprint === fingerprint) return activeCard.value
+
+  if (activeCard.value) previousCard.value = activeCard.value
   activeCard.value = card
-  messages.value.push({ role: 'assistant', title: card.title, summary: card.summary })
+  acceptedCardSeq = seq
+  acceptedCardFingerprint = fingerprint
+  messages.value.push({
+    role: 'assistant',
+    content: card.summary || card.title || '向导已返回一条结果。'
+  })
+  return card
 }
-function phaseIndex(event) {
-  if (event.node === 'route' || event.node === 'intent') return 0
-  if (event.node === 'retrieve' || event.tool === 'knowledge_retrieval') return 1
-  if (event.node === 'service_search' || event.tool === 'service_search') return 2
-  if (event.node === 'itinerary') return 3
-  return -1
-}
-function applyEvent(seq, socket, event) {
-  if (!isCurrent(seq, socket)) return
-  if (event?.type === 'node_started') {
-    const index = phaseIndex(event)
-    if (index >= 0) { phases.value = phases.value.map((phase, i) => ({ ...phase, state: i === index ? 'active' : i < index && phase.state === 'active' ? 'done' : phase.state })) }
+
+function settleRequest(seq, socket, outcome) {
+  if (!isCurrentRequest(seq, socket)) {
+    closeAssistantSocket(socket)
+    return
   }
-  if (event?.type === 'tool_finished') {
-    const index = phaseIndex(event)
-    if (index >= 0) phases.value[index].state = 'done'
-  }
-  if (event?.type === 'card_ready') acceptCard(seq, socket, event.card || event.data)
-  if (event?.type === 'completed' || event?.type === 'failed') settle(seq, socket, event.type)
+
+  stages.value = stages.value.map(phase => {
+    if (phase.state === 'active') {
+      return { ...phase, state: outcome === 'completed' ? 'done' : 'failed' }
+    }
+    if (phase.state === 'idle') return { ...phase, state: 'skipped' }
+    return phase
+  })
+  isBusy.value = false
+  if (outcome === 'failed') mode.value = 'error'
+  activityText.value = outcome === 'completed' ? '本轮建议已生成' : '本轮未能完成'
+
+  if (activeSocket === socket) activeSocket = null
+  closeAssistantSocket(socket)
 }
+
+function failTransport(seq, socket, summary) {
+  if (!isCurrentRequest(seq, socket) || !isBusy.value) {
+    closeAssistantSocket(socket)
+    return
+  }
+
+  if (acceptedCardSeq === seq && activeCard.value?.type === 'error') {
+    settleRequest(seq, socket, 'failed')
+    return
+  }
+
+  acceptCard({
+    type: 'error',
+    title: '向导暂不可用',
+    summary,
+    data: { demoAvailable: true },
+    sources: []
+  }, seq)
+  settleRequest(seq, socket, 'failed')
+}
+
+function handleAssistantEvent(event, seq, socket) {
+  if (!isCurrentRequest(seq, socket)) {
+    closeAssistantSocket(socket)
+    return
+  }
+  if (!event || typeof event !== 'object') return
+
+  if (event.type === 'task_started') {
+    activityText.value = '乌东向导已收到需求'
+    return
+  }
+
+  if (event.type === 'node_started') {
+    if (event.node === 'route' || event.node === 'intent') {
+      setPhase('understanding', 'active')
+      activityText.value = '正在理解你的出行需求'
+    }
+    if (event.node === 'retrieve' || event.node === 'service_search' || event.node === 'itinerary') {
+      finishPhaseIfActive('understanding')
+    }
+    if (event.node === 'retrieve') {
+      setPhase('knowledge', 'active')
+      activityText.value = '正在查找乌东资料'
+    }
+    if (event.node === 'service_search') {
+      setPhase('service', 'active')
+      activityText.value = '正在匹配平台服务'
+    }
+    if (event.node === 'itinerary') {
+      setPhase('itinerary', 'active')
+      activityText.value = '正在整理行程建议'
+    }
+    return
+  }
+
+  if (event.type === 'tool_finished') {
+    if (event.tool === 'knowledge_retrieval') setPhase('knowledge', 'done')
+    if (event.tool === 'service_search') setPhase('service', 'done')
+    return
+  }
+
+  if (event.type === 'card_ready' && event.card?.type) {
+    const acceptedCard = acceptCard(event.card, seq)
+    mode.value = acceptedCard?.type === 'error'
+      ? 'error'
+      : acceptedCard?.data?.demoMode === true ? 'demo' : 'live'
+    activityText.value = acceptedCard?.type === 'error' ? '向导返回了一条说明' : '建议已整理，正在结束本轮'
+    return
+  }
+
+  if (event.type === 'completed') settleRequest(seq, socket, 'completed')
+  if (event.type === 'failed') settleRequest(seq, socket, 'failed')
+}
+
 function send(text) {
+  if (typeof text !== 'string') return
   const userText = text.trim()
   if (!userText) return
+
   const seq = ++requestSeq.value
-  close(activeSocket)
-  phases.value = makePhases()
-  mode.value = 'live'
-  messages.value.push({ role: 'user', text: userText })
-  const socket = activeSocket = new WebSocket(aiWs)
-  socket.onopen = () => { if (isCurrent(seq, socket)) socket.send(JSON.stringify({ thread_id: threadId, user_text: userText })) }
-  socket.onmessage = ({ data }) => { try { applyEvent(seq, socket, JSON.parse(data)) } catch (_) {} }
-  socket.onerror = () => { if (isCurrent(seq, socket)) { acceptCard(seq, socket, { type: 'error', title: '向导暂不可用', summary: '连接暂时中断，可选择查看演示结果。', data: { demoAvailable: true } }); settle(seq, socket, 'failed') } }
-  socket.onclose = () => { if (isCurrent(seq, socket) && mode.value === 'live') { acceptCard(seq, socket, { type: 'error', title: '向导暂不可用', summary: '连接已关闭，可选择查看演示结果。', data: { demoAvailable: true } }); settle(seq, socket, 'failed') } }
+  const previousSocket = activeSocket
+  activeSocket = null
+  closeAssistantSocket(previousSocket)
+
+  resetPhases()
+  isBusy.value = true
+  activityText.value = '正在连接乌东向导'
+  messages.value.push({ role: 'user', content: userText })
+
+  let socket = null
+  try {
+    if (typeof globalThis.WebSocket !== 'function') throw new Error('websocket_unavailable')
+    socket = new globalThis.WebSocket(aiWs)
+    activeSocket = socket
+  } catch (_) {
+    activeSocket = null
+    failTransport(seq, null, '当前浏览器无法连接向导，可选择查看演示结果。')
+    return
+  }
+
+  socket.onopen = () => {
+    if (!isCurrentRequest(seq, socket)) {
+      closeAssistantSocket(socket)
+      return
+    }
+    try {
+      socket.send(JSON.stringify({ thread_id: threadId, user_text: userText }))
+    } catch (_) {
+      failTransport(seq, socket, '发送需求时连接中断，可选择查看演示结果。')
+    }
+  }
+  socket.onmessage = ({ data }) => {
+    if (!isCurrentRequest(seq, socket)) {
+      closeAssistantSocket(socket)
+      return
+    }
+    try {
+      handleAssistantEvent(JSON.parse(data), seq, socket)
+    } catch (_) {
+      failTransport(seq, socket, '向导返回了无法读取的内容，可选择查看演示结果。')
+    }
+  }
+  socket.onerror = () => {
+    failTransport(seq, socket, '连接暂时中断，可选择查看演示结果。')
+  }
+  socket.onclose = () => {
+    if (isCurrentRequest(seq, socket) && isBusy.value) {
+      failTransport(seq, socket, '连接在结果完成前关闭，可选择查看演示结果。')
+    }
+  }
 }
+
 function useDemo() {
   if (activeCard.value?.type !== 'error' || activeCard.value.data?.demoAvailable !== true) return
+
+  if (isBusy.value && activeSocket) {
+    settleRequest(requestSeq.value, activeSocket, 'failed')
+  }
   const seq = ++requestSeq.value
-  close(activeSocket)
-  const demo = safeCard(demoAssistantCard)
-  previousCard.value = activeCard.value
-  activeCard.value = demo
-  messages.value.push({ role: 'assistant', title: demo.title, summary: demo.summary })
-  phases.value = phases.value.map(phase => ({ ...phase, state: 'done' }))
+  const socket = activeSocket
+  activeSocket = null
+  isBusy.value = false
+  closeAssistantSocket(socket)
+  acceptCard(demoAssistantCard, seq)
   mode.value = 'demo'
+  activityText.value = '正在查看静态演示结果'
 }
-export function useAssistantSession() { return { threadId, messages, phases, activeCard, previousCard, mode, requestSeq, send, useDemo, close, validServiceId } }
+
+export function useAssistantSession() {
+  return {
+    threadId,
+    messages,
+    stages,
+    activeCard,
+    previousCard,
+    mode,
+    isBusy,
+    activityText,
+    requestSeq,
+    send,
+    useDemo,
+    isNonEmptyString
+  }
+}

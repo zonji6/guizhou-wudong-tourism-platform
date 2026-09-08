@@ -1,2 +1,89 @@
-.cover { width:100%; height:480rpx; }.intro { color:#55675e; line-height:1.85; margin:30rpx 0; }.price { color:#b56f3b; font-size:48rpx; font-weight:700; }.price text { color:#718077; font-size:22rpx; font-weight:400; }
-.image-fallback{display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:32rpx;background:#315f4b;color:#f5e7cf;text-align:center}
+button::after {
+  border: 0;
+}
+
+.cover {
+  display: block;
+  width: 100%;
+  height: 480rpx;
+}
+
+.image-fallback {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 42rpx;
+  color: #f2efe5;
+  background: linear-gradient(145deg, #173f36, #315f4b);
+  font-size: 23rpx;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.fallback-label {
+  color: #d8cb86;
+  font-family: STSong, SimSun, serif;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.detail-content {
+  padding-top: 34rpx;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 22rpx;
+}
+
+.tag {
+  padding: 8rpx 16rpx;
+  color: #315f4b;
+  background: rgba(134, 166, 157, .14);
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+
+.intro {
+  margin: 30rpx 0;
+  color: #55675e;
+  font-size: 27rpx;
+  line-height: 1.85;
+}
+
+.price {
+  color: #b65f3f;
+  font-size: 48rpx;
+  font-weight: 700;
+}
+
+.price text {
+  color: #718077;
+  font-size: 22rpx;
+  font-weight: 400;
+}
+
+.service-note,
+.empty-note {
+  margin-top: 22rpx;
+  color: #718077;
+  font-size: 23rpx;
+  line-height: 1.7;
+}
+
+.booking-button {
+  min-height: 80rpx;
+  margin-top: 32rpx;
+  border: 0;
+  font-size: 27rpx;
+  line-height: 80rpx;
+}
+
+.empty-state {
+  padding-top: 120rpx;
+}

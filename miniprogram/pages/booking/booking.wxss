@@ -1,2 +1,199 @@
-.booking { margin-top:22rpx; padding:24rpx; background:#fffdf8; }.item { display:flex; gap:18rpx; padding-bottom:22rpx; border-bottom:1rpx solid #ece6d9; }.item image { width:150rpx; height:115rpx; }.item-title { font-weight:600; font-size:28rpx; line-height:1.45; }.service-price { color:#b56f3b; margin-top:17rpx; }.field { display:flex; justify-content:space-between; padding:26rpx 0; border-bottom:1rpx solid #ece6d9; }.field text { color:#315f4b; }.field input { text-align:right; }.tip { color:#718077; margin-top:18rpx; font-size:21rpx; }.pending { margin-top:20rpx; color:#315f4b; font-size:23rpx; line-height:1.6; }.done { padding:70rpx 20rpx; text-align:center; background:#fffdf8; }.done > text { display:inline-flex; justify-content:center; align-items:center; width:92rpx; height:92rpx; margin-bottom:22rpx; color:#fff; background:#315f4b; border-radius:50%; font-size:50rpx; }
-.item .image-fallback{width:150rpx;height:115rpx;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:12rpx;background:#315f4b;color:#f5e7cf;text-align:center;font-size:20rpx}.error{margin-top:20rpx;color:#a13e2f}
+button::after {
+  border: 0;
+}
+
+.booking-page {
+  padding-top: 36rpx;
+}
+
+.booking-card,
+.state-card,
+.done {
+  margin-top: 26rpx;
+  padding: 26rpx;
+  background: #fffdf8;
+  border: 1rpx solid rgba(104, 76, 58, .13);
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 30rpx rgba(35, 58, 46, .07);
+}
+
+.state-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 18rpx;
+}
+
+.state-card--error {
+  display: block;
+  border-color: rgba(161, 62, 47, .2);
+}
+
+.state-mark {
+  width: 22rpx;
+  height: 22rpx;
+  flex: 0 0 auto;
+  margin-top: 7rpx;
+  background: #d8cb86;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9rpx rgba(216, 203, 134, .18);
+}
+
+.state-title,
+.readonly-heading,
+.form-heading {
+  color: #173f36;
+  font-size: 28rpx;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.state-note,
+.fine-print,
+.done-note {
+  margin-top: 8rpx;
+  color: #718077;
+  font-size: 22rpx;
+  line-height: 1.65;
+}
+
+.service-summary {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid #ece6d9;
+}
+
+.service-thumb {
+  display: block;
+  width: 156rpx;
+  height: 118rpx;
+  flex: 0 0 156rpx;
+  border-radius: 15rpx;
+}
+
+.image-fallback {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 13rpx;
+  color: #f5e7cf;
+  background: linear-gradient(145deg, #173f36, #315f4b);
+  font-size: 20rpx;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.service-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.service-name {
+  color: #203b33;
+  font-size: 28rpx;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.readonly-heading,
+.form-heading {
+  margin-top: 26rpx;
+  margin-bottom: 6rpx;
+}
+
+.field,
+.readonly-field {
+  display: flex;
+  min-height: 84rpx;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #ece6d9;
+  font-size: 25rpx;
+}
+
+.field > text:first-child,
+.readonly-field > text:first-child {
+  flex: 0 0 auto;
+  color: #315f4b;
+}
+
+.field input,
+.field-value,
+.readonly-field > text:last-child {
+  min-width: 0;
+  color: #1f302b;
+  text-align: right;
+}
+
+.field input {
+  flex: 1;
+}
+
+.field-placeholder {
+  color: #9aa39d;
+}
+
+.status-text {
+  color: #b65f3f !important;
+  font-weight: 650;
+}
+
+.error {
+  margin-top: 20rpx;
+  padding: 15rpx 17rpx;
+  color: #933f31;
+  background: rgba(198, 115, 77, .11);
+  border-radius: 13rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+
+.action-button {
+  min-height: 80rpx;
+  margin-top: 26rpx;
+  border: 0;
+  font-size: 27rpx;
+  line-height: 80rpx;
+}
+
+.action-button--warm {
+  background: #c6734d;
+}
+
+.action-button[disabled] {
+  color: rgba(255, 255, 255, .82);
+  background: #718077;
+}
+
+.back-link {
+  display: inline-flex;
+  margin-top: 22rpx;
+  padding: 14rpx 24rpx;
+  color: #fff;
+  background: #315f4b;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+}
+
+.done {
+  padding: 70rpx 26rpx;
+  text-align: center;
+}
+
+.done-mark {
+  display: flex;
+  width: 92rpx;
+  height: 92rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 22rpx;
+  color: #fff;
+  background: #315f4b;
+  border-radius: 50%;
+  font-size: 48rpx;
+}

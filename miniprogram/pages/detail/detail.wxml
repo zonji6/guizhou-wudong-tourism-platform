@@ -1,1 +1,37 @@
-<view wx:if="{{item}}"><image wx:if="{{item.image && !imageFailed}}" class="cover" src="{{item.image}}" mode="aspectFill" aria-label="{{item.imageAlt}}" binderror="imageError"/><view wx:else role="img" aria-label="{{item.imageAlt}}" class="cover image-fallback">{{item.imageAlt}}</view><view class="page"><view class="eyebrow">贵州乌东 · 演示资源</view><view class="title">{{item.title}}</view><text class="tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text><view class="intro">{{item.intro}}</view><view class="price">¥{{item.price}} <text>起 / 演示价格</text></view><view class="primary" bindtap="booking">预约这项体验</view></view></view><view wx:else class="page"><view class="title">未找到可浏览服务</view></view>
+<view wx:if="{{item}}" class="detail-page">
+  <image
+    wx:if="{{item.image && !imageFailed}}"
+    class="cover"
+    src="{{item.image}}"
+    mode="aspectFill"
+    aria-label="{{item.imageAlt}}"
+    binderror="imageError"
+  />
+  <view
+    wx:else
+    role="img"
+    aria-label="{{item.imageAlt || '服务实景暂缺'}}"
+    class="cover image-fallback"
+  >
+    <text class="fallback-label">{{item.categoryLabel || '乌东体验'}}</text>
+    <text>{{item.imageAlt || '服务实景暂缺'}}</text>
+  </view>
+
+  <view class="page detail-content">
+    <view class="eyebrow">贵州乌东 · 演示资源</view>
+    <view class="title">{{item.title}}</view>
+    <view class="tags">
+      <text class="tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="intro">{{item.intro}}</view>
+    <view class="price">¥{{item.price}} <text>起 / 演示价格</text></view>
+    <view class="service-note">服务时间、价格与可预约情况请以服务方确认结果为准。</view>
+    <button class="primary booking-button" bindtap="booking">预约这项体验</button>
+  </view>
+</view>
+
+<view wx:else class="page empty-state">
+  <view class="eyebrow">体验详情</view>
+  <view class="title">未找到可浏览服务</view>
+  <view class="empty-note">这个链接没有对应可操作的乌东服务，请返回“游乌东”重新选择。</view>
+</view>

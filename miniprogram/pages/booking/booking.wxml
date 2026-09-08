@@ -1,1 +1,128 @@
-<view class="page"><view class="eyebrow">预约确认</view><view class="title">留一席山里的慢时光</view><view wx:if="{{pendingLoading}}" class="pending">正在读取待确认预约</view><view wx:elif="{{item && !pendingLoadError}}" class="booking"><view class="item"><image wx:if="{{item.image && !imageFailed}}" src="{{item.image}}" mode="aspectFill" aria-label="{{item.imageAlt}}" binderror="imageError"/><view wx:else role="img" aria-label="{{item.imageAlt}}" class="image-fallback">{{item.imageAlt}}</view><view>{{item.title}}</view></view><view wx:if="{{!done}}"><view class="field"><text>日期</text><picker mode="date" value="{{date}}" bindchange="dateChange"><view>{{date}}</view></picker></view><view class="field"><text>人数</text><input type="number" value="{{people}}" bindinput="peopleChange"/></view><view class="field"><text>联系人</text><input value="{{contact}}" bindinput="contactChange"/></view><view class="field"><text>联系电话</text><input value="{{phone}}" bindinput="phoneChange"/></view><view wx:if="{{actionError}}" class="error">{{actionError}}</view><view wx:if="{{!pending}}" class="primary" bindtap="submit">提交待确认预约</view><view wx:else><view class="pending">预约已创建，状态：{{pending.status}}</view><view class="primary" bindtap="confirm">确认这笔预约</view></view></view><view wx:else class="done"><view class="title">预约已确认</view><view class="primary" bindtap="orders">查看我的订单</view></view></view><view wx:else><view class="error">{{pendingLoadError || '未找到可预约服务'}}</view><navigator open-type="navigateBack">返回重试</navigator></view></view>
+<view class="page booking-page">
+  <view class="eyebrow">预约确认</view>
+  <view class="title">留一席山里的慢时光</view>
+
+  <view wx:if="{{pendingLoading}}" class="state-card state-card--loading">
+    <view class="state-mark" aria-hidden="true"></view>
+    <view>
+      <view class="state-title">正在读取待确认预约</view>
+      <view class="state-note">读取完成前不会新建或确认其他订单。</view>
+    </view>
+  </view>
+
+  <view wx:elif="{{pendingLoadError}}" class="state-card state-card--error">
+    <view class="state-title">这笔预约暂时无法读取</view>
+    <view class="error">{{pendingLoadError}}</view>
+    <navigator class="back-link" open-type="navigateBack">返回重试</navigator>
+  </view>
+
+  <view wx:elif="{{done}}" class="done">
+    <view class="done-mark" aria-hidden="true">✓</view>
+    <view class="title">预约已确认</view>
+    <view class="done-note">{{pending.name}} · {{pending.date}} · {{pending.people}} 人</view>
+    <button class="primary action-button" bindtap="orders">查看我的订单</button>
+  </view>
+
+  <view wx:elif="{{pending}}" class="booking-card">
+    <view class="service-summary">
+      <image
+        wx:if="{{item && item.image && !imageFailed}}"
+        class="service-thumb"
+        src="{{item.image}}"
+        mode="aspectFill"
+        aria-label="{{item.imageAlt}}"
+        binderror="imageError"
+      />
+      <view
+        wx:else
+        class="service-thumb image-fallback"
+        role="img"
+        aria-label="{{item.imageAlt || '服务实景暂缺'}}"
+      >
+        <text>{{item.categoryLabel || '乌东体验'}}</text>
+      </view>
+      <view class="service-copy">
+        <view class="service-name">{{pending.name}}</view>
+        <text wx:if="{{pending.demoData}}" class="demo">演示数据</text>
+      </view>
+    </view>
+
+    <view class="readonly-heading">请核对这笔预约</view>
+    <view class="readonly-field"><text>日期</text><text>{{pending.date || '未填写'}}</text></view>
+    <view class="readonly-field"><text>人数</text><text>{{pending.people}} 人</text></view>
+    <view class="readonly-field"><text>联系人</text><text>{{pending.contact || '未填写'}}</text></view>
+    <view class="readonly-field"><text>联系电话</text><text>{{pending.phone || '未填写'}}</text></view>
+    <view class="readonly-field"><text>状态</text><text class="status-text">{{pending.statusLabel}}</text></view>
+
+    <view wx:if="{{actionError}}" class="error">{{actionError}}</view>
+    <button
+      wx:if="{{pending.canConfirm}}"
+      class="primary action-button action-button--warm"
+      bindtap="confirm"
+      loading="{{confirming}}"
+      disabled="{{confirming || submitting}}"
+    >{{confirming ? '正在确认' : '确认这笔预约'}}</button>
+    <view wx:else class="fine-print">这笔预约当前状态不需要重复确认。</view>
+    <view class="fine-print">只会确认当前读取的同一笔预约，不会重复创建。</view>
+  </view>
+
+  <view wx:elif="{{item && !handoffMode}}" class="booking-card">
+    <view class="service-summary">
+      <image
+        wx:if="{{item.image && !imageFailed}}"
+        class="service-thumb"
+        src="{{item.image}}"
+        mode="aspectFill"
+        aria-label="{{item.imageAlt}}"
+        binderror="imageError"
+      />
+      <view
+        wx:else
+        class="service-thumb image-fallback"
+        role="img"
+        aria-label="{{item.imageAlt || '服务实景暂缺'}}"
+      >
+        <text>{{item.categoryLabel || '乌东体验'}}</text>
+      </view>
+      <view class="service-copy">
+        <view class="service-name">{{item.title}}</view>
+        <text wx:if="{{item.demoData}}" class="demo">演示数据</text>
+      </view>
+    </view>
+
+    <view class="form-heading">填写待确认预约</view>
+    <view class="field">
+      <text>日期</text>
+      <picker mode="date" value="{{date}}" bindchange="dateChange">
+        <view class="field-value {{date ? '' : 'field-placeholder'}}">{{date || '请选择日期'}}</view>
+      </picker>
+    </view>
+    <view class="field">
+      <text>人数</text>
+      <input type="number" value="{{people}}" bindinput="peopleChange" placeholder="请填写人数"/>
+    </view>
+    <view class="field">
+      <text>联系人</text>
+      <input value="{{contact}}" bindinput="contactChange" placeholder="请填写联系人"/>
+    </view>
+    <view class="field">
+      <text>联系电话</text>
+      <input type="text" value="{{phone}}" bindinput="phoneChange" placeholder="请填写电话"/>
+    </view>
+
+    <view wx:if="{{actionError}}" class="error">{{actionError}}</view>
+    <button
+      class="primary action-button"
+      bindtap="submit"
+      loading="{{submitting}}"
+      disabled="{{submitting || confirming}}"
+    >{{submitting ? '正在提交' : '提交待确认预约'}}</button>
+    <view class="fine-print">提交后仍需在本页再次核对并确认。</view>
+  </view>
+
+  <view wx:else class="state-card state-card--error">
+    <view class="state-title">未找到可预约服务</view>
+    <view class="state-note">这个链接没有对应可操作的服务，请返回重新选择。</view>
+    <navigator class="back-link" open-type="navigateBack">返回</navigator>
+  </view>
+</view>
