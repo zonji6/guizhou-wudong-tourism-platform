@@ -26,5 +26,4 @@ structure:
   control_root: .codex/multi-agent
 runtime_mode: LIMITED_CONCURRENT
 long_lived_provisioning: complete
-active_task_refs:
-  - .codex/multi-agent/tasks/TASK-007.yaml
+active_task_refs: []
