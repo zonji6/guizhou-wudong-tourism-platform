@@ -21,17 +21,12 @@ read_scope:
   - agent-service/app/main.py
   - agent-service/app/llm/**
   - agent-service/app/tools/**
-write_scope:
-  - agent-service/app/contracts.py
-  - agent-service/app/graph/state.py
-  - agent-service/app/graph/context.py
-  - agent-service/app/privacy.py
-  - docs/contracts/assistant-card-v2.md
+write_scope: []
 restricted_actions:
   - 不修改图节点、builder、streaming、main、LLM、Java、Web 或小程序；本任务只冻结模型与隐私边界，不得声称已接入现有节点或运行链。
   - 不在 checkpoint 或可持久化 AgentState 写入 user_text、messages、联系人、visitorId、token、key、URL、原始检索内容、原始异常、完整参数或 CoT。
   - 不新增或运行测试，不运行 Python、pytest、安装、构建、启动、外部调用或推送。
-  - 只用 apply_patch；只允许 status、name-only、diff --check、rg 静态检查；仅暂存 write_scope，不执行 reset、checkout 或 clean。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续接线或运行变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
@@ -63,8 +58,18 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
+task_state: VERIFYING
+dispatch_state: RETURNED
+implementation_status: IMPLEMENTED_NOT_VERIFIED
+artifact_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+verification_target_artifact_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+changed_paths: 5
+implementation_evidence_fingerprint: sha256:1a94761e5704ab535cf7b5e22ea1e4d10979fc717e0839f2f380854a93b7198c
+verification_target_evidence_fingerprint: sha256:1a94761e5704ab535cf7b5e22ea1e4d10979fc717e0839f2f380854a93b7198c
+final_static_review: FINAL_REVIEW_PASS
+artifact_review: ARTIFACT_REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,final_static_review:PASS,artifact_review:PASS,tests:SKIPPED
 enforcement:
   write_scope: PROCESS_GOVERNED
   checkpoint_privacy: PROCESS_GOVERNED
