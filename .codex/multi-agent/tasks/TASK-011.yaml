@@ -4,7 +4,7 @@ long_lived_responsibility_owner:
   agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
   write_authority_for_current_dispatch: false
 temporary_writer:
-  route: collaboration:/root/task010_helper
+  route: primary:/root
   write_authority_for_current_dispatch: true
 objective: 基于冻结的 tourism-api-v2 契约实现公开目录/地点查询、六类后台目录维护与 X-Admin-Token 鉴权，不实现订单、社区、内部 AI v2、真实地图、数据导入或前端。
 deliverables:
@@ -52,7 +52,7 @@ restricted_actions:
   - 不新增数据库字段、假坐标、假路线、库存、房态、餐位或地图能力；地点维护不得改变 mapStatus=NOT_CONFIGURED 与 public places=[] 的契约。
   - 不在仓库写入 ADMIN_API_TOKEN 默认值、密钥或生产凭据；不得泄露 merchant 联系方式或内部异常。
   - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
-  - 使用 apply_patch；当前派发仅 temporary_writer 可写，任何其他 writer 的后续写入立即使本派发 STALE；仅暂存 write_scope；不执行 reset、checkout 或 clean。
+  - 使用 apply_patch；当前派发仅 primary:/root 可写，任何其他 writer 的后续写入立即使本派发 STALE；仅暂存 write_scope；不执行 reset、checkout 或 clean。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
