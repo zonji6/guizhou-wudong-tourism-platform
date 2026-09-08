@@ -18,4 +18,4 @@ management:
       exposure:
         include: health,info
 info:
-  app: 贵州乌冬文旅演示服务
+  app: 贵州乌东文旅演示服务
