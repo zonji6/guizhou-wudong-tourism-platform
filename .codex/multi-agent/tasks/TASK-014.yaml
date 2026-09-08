@@ -1,0 +1,82 @@
+task_id: TASK-014
+dispatch_id: dispatch-TASK-014-r1
+long_lived_responsibility_owner:
+  agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: primary:/root
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: false
+objective: 实现 Java 社区动态与路线攻略 v2 的公开查询与匿名访客发布，不实现互动、审核、后台、内部接口、地图或前端。
+deliverables:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityRequests.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCommunityController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/CommunityRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CommunityService.java
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+branch: feat/wudong-task2-data
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/CommunityPost.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/Place.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/PostType.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/VisitorIdentity.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/OrderRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/OrderService.java
+write_scope:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityRequests.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCommunityController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/repository/CommunityRepository.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CommunityService.java
+restricted_actions:
+  - 不修改迁移、领域实体、v1 Controller/Service/Repository、TASK-011 其他文件、Python、前端或小程序。
+  - 不实现点赞、评论、图片审核、admin/internal、地图、DELETE、数据导入或前端；不得写入假坐标、路线能力或身份数据。
+  - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
+  - 仅使用 apply_patch；当前派发仅 primary:/root 可写，任何其他 writer 写入立即使派发 STALE；仅暂存 write_scope，不执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/CommunityPost.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/Place.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/PostType.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/VisitorIdentity.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-010
+    artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-011
+    artifact_revision: 29caf0ba1f861d942218deaf5938e805759de48b
+  - task_id: TASK-013
+    artifact_revision: 183bd282a6f2cf8dbc87fcefa53f2cf4b18110b9
+acceptance:
+  - GET /api/posts?type=&tag= 仅返回 published=true，SQL 过滤 type 为 MOMENT 或 ROUTE_GUIDE、tag 为单值；unknown 或重复 query 必须拒绝。
+  - POST /api/posts 必须有规范 X-Visitor-Id、没有 query、严格字段白名单；不得接收 author、visitor、published、demo、image。MOMENT 的 title、routeSummary、routeNodes 只能省略或 null；ROUTE_GUIDE 必须有 title、routeSummary 与至少一个严格 RouteNode。
+  - RouteNode 的 sequence 为唯一正整数并按序输出，placeId 可 null；非 null 时必须为规范 UUID 且地点存在并 PUBLISHED，否则分别返回 404 或 409。服务端生成匿名展示名，demoData=true、published=true。
+  - public DTO 仅输出契约字段，排除 visitorId、published、coverUrl；tags 固定为 string[]，routeNodes 按 sequence。旧 V2 seed 默认投影为 MOMENT，即使数据库 title 非空也输出 title=null。
+  - 不修改迁移、领域或 v1；不实现点赞、评论、图片审核、admin/internal/map/前端；不运行测试、Maven、构建、服务、Flyway 或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 183bd282a6f2cf8dbc87fcefa53f2cf4b18110b9
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: ACTIVE
+dispatch_state: DISPATCHED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  visitor_identity: PROCESS_GOVERNED
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
