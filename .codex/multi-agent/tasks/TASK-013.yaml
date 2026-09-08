@@ -1,12 +1,12 @@
 task_id: TASK-013
-dispatch_id: dispatch-TASK-013-r1
+dispatch_id: dispatch-TASK-013-r2
 long_lived_responsibility_owner:
   agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
   write_authority_for_current_dispatch: false
 temporary_writer:
-  route: collaboration:/root/task010_helper/task010_static_review
-  route_status: UNAVAILABLE
-  write_authority_for_current_dispatch: false
+  route: primary:/root
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: true
 objective: 实现三类公开订单、/api/me 匿名访客边界与后台订单状态维护；不扩展到支付、库存、餐位、房态、AI/internal、社区、地图或前端。
 deliverables:
   - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
@@ -74,7 +74,7 @@ acceptance:
   - ApiRequestException 携带 HttpStatus、稳定 code 与安全中文 message；ApiExceptionHandler 精确返回动态状态，不泄露内部异常，且保持 TASK-011/v1 源码兼容。
   - 无 DELETE、AI/internal、社区、地图或前端；仅改 write_scope；不新增或运行测试，不运行 Maven、构建、服务、Flyway、curl、浏览器或外部调用。
 project_revision: project-r1
-task_revision: task-r1
+task_revision: task-r2
 base_revision: 29caf0ba1f861d942218deaf5938e805759de48b
 interface_revision: tourism-api-v2-draft-r2
 verification_profile: high_risk
@@ -83,9 +83,9 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: BLOCKED
-dispatch_state: STALE
-block_reason: TEMPORARY_WRITER_ROUTE_UNAVAILABLE; no active collaboration route for the user-specified sole writer, and no replacement or new agent is authorized.
+task_state: ACTIVE
+dispatch_state: DISPATCHED
+writer_fallback: primary:/root authorized after requested collaboration route was confirmed unavailable.
 enforcement:
   write_scope: PROCESS_GOVERNED
   visitor_identity: PROCESS_GOVERNED
