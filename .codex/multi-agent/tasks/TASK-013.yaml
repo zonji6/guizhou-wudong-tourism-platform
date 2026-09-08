@@ -33,21 +33,12 @@ read_scope:
   - tourism-service/src/main/java/com/guizhou/wudong/api/AdminCatalogController.java
   - tourism-service/src/main/java/com/guizhou/wudong/repository/CatalogRepository.java
   - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
-write_scope:
-  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiRequestException.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/VisitorIdentity.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/OrderRequests.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/OrderViews.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicOrderController.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/AdminOrderController.java
-  - tourism-service/src/main/java/com/guizhou/wudong/repository/OrderRepository.java
-  - tourism-service/src/main/java/com/guizhou/wudong/service/OrderService.java
-  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+write_scope: []
 restricted_actions:
   - 不修改 TASK-011 的其他文件、V1-V4 迁移、领域实体、v1 Controller/Service/Repository、Python、前端或小程序。
   - 不实现 DELETE、支付、库存、餐位、房态、AI/internal 路由、社区、地图、导入或前端；不以内存过滤或手机号查询订单。
   - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
-  - 仅使用 apply_patch；仅暂存 write_scope；不执行 reset、checkout 或 clean；任何非唯一 writer 写入立即使派发 STALE。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
@@ -83,8 +74,19 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
+task_state: VERIFYING
+dispatch_state: RETURNED
+implementation_status: IMPLEMENTED_NOT_VERIFIED
+artifact_revision: 183bd282a6f2cf8dbc87fcefa53f2cf4b18110b9
+verification_target_artifact_revision: 183bd282a6f2cf8dbc87fcefa53f2cf4b18110b9
+changed_paths: 9
+implementation_evidence_fingerprint: sha256:28cd35500ec98e07cdb37eaa3b5285865fde39bfcb3147187cf20d576974fb03
+verification_target_evidence_fingerprint: sha256:28cd35500ec98e07cdb37eaa3b5285865fde39bfcb3147187cf20d576974fb03
+second_axis_static_review: STATIC_PASS
+final_static_review: FINAL_REVIEW_PASS
+artifact_review: ARTIFACT_REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,second_axis_static_review:PASS,final_static_review:PASS,artifact_review:PASS,tests:SKIPPED
 writer_fallback: primary:/root authorized after requested collaboration route was confirmed unavailable.
 enforcement:
   write_scope: PROCESS_GOVERNED
