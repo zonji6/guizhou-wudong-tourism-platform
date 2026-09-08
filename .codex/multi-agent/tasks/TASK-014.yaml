@@ -6,7 +6,7 @@ long_lived_responsibility_owner:
 temporary_writer:
   route: primary:/root
   route_status: AVAILABLE
-  write_authority_for_current_dispatch: false
+  write_authority_for_current_dispatch: true
 objective: 实现 Java 社区动态与路线攻略 v2 的公开查询与匿名访客发布，不实现互动、审核、后台、内部接口、地图或前端。
 deliverables:
   - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityRequests.java
