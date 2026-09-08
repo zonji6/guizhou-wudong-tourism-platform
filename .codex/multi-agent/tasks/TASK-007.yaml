@@ -1,0 +1,77 @@
+task_id: TASK-007
+dispatch_id: dispatch-TASK-007-r1
+owner: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
+objective: 完成任务 2 前端部分、任务 4、任务 6 和任务 7：稳定 UUID 与演示卡、Web 开卷五联首页、小程序五栏导航与工具首页；暂不实现任务 5 和任务 8 的 AI 工作台。
+deliverables:
+  - web/index.html
+  - web/src/data/demo.js
+  - web/src/components/common/SafeImage.vue
+  - web/src/components/home/**
+  - web/src/pages/HomePage.vue
+  - web/src/style.css
+  - miniprogram/utils/demo.js
+  - miniprogram/app.js
+  - miniprogram/app.json
+  - miniprogram/app.wxss
+  - miniprogram/custom-tab-bar/**
+  - miniprogram/pages/profile/**
+  - miniprogram/pages/index/**
+  - miniprogram/pages/resources/**
+  - miniprogram/pages/community/**
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
+branch: feat/wudong-frontend-redesign
+read_scope:
+  - AGENTS.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+write_scope:
+  - web/index.html
+  - web/src/data/demo.js
+  - web/src/components/common/SafeImage.vue
+  - web/src/components/home/**
+  - web/src/pages/HomePage.vue
+  - web/src/style.css
+  - miniprogram/utils/demo.js
+  - miniprogram/app.js
+  - miniprogram/app.json
+  - miniprogram/app.wxss
+  - miniprogram/custom-tab-bar/**
+  - miniprogram/pages/profile/**
+  - miniprogram/pages/index/**
+  - miniprogram/pages/resources/**
+  - miniprogram/pages/community/**
+restricted_actions:
+  - 不创建或运行测试，不构建，不推送。
+  - 不修改任务 5 或任务 8 的 AI 工作台范围，不修改 tourism-service、agent-service、docs/contracts 或协作控制文件。
+  - 不访问或写入 API Key、真实用户或真实订单数据。
+read_first:
+  - AGENTS.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+dependencies:
+  - base_revision b10ca9f: 使用其中已存在制品作为基线，不把 TASK-001 的制品归为本任务实现。
+acceptance:
+  - 所有游客可见文案为“贵州乌东”；两端使用稳定 UUID，演示卡只能由用户主动启用。
+  - Web 支持首次会话点击开卷、山水寨茶人五联、探景、下滑雾与叶片，且减少动态效果可用。
+  - 小程序固定首页、游乌东、向导、寨里、我的，中央叶片为唯一入口。
+  - 图片失败显示语义占位；不创建或运行测试、不构建、不推送。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: b10ca9f
+verification_profile: standard
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: PENDING
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  external_model_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED

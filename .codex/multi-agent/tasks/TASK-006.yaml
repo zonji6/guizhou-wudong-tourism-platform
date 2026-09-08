@@ -1,0 +1,53 @@
+task_id: TASK-006
+dispatch_id: dispatch-TASK-006-r1
+owner: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
+objective: 完成实施计划任务 3 的 FastAPI、LangGraph、DeepSeek、关键词资料与服务动作完整主链。
+deliverables:
+  - agent-service/**
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai
+branch: feat/wudong-task3-ai
+read_scope:
+  - AGENTS.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/contracts/tourism-api-v1.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+write_scope:
+  - agent-service/**
+restricted_actions:
+  - 不创建或运行测试，不构建，不推送。
+  - 不调用外部模型、不访问或写入 API Key、生产凭据或真实业务数据。
+  - 不修改 tourism-service、web、miniprogram、docs/contracts 或协作控制文件。
+read_first:
+  - AGENTS.md
+  - docs/需求文档.md
+  - docs/开发文档.md
+  - docs/contracts/tourism-api-v1.md
+  - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
+  - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
+dependencies:
+  - TASK-001: tourism-api-v1 制品已在基线 b10ca9f 可读；本任务不修改其契约。
+acceptance:
+  - 字符串文档 ID 与 serviceId 别名正确映射；图使用缓存的 InMemorySaver。
+  - astream v2 通过 custom 与 updates 传递真实事件，最终卡只发一次，错误卡以 failed 结束。
+  - Java 关键词资料明确标记 keyword_demo；DeepSeek JSON 结果仅保留真实服务 ID。
+  - 待确认预约仅经 Java 内部接口创建；缺少 Key 时明确降级。
+  - 不调用外部模型、不创建或运行测试、不构建、不推送。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: b10ca9f
+interface_revision: tourism-api-v1
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: PENDING
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  credentials: UNAVAILABLE
+  external_model_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
