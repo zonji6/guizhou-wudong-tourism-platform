@@ -18,7 +18,7 @@ const recentMessages = computed(() => session.messages.value.slice(-6))
 const days = computed(() => arrayValue(card.value?.data?.days))
 const services = computed(() => arrayValue(card.value?.data?.services))
 const sourceCount = computed(() => card.value?.sources?.length || 0)
-const previousCardKey = computed(() => JSON.stringify(previousCard.value || {}))
+const previousCardKey = computed(() => `previous-card-${session.previousCardVersion.value}`)
 
 watch(card, () => { sourcesOpen.value = false })
 

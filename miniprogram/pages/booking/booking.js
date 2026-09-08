@@ -13,20 +13,43 @@ function stringId(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function toOrder(item, fallbackDemoData) {
-  const people = Number(item?.peopleCount ?? item?.people ?? 0)
-  const status = typeof item?.status === 'string' ? item.status : ''
+function nonEmptyText(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function bookingResponseToOrder(item, expected, fallbackDemoData) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return null
+
+  const id = stringId(item.id)
+  const serviceId = stringId(item.serviceId)
+  const serviceName = nonEmptyText(item.serviceName)
+  const date = nonEmptyText(item.travelDate)
+  const contact = nonEmptyText(item.contactName)
+  const phone = nonEmptyText(item.contactPhone)
+  const people = item.peopleCount
+  const status = stringId(item.status)
+  const validStatus = Object.prototype.hasOwnProperty.call(STATUS_LABELS, status)
+  const expectedBookingId = stringId(expected?.bookingId)
+  const expectedServiceId = stringId(expected?.serviceId)
+  const expectedStatus = stringId(expected?.status)
+
+  if (!id || !serviceId || !serviceName || !date || !contact || !phone) return null
+  if (!Number.isInteger(people) || people <= 0 || !validStatus) return null
+  if (expectedBookingId && id !== expectedBookingId) return null
+  if (expectedServiceId && serviceId !== expectedServiceId) return null
+  if (expectedStatus && status !== expectedStatus) return null
+
   const demoData = typeof item?.demoData === 'boolean'
     ? item.demoData
     : (typeof fallbackDemoData === 'boolean' ? fallbackDemoData : true)
   return {
-    id: stringId(item?.id),
-    serviceId: stringId(item?.serviceId),
-    name: item?.serviceName || item?.name || '乌东体验',
-    date: item?.travelDate || item?.date || '',
-    people: Number.isFinite(people) ? people : 0,
-    contact: item?.contactName || item?.contact || '',
-    phone: item?.contactPhone || item?.phone || '',
+    id,
+    serviceId,
+    name: serviceName,
+    date,
+    people,
+    contact,
+    phone,
     status,
     statusLabel: STATUS_LABELS[status] || '等待服务方处理',
     canConfirm: status === 'PENDING_CONFIRMATION',
@@ -68,6 +91,7 @@ Page({
     if (!lockedBookingId) return
 
     this.lockedBookingId = lockedBookingId
+    this.lockedServiceId = serviceId
     this.setData({
       handoffMode: true,
       pending: null,
@@ -75,17 +99,23 @@ Page({
       pendingLoadError: '',
       actionError: ''
     })
+    if (!this.lockedServiceId) {
+      this.setData({
+        pendingLoading: false,
+        pendingLoadError: '这笔待确认预约缺少服务信息，请返回后重试。'
+      })
+      return
+    }
     request(`/api/bookings/${encodeURIComponent(lockedBookingId)}`)
       .then(fullBooking => {
-        const responseId = stringId(fullBooking?.id)
-        const responseServiceId = stringId(fullBooking?.serviceId)
-        const expectedServiceId = handoffServiceId || requestedServiceId
-        if (responseId !== lockedBookingId) throw new Error('booking_id_mismatch')
-        if (!responseServiceId || (expectedServiceId && responseServiceId !== expectedServiceId)) {
-          throw new Error('booking_service_mismatch')
-        }
-        const pending = toOrder(fullBooking, handoff.demoData)
-        this.requestedServiceId = responseServiceId
+        const pending = bookingResponseToOrder(fullBooking, {
+          bookingId: this.lockedBookingId,
+          serviceId: this.lockedServiceId,
+          status: 'PENDING_CONFIRMATION'
+        }, handoff.demoData)
+        if (!pending) throw new Error('invalid_pending_booking')
+
+        this.requestedServiceId = pending.serviceId
         this.setData({
           pending,
           date: pending.date,
@@ -93,7 +123,7 @@ Page({
           contact: pending.contact,
           phone: pending.phone
         })
-        this.loadService(responseServiceId)
+        this.loadService(pending.serviceId)
       })
       .catch(() => {
         this.setData({ pendingLoadError: '无法读取这笔待确认预约，请返回后重试。' })
@@ -173,11 +203,14 @@ Page({
       note: '小程序预约'
     })
       .then(item => {
-        const pending = toOrder(item, this.data.item.demoData)
-        if (!pending.id || pending.serviceId !== serviceId || !pending.canConfirm) {
-          throw new Error('created_booking_mismatch')
-        }
+        const pending = bookingResponseToOrder(item, {
+          serviceId,
+          status: 'PENDING_CONFIRMATION'
+        }, this.data.item.demoData)
+        if (!pending) throw new Error('invalid_created_booking')
+
         this.lockedBookingId = pending.id
+        this.lockedServiceId = pending.serviceId
         this.setData({
           pending,
           date: pending.date,
@@ -198,17 +231,25 @@ Page({
   confirm() {
     if (this.confirmingRequest || this.data.confirming || this.submittingRequest || this.data.submitting || this.data.done) return
     const pendingId = stringId(this.data.pending?.id)
+    const pendingServiceId = stringId(this.data.pending?.serviceId)
     const lockedBookingId = stringId(this.lockedBookingId)
-    if (!pendingId || pendingId !== lockedBookingId || this.data.pending?.canConfirm !== true) return
+    const lockedServiceId = stringId(this.lockedServiceId)
+    if (!pendingId || pendingId !== lockedBookingId || !pendingServiceId || pendingServiceId !== lockedServiceId || this.data.pending?.canConfirm !== true) {
+      this.setData({ actionError: '预约信息不完整，请返回后重试。' })
+      return
+    }
 
     this.confirmingRequest = true
     this.setData({ actionError: '', confirming: true })
     request(`/api/bookings/${encodeURIComponent(lockedBookingId)}/confirm`, 'POST')
       .then(item => {
-        const order = toOrder(item, this.data.pending.demoData)
-        if (order.id !== lockedBookingId || order.status !== 'CONFIRMED') {
-          throw new Error('confirmed_booking_mismatch')
-        }
+        const order = bookingResponseToOrder(item, {
+          bookingId: lockedBookingId,
+          serviceId: lockedServiceId,
+          status: 'CONFIRMED'
+        }, this.data.pending.demoData)
+        if (!order) throw new Error('invalid_confirmed_booking')
+
         const app = getApp()
         const orders = Array.isArray(app.globalData.orders) ? app.globalData.orders : []
         app.globalData.orders = [order, ...orders.filter(existing => String(existing.id) !== lockedBookingId)]

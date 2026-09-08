@@ -25,22 +25,32 @@ function createPhases() {
   ]
 }
 
-function normalizeCard(raw) {
-  if (!CARD_TYPES.has(raw?.type)) {
-    return {
-      type: 'error',
-      title: '内容暂不可展示',
-      summary: '向导返回了不支持的内容，请重新描述你的需求。',
-      data: {},
-      sources: []
-    }
-  }
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
 
-  const sources = Array.isArray(raw.sources)
-    ? raw.sources
-        .filter(source => typeof source?.title === 'string' && source.title.trim())
-        .map(source => ({ title: source.title.trim() }))
-    : []
+function isStructurallyValidCard(raw) {
+  if (!isPlainObject(raw) || !CARD_TYPES.has(raw.type)) return false
+  if (!isNonEmptyString(raw.title) || typeof raw.summary !== 'string') return false
+  if (!isPlainObject(raw.data) || !Array.isArray(raw.sources)) return false
+  if (!raw.sources.every(source => isPlainObject(source) && isNonEmptyString(source.title))) return false
+
+  if (raw.type === 'itinerary') {
+    return Array.isArray(raw.data.days) && raw.data.days.every(day =>
+      isPlainObject(day) &&
+      Array.isArray(day.items) &&
+      day.items.every(isPlainObject)
+    )
+  }
+  if (raw.type === 'service_recommendation') {
+    return Array.isArray(raw.data.services) && raw.data.services.every(isPlainObject)
+  }
+  if (raw.type === 'pending_booking') return isPlainObject(raw.data.booking)
+  return true
+}
+
+function normalizeCard(raw) {
+  const sources = raw.sources.map(source => ({ title: source.title.trim() }))
 
   return {
     type: raw.type,
@@ -48,6 +58,16 @@ function normalizeCard(raw) {
     summary: typeof raw.summary === 'string' ? raw.summary : '',
     data: raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : {},
     sources
+  }
+}
+
+function errorCard(title, summary) {
+  return {
+    type: 'error',
+    title,
+    summary,
+    data: { demoAvailable: true },
+    sources: []
   }
 }
 
@@ -60,6 +80,8 @@ const messages = ref([])
 const stages = ref(createPhases())
 const activeCard = ref(null)
 const previousCard = ref(null)
+const cardVersion = ref(0)
+const previousCardVersion = ref(0)
 const mode = ref('idle')
 const isBusy = ref(false)
 const activityText = ref('说说你想怎样游乌东')
@@ -110,13 +132,18 @@ function isCurrentRequest(seq, socket) {
 
 function acceptCard(raw, seq) {
   if (seq !== requestSeq.value) return null
+  if (!isStructurallyValidCard(raw)) return null
 
   const card = normalizeCard(raw)
   const fingerprint = cardFingerprint(card)
   if (acceptedCardSeq === seq && acceptedCardFingerprint === fingerprint) return activeCard.value
 
-  if (activeCard.value) previousCard.value = activeCard.value
+  if (activeCard.value) {
+    previousCard.value = activeCard.value
+    previousCardVersion.value = cardVersion.value
+  }
   activeCard.value = card
+  cardVersion.value += 1
   acceptedCardSeq = seq
   acceptedCardFingerprint = fingerprint
   messages.value.push({
@@ -158,13 +185,18 @@ function failTransport(seq, socket, summary) {
     return
   }
 
-  acceptCard({
-    type: 'error',
-    title: '向导暂不可用',
-    summary,
-    data: { demoAvailable: true },
-    sources: []
-  }, seq)
+  acceptCard(errorCard('向导暂不可用', summary), seq)
+  settleRequest(seq, socket, 'failed')
+}
+
+function failWithCard(seq, socket, title, summary) {
+  if (!isCurrentRequest(seq, socket) || !isBusy.value) return
+
+  if (acceptedCardSeq !== seq || activeCard.value?.type !== 'error') {
+    acceptCard(errorCard(title, summary), seq)
+  }
+  mode.value = 'error'
+  activityText.value = summary
   settleRequest(seq, socket, 'failed')
 }
 
@@ -209,7 +241,16 @@ function handleAssistantEvent(event, seq, socket) {
     return
   }
 
-  if (event.type === 'card_ready' && event.card?.type) {
+  if (event.type === 'card_ready') {
+    if (!isStructurallyValidCard(event.card)) {
+      failWithCard(
+        seq,
+        socket,
+        '向导结果不完整',
+        '本轮结果无法安全展示，请重新描述需求或查看演示结果。'
+      )
+      return
+    }
     const acceptedCard = acceptCard(event.card, seq)
     mode.value = acceptedCard?.type === 'error'
       ? 'error'
@@ -218,8 +259,29 @@ function handleAssistantEvent(event, seq, socket) {
     return
   }
 
-  if (event.type === 'completed') settleRequest(seq, socket, 'completed')
-  if (event.type === 'failed') settleRequest(seq, socket, 'failed')
+  if (event.type === 'completed') {
+    const hasSuccessfulCard = acceptedCardSeq === seq &&
+      activeCard.value?.type !== 'error' &&
+      isStructurallyValidCard(activeCard.value)
+    if (!hasSuccessfulCard) {
+      failWithCard(
+        seq,
+        socket,
+        '向导结果未送达',
+        '本轮没有收到完整结果，请重新尝试或查看演示结果。'
+      )
+      return
+    }
+    settleRequest(seq, socket, 'completed')
+  }
+  if (event.type === 'failed') {
+    failWithCard(
+      seq,
+      socket,
+      '本轮向导未能完成',
+      '本轮处理没有完成，请稍后重试或查看演示结果。'
+    )
+  }
 }
 
 function send(text) {
@@ -303,6 +365,8 @@ export function useAssistantSession() {
     stages,
     activeCard,
     previousCard,
+    cardVersion,
+    previousCardVersion,
     mode,
     isBusy,
     activityText,
