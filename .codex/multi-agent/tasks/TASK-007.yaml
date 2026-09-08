@@ -1,83 +1,63 @@
 task_id: TASK-007
-dispatch_id: dispatch-TASK-007-r2
+dispatch_id: dispatch-TASK-007-r3
 agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
-objective: 完成任务 2 前端部分、任务 4、任务 6 和任务 7：稳定 UUID 与演示卡、Web 开卷五联首页、小程序五栏导航与工具首页；暂不实现任务 5 和任务 8 的 AI 工作台。
+objective: 仅修复 r2 独立验收的开卷完成、游客可见旧地名与向导 tab 选中态三类失败，不继续任务 5 或任务 8。
 deliverables:
-  - web/index.html
-  - web/src/data/demo.js
-  - web/src/components/common/SafeImage.vue
-  - web/src/components/home/**
-  - web/src/pages/HomePage.vue
-  - web/src/App.vue
-  - web/src/style.css
-  - miniprogram/utils/demo.js
-  - miniprogram/app.js
-  - miniprogram/app.json
-  - miniprogram/app.wxss
-  - miniprogram/custom-tab-bar/**
-  - miniprogram/pages/profile/**
-  - miniprogram/pages/index/**
-  - miniprogram/pages/resources/**
-  - miniprogram/pages/community/**
+  - web/src/components/home/ScrollGate.vue
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.json
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/detail/detail.wxml
+  - miniprogram/pages/orders/orders.wxml
 workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
 branch: feat/wudong-frontend-redesign
 read_scope:
   - AGENTS.md
-  - docs/需求文档.md
-  - docs/开发文档.md
+  - web/src/components/home/ScrollGate.vue
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.json
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/detail/detail.wxml
+  - miniprogram/pages/orders/orders.wxml
+  - .codex/multi-agent/verification/TASK-007.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
 write_scope:
-  - web/index.html
-  - web/src/data/demo.js
-  - web/src/components/common/SafeImage.vue
-  - web/src/components/home/**
-  - web/src/pages/HomePage.vue
-  - web/src/App.vue
-  - web/src/style.css
-  - miniprogram/utils/demo.js
-  - miniprogram/app.js
-  - miniprogram/app.json
-  - miniprogram/app.wxss
-  - miniprogram/custom-tab-bar/**
-  - miniprogram/pages/profile/**
-  - miniprogram/pages/index/**
-  - miniprogram/pages/resources/**
-  - miniprogram/pages/community/**
+  - web/src/components/home/ScrollGate.vue
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.json
+  - miniprogram/pages/assistant/assistant.wxml
+  - miniprogram/pages/detail/detail.wxml
+  - miniprogram/pages/orders/orders.wxml
 restricted_actions:
   - 不创建或运行测试，不构建，不推送。
-  - 不修改任务 5 或任务 8 的 AI 工作台范围，不修改 tourism-service、agent-service、docs/contracts 或协作控制文件。
+  - 不继续任务 5 或任务 8 的 AI 工作台，不修改 tourism-service、agent-service、docs/contracts 或协作控制文件。
   - 不访问或写入 API Key、真实用户或真实订单数据。
 read_first:
   - AGENTS.md
-  - docs/需求文档.md
-  - docs/开发文档.md
+  - .codex/multi-agent/verification/TASK-007.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
 dependencies: []
 artifact_inputs:
   - b10ca9f: 本机素材管线与场景清单
 acceptance:
-  - 所有游客可见文案为“贵州乌东”；两端使用稳定 UUID，演示卡只能由用户主动启用。
-  - Web 支持首次会话点击开卷、山水寨茶人五联、探景、下滑雾与叶片，且减少动态效果可用。
-  - 小程序固定首页、游乌东、向导、寨里、我的，中央叶片为唯一入口。
-  - 图片失败显示语义占位；不创建或运行测试、不构建、不推送。
-  - App.vue 只把新 HomePage 接入现有首页 hash 路由，并保持既有资源、社区、助手、预约和后台入口可达；本轮不实现任务 5 的 AI 工作台重构。
+  - 点击开卷后由子挡板 animationend 或等价确定性机制使 gateState 进入 open、写入 sessionStorage、发出 opened；减少动态效果也能完成。
+  - git grep 乌冬 -- web miniprogram 无游客可见旧地名命中。
+  - assistant onShow 设置 custom tab selected=2；只改文案和选中态，不提前实现任务 8 工作台。
+  - detail/orders 仅修正公开地名。
+  - 不测试、不构建、不启动、不推送。
 project_revision: project-r1
-task_revision: task-r2
-base_revision: b10ca9f
-verification_profile: standard
+task_revision: task-r3
+base_revision: 46e0a2e7e76771793875eaa9df8f09989646c347
+verification_profile: high_risk
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: VERIFYING
-dispatch_state: RETURNED
-artifact_revision: 46e0a2e7e76771793875eaa9df8f09989646c347
-changed_paths: 32
-evidence_fingerprint: sha256:761eab11c85ee4f4af8be5408bce2640aab839237e5a8f7e6e58ab8eda958793
-checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
+task_state: READY
+dispatch_state: DISPATCHED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
