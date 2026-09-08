@@ -1,77 +1,38 @@
 task_id: TASK-007
-dispatch_id: dispatch-TASK-007-r4
+dispatch_id: dispatch-TASK-007-r5
 agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
-objective: 在不实施任务 5/8 AI 工作台的前提下，收敛原任务 2 前端数据、任务 4 Web 沉浸首页、任务 7 小程序首页/列表的完整静态审查缺口。
+objective: 仅修复 reduced motion 动态切换、Web 社区归一化与小程序未知 API 项回退的质量审查失败，不扩展到任务 5/8。
 deliverables:
+  - web/src/components/home/ScrollGate.vue
+  - web/src/components/home/WudongJourney.vue
   - web/src/data/demo.js
   - web/src/App.vue
-  - web/src/pages/HomePage.vue
-  - web/src/components/common/SafeImage.vue
-  - web/src/components/home/ScrollGate.vue
-  - web/src/components/home/FiveSceneHero.vue
-  - web/src/components/home/SceneExplorer.vue
-  - web/src/components/home/WudongJourney.vue
-  - web/src/style.css
   - miniprogram/utils/demo.js
-  - miniprogram/pages/index/index.js
-  - miniprogram/pages/index/index.wxml
-  - miniprogram/pages/index/index.wxss
-  - miniprogram/pages/resources/resources.js
-  - miniprogram/pages/resources/resources.wxml
-  - miniprogram/pages/resources/resources.wxss
   - miniprogram/pages/community/community.js
-  - miniprogram/pages/community/community.wxml
-  - miniprogram/pages/community/community.wxss
 workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
 branch: feat/wudong-frontend-redesign
 read_scope:
   - AGENTS.md
+  - web/src/components/home/ScrollGate.vue
+  - web/src/components/home/WudongJourney.vue
   - web/src/data/demo.js
   - web/src/App.vue
-  - web/src/pages/HomePage.vue
-  - web/src/components/common/SafeImage.vue
-  - web/src/components/home/ScrollGate.vue
-  - web/src/components/home/FiveSceneHero.vue
-  - web/src/components/home/SceneExplorer.vue
-  - web/src/components/home/WudongJourney.vue
-  - web/src/style.css
   - miniprogram/utils/demo.js
-  - miniprogram/pages/index/index.js
-  - miniprogram/pages/index/index.wxml
-  - miniprogram/pages/index/index.wxss
-  - miniprogram/pages/resources/resources.js
-  - miniprogram/pages/resources/resources.wxml
-  - miniprogram/pages/resources/resources.wxss
   - miniprogram/pages/community/community.js
-  - miniprogram/pages/community/community.wxml
-  - miniprogram/pages/community/community.wxss
   - .codex/multi-agent/verification/TASK-007.md
   - docs/superpowers/specs/2026-09-08-wudong-frontend-redesign-design.md
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
 write_scope:
+  - web/src/components/home/ScrollGate.vue
+  - web/src/components/home/WudongJourney.vue
   - web/src/data/demo.js
   - web/src/App.vue
-  - web/src/pages/HomePage.vue
-  - web/src/components/common/SafeImage.vue
-  - web/src/components/home/ScrollGate.vue
-  - web/src/components/home/FiveSceneHero.vue
-  - web/src/components/home/SceneExplorer.vue
-  - web/src/components/home/WudongJourney.vue
-  - web/src/style.css
   - miniprogram/utils/demo.js
-  - miniprogram/pages/index/index.js
-  - miniprogram/pages/index/index.wxml
-  - miniprogram/pages/index/index.wxss
-  - miniprogram/pages/resources/resources.js
-  - miniprogram/pages/resources/resources.wxml
-  - miniprogram/pages/resources/resources.wxss
   - miniprogram/pages/community/community.js
-  - miniprogram/pages/community/community.wxml
-  - miniprogram/pages/community/community.wxss
 restricted_actions:
   - 不创建或运行测试，不构建，不推送。
-  - 不提前重写 assistant、detail、booking、orders 为任务 8 工作台。
-  - 不修改 Java、Python、docs 或协作控制文件。
+  - 不改 style、预约或后台裸图，不提前实施任务 5/8。
+  - 不修改 Java、Python、docs 或 control 之外的协作文件。
   - 不访问或写入 API Key、真实用户或真实订单数据。
 read_first:
   - AGENTS.md
@@ -80,34 +41,27 @@ read_first:
   - docs/superpowers/plans/2026-09-08-wudong-frontend-redesign.md
 dependencies: []
 artifact_inputs:
-  - 4aab99e8b1afbcecfa38a7df22d82c3221f7752e: r3 实现制品基线
-combined_review: FRONTEND_REVIEW_REJECT
+  - dd2c17670a65e3e174a6eabe3c53d9642decc927: r4 实现制品基线
+combined_review: QUALITY_REVIEW_REJECT
+deferred_findings:
+  - safeimage_partial: 预约与后台裸图属于任务 5 薄页面与 SafeImage 迁移范围，本任务不扩展。
 acceptance:
-  - Web 和小程序各有 6 项服务，ID 严格为 10000000-0000-0000-0000-000000000001 至 000006；仅前两项茶旅使用 tea 图片及精确 imageAlt；住宿、餐食、苗绣、接驳图片为空并用类别语义占位，不得错配村寨、人物、务农或溪流；社区第一条用茶图和 coverAlt，第二条无图。
-  - 两端 normalizeService 按稳定 ID 合并 fallback，Java 逗号标签转数组，API 图片只有 imageUrl 加 imageAlt 成对才采用，否则策展图或占位；默认 demoData。Web App 使用该统一规范化函数，不能再让字符串 tags.join 报错。
-  - 两端定义同构 demoAssistantCard，必须包含 data.demoMode、retrievalMode=keyword_demo、两日 days/items、真实 serviceId、逐项 demoData、notice、source title 与 document_id；只定义或导出，不自动载入。
-  - 未点击时后续首页内容不能挂载或被滚动绕过，五联渐显只在开卷完成后开始；首页顶栏在开卷前不显示；同一 session 返回不重复。卷轴正常与 reduced motion 都确定完成。
-  - HomePage 顺序为 gate、五联、探景、沿溪、衣食住行、assistant 命名插槽；叶片只滚到该插槽，插槽可提供前往现有助手的轻量 fallback，但不实现任务 5 工作台。
-  - SafeImage、FiveSceneHero、SceneExplorer 正确使用 desktopFocus 和 mobileFocus；移动五联保持一张主卡加露边；沿溪衣食住行节点呈路径或单列而非等宽卡片墙。
-  - reduced motion 下卷轴、五联、雾、叶片不保留明显位移动画，且关闭动画时状态仍能进入 open 或 cleared，不会卡死。
-  - 小程序工具首页新增 brand-hero、brand-copy、hero-fallback、trip 等都有完整紧凑品牌样式；存在 currentItinerary 或 pendingBooking 时显示继续入口；精选图失败不破图。
-  - 小程序资源、社区正常图使用 imageAlt 或 coverAlt；缺图或失败显示包含乌东与类别语义的品牌色块，并有实际尺寸样式；异步接口数据仍用统一 normalizeService，分类意图不被覆盖。
-  - 不提前重写 assistant、detail、booking、orders 为任务 8 工作台；不改 Java、Python、docs、control 之外的协作文件；不测试、不构建、不启动、不推送。
+  - 两组件监听 MediaQueryList 变化；事件触发时重新读取当前 matches；动画进行中切为 reduce 会立即 finish；卸载移除监听；正常与初始 reduce 均仍确定完成。
+  - Web 社区归一化按稳定 ID 合并 posts fallback，只有 coverUrl 与 coverAlt 成对时采用 API 图；否则保留策展图或非空“乌东社区分享配图暂缺”。
+  - 小程序 normalizeService 对无同 ID fallback 的 API 项仍保留 category/categoryLabel，并给无图项非空、含乌东与类别语义的 imageAlt；已锁定六项精确 alt 不变。
+  - 小程序 normalizePost 按稳定 ID 合并，API coverUrl/coverAlt 必须成对；未知无图项 coverAlt 非空“乌东社区分享配图暂缺”。
+  - 不改 style、预约/后台裸图或任务 5/8；不测试、不构建、不启动、不推送。
 project_revision: project-r1
-task_revision: task-r4
-base_revision: 4aab99e8b1afbcecfa38a7df22d82c3221f7752e
+task_revision: task-r5
+base_revision: dd2c17670a65e3e174a6eabe3c53d9642decc927
 verification_profile: high_risk
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: VERIFYING
-dispatch_state: RETURNED
-artifact_revision: dd2c17670a65e3e174a6eabe3c53d9642decc927
-changed_paths: 18
-implementation_evidence_fingerprint: sha256:60133163128af91695eee5682a98253277251dac9580c475d2767bf523d029cf
-checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
+task_state: READY
+dispatch_state: DISPATCHED
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
