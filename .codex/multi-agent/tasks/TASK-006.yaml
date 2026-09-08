@@ -45,10 +45,13 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: VERIFYING
-dispatch_state: RETURNED
+task_state: VERIFIED
+dispatch_state: VERIFIED
 artifact_revision: d94dd05d7ca97857265fff58092761ecdec665df
 implementation_evidence_fingerprint: sha256:0d2e348eabad269675a31813af072bbb1033dc912ba74657c814cca904dbbf9e
+evidence_fingerprint: sha256:0d2e348eabad269675a31813af072bbb1033dc912ba74657c814cca904dbbf9e
+verification_ref: .codex/multi-agent/verification/TASK-006.md
+verification_result: PASS
 enforcement:
   write_scope: PROCESS_GOVERNED
   credentials: UNAVAILABLE
