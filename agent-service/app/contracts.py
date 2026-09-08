@@ -15,7 +15,7 @@ CardType = Literal[
 
 class Source(BaseModel):
     title: str
-    document_id: int | None = None
+    document_id: str | None = None
 
 
 class AgentCard(BaseModel):
@@ -30,9 +30,11 @@ class AssistantRequest(BaseModel):
     thread_id: str = "demo-session"
     user_text: str = ""
     page_action: str | None = None
-    service_id: str | None = None
+    service_id: str | None = Field(default=None, alias="serviceId")
     people: int | None = None
     travel_date: str | None = Field(default=None, alias="travelDate")
+    contact_name: str | None = Field(default=None, alias="contactName")
+    contact_phone: str | None = Field(default=None, alias="contactPhone")
 
 
 class AssistantResponse(BaseModel):

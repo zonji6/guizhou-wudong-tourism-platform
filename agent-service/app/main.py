@@ -16,7 +16,7 @@ async def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "deepseek": "configured" if settings.deepseek_api_key else "not_configured",
-        "embedding": "configured" if settings.dashscope_api_key else "not_configured",
+        "embedding": "pending_endpoint",
         "langsmith": "configured" if settings.langsmith_tracing and settings.langsmith_api_key else "not_configured",
     }
 
@@ -33,7 +33,7 @@ async def assistant(request: AssistantRequest) -> AssistantResponse:
 
 
 @app.post("/internal/index/knowledge/{document_id}")
-async def index_knowledge(document_id: int, payload: dict[str, str]) -> dict[str, Any]:
+async def index_knowledge(document_id: str, payload: dict[str, str]) -> dict[str, Any]:
     result = await KnowledgeIndexer().index(document_id, payload.get("title", "未命名资料"), payload.get("content", ""))
     return {"status": "indexed", **result}
 

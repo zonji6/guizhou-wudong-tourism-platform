@@ -1,3 +1,6 @@
+from functools import lru_cache
+
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from app.graph.nodes import (
@@ -12,6 +15,11 @@ from app.graph.nodes import (
     route_request,
 )
 from app.graph.state import AgentState
+
+
+@lru_cache(maxsize=1)
+def get_graph():
+    return build_graph()
 
 
 def build_graph():
@@ -31,4 +39,4 @@ def build_graph():
     graph.add_edge("itinerary", END)
     graph.add_edge("knowledge", END)
     graph.add_edge("pending_booking", END)
-    return graph.compile()
+    return graph.compile(checkpointer=InMemorySaver())
