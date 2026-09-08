@@ -1,0 +1,72 @@
+task_id: TASK-015
+dispatch_id: dispatch-TASK-015-r1
+long_lived_responsibility_owner:
+  agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: primary:/root
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: true
+objective: 实现 Java v2 内部目录只读搜索，为 Python 工具适配解锁；不写目录、订单、社区或任何外部能力。
+deliverables:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalCatalogService.java
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+branch: feat/wudong-task2-data
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/InternalAgentAccessConfiguration.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/**
+write_scope:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalCatalogService.java
+restricted_actions:
+  - 不修改 InternalAgentAccessConfiguration、InternalAgentController、v1 pending-bookings、目录、订单、社区、迁移、领域实体、Python、前端或小程序。
+  - 不读取联系人或未发布资料；地点搜索始终复用 NOT_CONFIGURED+[]，不得因关键词伪造地点或路线。
+  - 不新增或运行测试；不得 Maven、构建、启动、Flyway、curl、浏览器、外部调用或推送。
+  - 仅使用 apply_patch；当前派发仅 primary:/root 可写，任何其他 writer 写入立即使派发 STALE；仅暂存 write_scope，不执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/config/InternalAgentAccessConfiguration.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/PublicCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CatalogViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CatalogService.java
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-010
+    artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-011
+    artifact_revision: 29caf0ba1f861d942218deaf5938e805759de48b
+  - task_id: TASK-014
+    artifact_revision: 4a4130c67cd1dd68b0496b20ed9da82daaa829ef
+acceptance:
+  - 实现 GET /internal/agent/products/search?keywords=&tag=、foods 同形、stays 的 keywords/tag/peopleCount/roomTypeId，以及 places 的 keywords/tag。
+  - 复用 CatalogService 的已发布目录与父商家发布链和 DTO；关键词仅在已发布结果的 name、description、tags 中本机演示过滤，住宿额外包含 roomTypes name、description，不读取联系人或未发布资料。
+  - tag 可重复；unknown query 必须拒绝；单值 keywords、peopleCount、roomTypeId 重复必须拒绝。keywords 可省略，但出现时必须非空、无首尾空格且长度不超过 120。
+  - places 始终复用 NOT_CONFIGURED 与空列表，关键词不得伪造地点或路线。InternalAgentAccessConfiguration 的现有回环拦截作为冻结依赖，不得修改。
+  - 不修改旧 InternalAgentController 或 v1 pending-bookings；不写目录、订单、社区；不运行测试、Maven、构建、服务、Flyway 或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 4a4130c67cd1dd68b0496b20ed9da82daaa829ef
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: ACTIVE
+dispatch_state: DISPATCHED
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  loopback_access: FROZEN_READ_ONLY
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
