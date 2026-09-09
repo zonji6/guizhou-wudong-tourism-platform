@@ -82,9 +82,9 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: READY
+task_state: ACTIVE
 dispatch_state: DISPATCHED
-proceed: false
+proceed: true
 enforcement:
   write_scope: PROCESS_GOVERNED
   checkpoint_privacy: PROCESS_GOVERNED
