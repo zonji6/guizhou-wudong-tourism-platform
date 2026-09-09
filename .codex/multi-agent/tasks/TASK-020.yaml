@@ -76,9 +76,10 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: BLOCKED
+task_state: READY
 dispatch_state: DISPATCHED
 proceed: false
+rework_ref: .codex/multi-agent/tasks/rework/TASK-020-r2.yaml
 enforcement:
   write_scope: PROCESS_GOVERNED
   protocol_adapter: PROCESS_GOVERNED

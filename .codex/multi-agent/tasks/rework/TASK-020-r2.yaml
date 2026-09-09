@@ -1,0 +1,70 @@
+task_ref: .codex/multi-agent/tasks/TASK-020.yaml
+dispatch_id: dispatch-TASK-020-r2
+rework_base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+task_state: REWORK
+dispatch_state: DISPATCHED
+proceed: false
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+project_revision: project-r1
+task_revision: task-r1
+base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+interface_revision: assistant-card-v2-draft-r1
+read_scope:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai\docs\contracts\assistant-card-v2.md
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - web/src/App.vue
+  - miniprogram/utils/assistant.js
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.wxml
+write_scope:
+  - web/src/protocol/assistantProtocol.js
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - web/src/App.vue
+  - miniprogram/utils/assistantProtocol.js
+  - miniprogram/utils/assistant.js
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.wxml
+restricted_actions:
+  - 仅 temporary writer subagent:/root/task020_front_impl 获得当前派发的写入权限；primary:/root 与 ExperienceDomainAgent 不得写入本任务 scope。仅使用 apply_patch；不得修改协作控制文件。
+  - 当前请求始终保持 {"thread_id","user_text"}，不得发送 v2 request、修改 Python、端点、请求基础设施、样式、路由、详情页、确认页或新增依赖。
+  - 不修改任何 write_scope 外文件；不直接在模板分散协议判断，必须通过严格协议适配器、统一展示模型和平台能力映射。
+  - 不新增或运行测试；不得 npm install、构建、启动服务、浏览器、网络、外部调用或推送；不得执行 reset、checkout 或 clean。
+  - 保留本覆盖层 dirty_snapshot 中的全部草稿；不得 reset、checkout、clean、restore、删除、覆盖或提交未核对的他方草稿。AssistantWorkspace.vue 当前存在，未获批准删除。
+  - 不修改任何 write_scope 外文件；逐文件审查当前草稿，仅在维持统一函数式协议适配器 API 的前提下保留或修正；不得另建并行实现。
+  - primary:/root、ExperienceDomainAgent 与任何其他代理不得写入本任务 scope。
+rework_round: 1
+dirty_snapshot:
+  captured_at: 2026-09-09T09:01:47+08:00
+  worktree_head: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+  paths:
+    - path: web/src/protocol/assistantProtocol.js
+      working_bytes: 24697
+      working_sha256: b5cf87eccf63ad49c322f3eb12134276696edb2a9bb895fccf9caae45cd25cb9
+    - path: web/src/composables/useAssistantSession.js
+      working_bytes: 10060
+      working_sha256: 4251e7ddc359aa15ffeae55d01c1f3cd69d847c1a460d005b30a8d293e9a2172
+    - path: web/src/components/assistant/AssistantWorkspace.vue
+      working_bytes: 13188
+      working_sha256: 272c483b1cea08690da5765af963313eba7409ac96be1139fd6af0d189495626
+    - path: web/src/App.vue
+      working_bytes: 15296
+      working_sha256: eed88dd65f7dea349fa4b7a47e12495e22a0b2bafb1a31ac7b4164b0b14d8d1c
+    - path: miniprogram/utils/assistantProtocol.js
+      working_bytes: 23083
+      working_sha256: b32c454bf475e199ea7fdcd51f8585964428b98221a0692ce132049fa874951e
+    - path: miniprogram/utils/assistant.js
+      working_bytes: 7440
+      working_sha256: 38fba15870fdfdf96827095fff859a7c5bb04d27904263952e6ae6276f826f8f
+    - path: miniprogram/pages/assistant/assistant.js
+      working_bytes: 15356
+      working_sha256: 9e39c65bed7663e0c3f2cb7c9f061b88b5b8b39c0fb6b85879c3c6c197874a26
+    - path: miniprogram/pages/assistant/assistant.wxml
+      working_bytes: 10386
+      working_sha256: bb281c8e58c6232ccb4e987cad249207fa5b8338c38ddccd665954ffca26b4bc
