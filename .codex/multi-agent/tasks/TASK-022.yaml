@@ -5,8 +5,8 @@ long_lived_responsibility_owner:
   write_authority_for_current_dispatch: false
 temporary_writer:
   route: primary:/root
-  route_status: PENDING_ACK
-  write_authority_for_current_dispatch: false
+  route_status: ACTIVE_LIMITED_WRITE
+  write_authority_for_current_dispatch: true
 objective: 将既有 /api/assistant 与 /ws/assistant 原位切换为 assistant-card-v2-draft-r1 完整输出链；不新增平行 v2 或 SSE 端点，所有 AI 可见数据仅来自已发布 Java 只读结果。
 deliverables:
   - agent-service/app/tools/tourism_v2_contracts.py
@@ -93,9 +93,9 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: READY
+task_state: ACTIVE
 dispatch_state: DISPATCHED
-proceed: false
+proceed: true
 enforcement:
   write_scope: PROCESS_GOVERNED
   checkpoint_privacy: PROCESS_GOVERNED
