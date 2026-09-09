@@ -5,7 +5,7 @@ long_lived_responsibility_owner:
   write_authority_for_current_dispatch: false
 temporary_writer:
   route: primary:/root
-  route_status: ACTIVE_LIMITED_WRITE
+  route_status: ACTIVE_GIT_ARTIFACT_ONLY
   write_authority_for_current_dispatch: true
 objective: 将既有 /api/assistant 与 /ws/assistant 原位切换为 assistant-card-v2-draft-r1 完整输出链；不新增平行 v2 或 SSE 端点，所有 AI 可见数据仅来自已发布 Java 只读结果。
 deliverables:
@@ -44,6 +44,7 @@ restricted_actions:
   - 不修改 contracts.py、privacy.py、graph/state.py、graph/context.py、DeepSeek、RAG、Java、Web、小程序、依赖或文档；不得新增平行 v2/SSE 端点、Redis checkpointer、云端 Embedding、run-summary、订单状态端点或正式订单能力。
   - 不得调用 Java 写接口或生成含联系人的提案；不得写入或泄露原始话语、messages、检索正文、异常、URL、参数、密钥或 CoT 到 checkpoint、卡片或事件。
   - 不新增或运行测试；不得运行 Python、pytest、安装、构建、服务、curl、浏览器、数据库、Flyway、外部 API、网络或推送；仅允许静态 scope/diff/导入/协议/隐私/事件序列审查与 git diff --check。
+  - 已通过静态双轴审查后，primary:/root 获得一次性 Git 制品权限：仅可暂存当前六条 write_scope 并以 `feat: 切换助手卡片 v2 输出链` 创建一次提交；禁止暂存其他路径、amend、push、reset、checkout、clean 或产品写入。
 read_first:
   - AGENTS.md
   - docs/contracts/assistant-card-v2.md
