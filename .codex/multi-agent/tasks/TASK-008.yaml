@@ -20,16 +20,12 @@ read_scope:
   - miniprogram/pages/assistant/assistant.wxml
   - miniprogram/pages/assistant/assistant.wxss
   - miniprogram/pages/booking/booking.js
-write_scope:
-  - web/src/composables/useAssistantSession.js
-  - web/src/components/assistant/AssistantWorkspace.vue
-  - miniprogram/pages/assistant/assistant.wxml
-  - miniprogram/pages/assistant/assistant.wxss
-  - miniprogram/pages/booking/booking.js
+write_scope: []
 restricted_actions:
   - 不修改上述五个 write_scope 之外的产品文件、Java、Python、契约、文档或 control。
   - 不创建或运行测试，不构建、不启动、不推送。
   - 不访问外部模型、API Key、生产凭据、真实用户或真实订单数据。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v1.md
@@ -64,6 +60,8 @@ verification_target_artifact_revision: 1d47230652796373456c8709c414142c1e84b795
 implementation_evidence_fingerprint: sha256:9c5363696da59ca8404c1140f05d6ee0ec923879063df157fdb5352b8d43c017
 verification_target_evidence_fingerprint: sha256:9c5363696da59ca8404c1140f05d6ee0ec923879063df157fdb5352b8d43c017
 changed_paths: 5
+implementation_status: IMPLEMENTED_NOT_VERIFIED
+dependency_contract_status: FROZEN_READ_ONLY
 checks: scope:PASS,diff:PASS,copy:PASS,tests:SKIPPED
 enforcement:
   write_scope: PROCESS_GOVERNED
