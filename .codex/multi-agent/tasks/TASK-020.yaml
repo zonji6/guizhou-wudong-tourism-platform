@@ -5,7 +5,7 @@ long_lived_responsibility_owner:
   write_authority_for_current_dispatch: false
 temporary_writer:
   route: subagent:/root/task020_front_impl
-  route_status: ACTIVE_LIMITED_WRITE
+  route_status: ACTIVE_GIT_ARTIFACT_ONLY
   write_authority_for_current_dispatch: true
 objective: 让 Web 与原生微信小程序严格兼容 legacy 与 Assistant Card v2 消费协议；当前请求格式和 Python 端点保持不变。
 deliverables:
