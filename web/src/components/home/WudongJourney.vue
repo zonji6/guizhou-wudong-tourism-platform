@@ -16,7 +16,6 @@ const reducedMotion = ref(motionQuery.matches)
 function enterJourney() {
   if (fogState.value !== 'idle') return
   fogState.value = 'passing'
-  if (reducedMotion.value) finishFogTransition()
 }
 
 function finishFogTransition() {
@@ -27,7 +26,6 @@ function finishFogTransition() {
 
 function syncMotion(event) {
   reducedMotion.value = event.matches
-  if (event.matches) finishFogTransition()
 }
 
 onMounted(() => {
@@ -45,11 +43,39 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section ref="boundary" class="journey">
-    <div v-if="fogState === 'passing'" class="journey__fog" aria-hidden="true" @animationend="finishFogTransition"></div>
+  <section ref="boundary" class="journey" :class="{ 'is-reduced': reducedMotion }">
+    <div v-if="fogState === 'passing'" class="journey__fog" aria-hidden="true" @animationend.self="finishFogTransition">
+      <span class="journey__fog-layer journey__fog-layer--far"></span>
+      <span class="journey__fog-layer journey__fog-layer--middle"></span>
+      <span class="journey__fog-layer journey__fog-layer--near"></span>
+    </div>
     <div v-if="fogState === 'idle'" class="journey__trigger" aria-hidden="true"></div>
-    <article v-for="section in sections" :key="section.id" class="journey__chapter">
-      <SafeImage :src="section.image" :alt="section.alt" :label="section.eyebrow" loading="lazy" />
+    <div class="journey__nature" aria-hidden="true">
+      <span class="journey__ridge"></span>
+      <span class="journey__canopy journey__canopy--left"></span>
+      <span class="journey__canopy journey__canopy--right"></span>
+      <span class="journey__moss"></span>
+    </div>
+    <svg class="journey__stream" :class="{ 'is-drawn': fogState === 'cleared' }" aria-hidden="true" viewBox="0 0 1000 2100" preserveAspectRatio="none">
+      <path class="journey__stream-water" d="M520 0C780 210 280 390 395 650c112 251 445 238 344 520-95 266-492 240-399 552 48 160 272 203 374 378" />
+      <path class="journey__stream-light" pathLength="1" d="M520 0C780 210 280 390 395 650c112 251 445 238 344 520-95 266-492 240-399 552 48 160 272 203 374 378" />
+      <path class="journey__stream-branch" pathLength="1" d="M525 1840c-29 109-154 135-258 197M612 1953c84 20 146 49 211 108" />
+      <g class="journey__ripples">
+        <ellipse cx="420" cy="644" rx="68" ry="18" />
+        <ellipse cx="721" cy="1170" rx="62" ry="16" />
+        <ellipse cx="357" cy="1715" rx="72" ry="19" />
+      </g>
+    </svg>
+    <article
+      v-for="(section, index) in sections"
+      :key="section.id"
+      class="journey__chapter"
+      :data-chapter="section.id"
+      :style="{ '--chapter-index': index, '--chapter-shift': `${(index - 1) * 1.6}rem` }"
+    >
+      <figure class="journey__photo">
+        <SafeImage :src="section.image" :alt="section.alt" :label="section.eyebrow" loading="lazy" />
+      </figure>
       <div>
         <p>{{ section.eyebrow }}</p>
         <h2>{{ section.title }}</h2>
@@ -58,7 +84,10 @@ onBeforeUnmount(() => {
     </article>
     <ol class="journey__services" aria-label="乌东服务入口">
       <li v-for="entry in entries" :key="entry.id">
-        <button type="button" @click="emit('navigate', { path: entry.path })"><b>{{ entry.mark }}</b>{{ entry.title }}</button>
+        <span class="journey__service-branch" aria-hidden="true"></span>
+        <button type="button" @click="emit('navigate', { path: entry.path })">
+          <b>{{ entry.mark }}</b><span>{{ entry.title }}</span><small>{{ entry.note }}</small>
+        </button>
       </li>
     </ol>
   </section>

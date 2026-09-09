@@ -15,4 +15,19 @@ onBeforeUnmount(() => { if (dialogRef.value?.open) dialogRef.value.close() })
 onMounted(() => { media = matchMedia('(max-width: 760px)'); syncViewport(); media.addEventListener('change', syncViewport) })
 onBeforeUnmount(() => media?.removeEventListener('change', syncViewport))
 </script>
-<template><dialog ref="dialogRef" class="scene-explorer" @click="handleDialogClick" @cancel.prevent="closeExplorer"><article v-if="scene"><button class="scene-explorer__close" aria-label="关闭探景" @click="closeExplorer">×</button><SafeImage :src="scene.expandedAsset" :alt="scene.expandedAlt" :label="scene.label" loading="lazy" :object-position="compact ? scene.mobileFocus : scene.desktopFocus" /><div><p>{{ scene.label }} · 探景</p><h2>{{ scene.story }}</h2><button class="primary" @click="runSceneAction">{{ scene.action.label }}</button></div></article></dialog></template>
+<template>
+  <dialog ref="dialogRef" class="scene-explorer" aria-labelledby="scene-explorer-title" aria-describedby="scene-explorer-story" @click="handleDialogClick" @cancel.prevent="closeExplorer">
+    <article v-if="scene">
+      <button class="scene-explorer__close" aria-label="关闭探景" @click="closeExplorer">×</button>
+      <figure class="scene-explorer__media">
+        <SafeImage :src="scene.expandedAsset" :alt="scene.expandedAlt" :label="scene.label" loading="lazy" :object-position="compact ? scene.mobileFocus : scene.desktopFocus" />
+        <figcaption id="scene-explorer-title" class="scene-explorer__caption">{{ scene.label }} · 探景</figcaption>
+      </figure>
+      <div class="scene-explorer__copy">
+        <p>乌东手账 · {{ scene.label }}的一页</p>
+        <h2 id="scene-explorer-story">{{ scene.story }}</h2>
+        <button class="primary" @click="runSceneAction">{{ scene.action.label }}</button>
+      </div>
+    </article>
+  </dialog>
+</template>

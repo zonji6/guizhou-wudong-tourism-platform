@@ -302,7 +302,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div :class="{ 'admin-shell': isAdmin }">
+  <div :class="{ 'admin-shell': isAdmin, 'visitor-shell': !isAdmin }">
     <template v-if="!isAdmin">
       <header v-if="route.name !== 'home' || homeOpened" class="topbar">
         <a class="brand" href="#/">贵州乌东</a>

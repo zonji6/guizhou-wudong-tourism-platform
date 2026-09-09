@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import FiveSceneHero from '../components/home/FiveSceneHero.vue'
 import LeafGuide from '../components/home/LeafGuide.vue'
 import SceneExplorer from '../components/home/SceneExplorer.vue'
@@ -10,15 +10,18 @@ import { journeySections, scenes } from '../data/scenes'
 const emit = defineEmits(['gate-change', 'navigate'])
 const selectedScene = ref(null)
 const leafVisible = ref(false)
+const nearAssistant = ref(false)
 const assistantAnchor = ref(null)
+const scrollGate = ref(null)
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const gateOpen = ref(sessionStorage.getItem('wudong:scroll-opened') === '1')
+let assistantObserver
 
 const serviceEntries = [
   { id: 'product', mark: '礼', title: '乌东好物', note: '茶、手作与可带走的山中记忆', path: '/resources/products' },
   { id: 'food', mark: '味', title: '在地风味', note: '坐下来，尝寨里的一顿热饭', path: '/resources/foods' },
   { id: 'stay', mark: '宿', title: '山居住宿', note: '把夜晚留给溪声与木楼', path: '/resources/stays' },
-  { id: 'orders', mark: '记', title: '我的订单', note: '找回这台浏览器提交的三类订单', path: '/orders' }
+  { id: 'orders', mark: '记', title: '我的订单', note: '看看在这里留下的旅行安排', path: '/orders' }
 ]
 
 function selectScene(scene) {
@@ -41,23 +44,50 @@ function handleJourneyEntered() {
 function handleGateOpened() {
   gateOpen.value = true
   emit('gate-change', true)
+  nextTick(observeAssistant)
+}
+
+function replayScroll() {
+  selectedScene.value = null
+  gateOpen.value = false
+  leafVisible.value = false
+  nearAssistant.value = false
+  assistantObserver?.disconnect()
+  emit('gate-change', false)
+  scrollGate.value?.replay()
+  window.scrollTo({ top: 0, behavior: 'instant' })
 }
 
 function scrollToAssistant() {
   assistantAnchor.value?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' })
 }
 
-onMounted(() => scenes.forEach(scene => {
-  const preload = new Image()
-  preload.src = scene.src
-}))
+function observeAssistant() {
+  assistantObserver?.disconnect()
+  if (!assistantAnchor.value) return
+  assistantObserver = new IntersectionObserver(entries => {
+    nearAssistant.value = entries.some(entry => entry.isIntersecting)
+  }, { rootMargin: '20% 0px 20%', threshold: 0 })
+  assistantObserver.observe(assistantAnchor.value)
+}
+
+onMounted(() => {
+  emit('gate-change', gateOpen.value)
+  scenes.forEach(scene => {
+    const preload = new Image()
+    preload.src = scene.src
+  })
+  if (gateOpen.value) nextTick(observeAssistant)
+})
+
+onBeforeUnmount(() => assistantObserver?.disconnect())
 </script>
 
 <template>
   <main class="home-page">
-    <ScrollGate @opened="handleGateOpened" />
+    <ScrollGate ref="scrollGate" @opened="handleGateOpened" />
     <template v-if="gateOpen">
-      <FiveSceneHero :scenes="scenes" @open-scene="selectScene" />
+      <FiveSceneHero :scenes="scenes" @open-scene="selectScene" @replay="replayScroll" />
       <SceneExplorer
         v-if="selectedScene"
         :scene="selectedScene"
@@ -71,29 +101,14 @@ onMounted(() => scenes.forEach(scene => {
         @navigate="emit('navigate', $event)"
       />
 
-      <section class="home-service-v2">
-        <header>
-          <p class="eyebrow">衣食住行，从一条溪边小路分开</p>
-          <h2>把时间留给乌东的山与人</h2>
-          <span>每个入口连接真实公开目录；没有内容时如实留白，不用演示卡片替代。</span>
-        </header>
-        <div>
-          <button v-for="entry in serviceEntries" :key="entry.id" type="button" @click="emit('navigate', { path: entry.path })">
-            <i>{{ entry.mark }}</i>
-            <span><strong>{{ entry.title }}</strong><small>{{ entry.note }}</small></span>
-            <b aria-hidden="true">↗</b>
-          </button>
-        </div>
-      </section>
-
       <section ref="assistantAnchor" class="home-assistant">
-        <p>乌东向导</p>
-        <h2>想好下一步，再出发</h2>
+        <p>一叶同行 · 旅行手账</p>
+        <h2>下一页，想去哪里？</h2>
         <slot name="assistant">
           <button class="primary" @click="emit('navigate', { path: '/assistant' })">为我安排乌东之行</button>
         </slot>
       </section>
-      <LeafGuide :visible="leafVisible" @open="scrollToAssistant" />
+      <LeafGuide :visible="leafVisible" :near-assistant="nearAssistant" @open="scrollToAssistant" />
     </template>
   </main>
 </template>

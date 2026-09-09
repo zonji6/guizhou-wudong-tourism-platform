@@ -2,6 +2,12 @@
 
 面向项目答辩的本机可操作原型。平台以贵州乌东的山水、苗寨生活与茶旅体验为主线，连接资源浏览、乌东向导、行程加入、预约确认、寨里分享和后台管理。
 
+## 2026-09-09 水彩视觉更新
+
+本分支已接入浅色水彩旅行手账主题、开卷主画与溪岸插画，保留点击开卷、五景、单屏探景及自然动效。本机预览端口为 5174。本分支与 `main` 尚未合并；[最新整合设计](https://github.com/zonji6/guizhou-wudong-tourism-platform/blob/main/docs/superpowers/specs/2026-09-09-wudong-watercolor-content-design.md)和[下一阶段开发计划](https://github.com/zonji6/guizhou-wudong-tourism-platform/blob/main/docs/superpowers/plans/2026-09-09-wudong-integrated-development.md)保存在 `main`，其中新增业务规则尚待实施。
+
+生成的水彩插画位于 `web/public/images/wudong-art/`，属于概念艺术，不是实景或地图。尚未确认公开使用许可的五景照片及派生图继续由 `.gitignore` 排除，不能用强制暂存绕过；本机现有图片不删除。新克隆需要按 `scripts/prepare-local-media.ps1` 准备允许使用的本地素材，不能把缺图占位理解为完整实景效果。
+
 ## 当前可演示体验
 
 - Web 门户：首次点击开卷，依次看见“山、水、寨、茶、人”五联实景；继续下滑经过雾散、叶片与沿溪入寨叙事，进入“乌东向导”和游客服务页面。

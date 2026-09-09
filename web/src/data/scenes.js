@@ -10,7 +10,7 @@ export const scenes = [
 ]
 
 export const journeySections = [
-  { id: 'creek', eyebrow: '沿溪入寨', title: '水声把路引向木楼', body: '这是页面叙事名称，不宣称为已核验官方线路。', image: localLarge('creek'), alt: '石间溪流与林木', sourceStatus: 'local-review', tone: 'cool' },
-  { id: 'village', eyebrow: '一寨一谷', title: '屋舍顺着山谷生长', body: '从航拍关系进入可浏览的村寨服务。', image: localLarge('village-aerial'), alt: '山谷中沿溪分布的木楼与田地', sourceStatus: 'local-review', tone: 'neutral' },
-  { id: 'people', eyebrow: '人在寨中', title: '山静，人也热烈', body: '以劳作与相聚呈现温度，不使用标签化人物描述。', image: localLarge('labor'), alt: '田野里劳作的人', sourceStatus: 'portrait-review', tone: 'warm' }
+  { id: 'creek', eyebrow: '沿溪入寨', title: '水声把路引向木楼', body: '溪水绕过石头，树影落在水面。把脚步放慢一点，听听山里的声音。', image: localLarge('creek'), alt: '石间溪流与林木', sourceStatus: 'local-review', tone: 'cool' },
+  { id: 'village', eyebrow: '一寨一谷', title: '屋舍顺着山谷生长', body: '木楼、田地和溪流挨在一起。走进这片山谷，也给一顿热饭、一晚山居留些时间。', image: localLarge('village-aerial'), alt: '山谷中沿溪分布的木楼与田地', sourceStatus: 'local-review', tone: 'neutral' },
+  { id: 'people', eyebrow: '人在寨中', title: '山静，人也热烈', body: '田间有人忙着劳作，门前有人笑着说话。风景之外，这些平常时刻也值得记下来。', image: localLarge('labor'), alt: '田野里劳作的人', sourceStatus: 'portrait-review', tone: 'warm' }
 ]
