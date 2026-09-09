@@ -1,0 +1,72 @@
+task_id: TASK-021
+dispatch_id: dispatch-TASK-021-r1
+long_lived_responsibility_owner:
+  agent_id: UNASSIGNED
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: primary:/root
+  route_status: PENDING_ACK
+  write_authority_for_current_dispatch: false
+objective: 将 Java GET /internal/agent/knowledge/search 收紧为 v2 最小只读知识投影；仅公开已发布知识的白名单字段，不提供写入、外部来源或状态泄露能力。
+deliverables:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalKnowledgeController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalKnowledgeViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalKnowledgeService.java
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+branch: feat/wudong-task2-data
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/TourismService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/**
+write_scope:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalKnowledgeController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalKnowledgeViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalKnowledgeService.java
+restricted_actions:
+  - 仅候选 temporary writer primary:/root 在 ACK_ACCEPTED proceed=true 后可写；当前 proceed=false，任何产品、Git 元数据或控制外文件写入均禁止。
+  - InternalAgentController 仅可移除旧 knowledge handler 及因此产生的无用 import；其余行为保持不变。
+  - 唯一新增能力为 GET /internal/agent/knowledge/search；不得新增任何写接口、假来源、依赖或其他路由。
+  - 不得修改 Repository、TourismService、domain、迁移、后台、Python、前端、小程序、测试或任何 write_scope 外路径。
+  - 不得运行测试、Maven、构建、服务、Flyway、数据库、浏览器、网络或外部调用；仅允许静态审查与 git diff --check。不得 push、reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/TourismService.java
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-019
+    artifact_revision: ed5c492faef5673bf022c6e86baa254364e83425
+    interface_revision: tourism-api-v2-draft-r2
+acceptance:
+  - 唯一 GET /internal/agent/knowledge/search 只接受可选且单次 keywords；未知参数、重复 keywords、空值、首尾空格或长度超过 120 均为 400。
+  - 仅通过 TourismService.knowledge(null) 读取 published=true 文档，并在内存按 title、content、tags 以 Locale.ROOT 字面包含过滤；无匹配返回成功空数组。
+  - DTO 仅为 id、title、content、tags:string[]、demoData；title 是唯一公开来源标题，demoData 不表示真实外部出处或授权已核验；不得返回 published、indexStatus、sourceType、updatedAt。
+  - CSV tags 必须去空并去重后输出数组；不得读取或输出其他持久化内部字段。
+  - 仅作静态验收：范围、查询边界、投影白名单、无写路由与 git diff --check；不运行测试、Maven、构建、服务、Flyway、数据库、浏览器、网络或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: ed5c492faef5673bf022c6e86baa254364e83425
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+proceed: false
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  loopback_access: FROZEN_READ_ONLY
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
