@@ -5,7 +5,7 @@ long_lived_responsibility_owner:
   write_authority_for_current_dispatch: false
 temporary_writer:
   route: subagent:/root/task020_front_impl
-  route_status: BLOCKED
+  route_status: PENDING_ACK
   write_authority_for_current_dispatch: false
 objective: 让 Web 与原生微信小程序严格兼容 legacy 与 Assistant Card v2 消费协议；当前请求格式和 Python 端点保持不变。
 deliverables:
@@ -76,10 +76,10 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: BLOCKED
-dispatch_state: BLOCKED
+task_state: READY
+dispatch_state: DISPATCHED
 proceed: false
-rework_ref: .codex/multi-agent/tasks/rework/TASK-020-r2.yaml
+rework_ref: .codex/multi-agent/tasks/rework/TASK-020-r3.yaml
 enforcement:
   write_scope: PROCESS_GOVERNED
   protocol_adapter: PROCESS_GOVERNED
