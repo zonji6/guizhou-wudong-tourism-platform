@@ -32,8 +32,8 @@
 
   <view wx:if="{{currentCard}}" class="agent-card">
     <view class="card-meta">
-      <text wx:if="{{mode === 'demo'}}" class="demo">演示模式</text>
-      <text wx:if="{{currentCard.data.retrievalMode === 'keyword_demo'}}" class="demo">关键词资料（演示）</text>
+      <text wx:if="{{mode === 'demo' || currentCard.demoMode}}" class="demo">演示模式</text>
+      <text wx:if="{{currentCard.keywordDemo}}" class="demo">关键词资料（演示）</text>
     </view>
     <view class="card-title">{{currentCard.title}}</view>
     <view wx:if="{{currentCard.summary}}" class="card-summary">{{currentCard.summary}}</view>
@@ -41,7 +41,7 @@
     <block wx:if="{{currentCard.type === 'itinerary'}}">
       <view wx:for="{{currentCard.data.days}}" wx:key="index" class="day-card">
         <view class="day-heading">
-          <text class="day-number">{{item.dayLabel}}</text>
+          <text class="day-number">{{item.dayLabel || ('第' + item.day + '天')}}</text>
           <text wx:if="{{item.theme}}" class="day-theme">{{item.theme}}</text>
         </view>
         <view wx:for="{{item.items}}" wx:for-item="entry" wx:key="index" class="itinerary-item">
@@ -49,64 +49,102 @@
           <view class="itinerary-copy">
             <view class="item-title">{{entry.title}}</view>
             <view wx:if="{{entry.summary}}" class="item-summary">{{entry.summary}}</view>
-            <text wx:if="{{entry.isDemo}}" class="demo">演示数据</text>
-            <view wx:if="{{entry.actionServiceId}}" class="card-actions">
-              <button class="text-action" data-service-id="{{entry.actionServiceId}}" bindtap="openService">查看详情</button>
-              <button class="text-action text-action--warm" data-service-id="{{entry.actionServiceId}}" bindtap="bookService">预约</button>
+            <text wx:if="{{entry.demoData}}" class="demo">演示数据</text>
+            <view wx:if="{{entry.actions.length}}" class="card-actions">
+              <button
+                wx:for="{{entry.actions}}"
+                wx:for-item="action"
+                wx:key="key"
+                class="text-action {{action.action === 'LEGACY_BOOK_SERVICE' ? 'text-action--warm' : ''}}"
+                data-action-key="{{action.key}}"
+                bindtap="runCardAction"
+              >{{action.label}}</button>
             </view>
           </view>
         </view>
       </view>
       <view wx:if="{{currentCard.data.notice}}" class="notice">{{currentCard.data.notice}}</view>
-      <button wx:if="{{currentCard.joinableCount > 0}}" class="secondary-action" bindtap="addItinerary">加入行程</button>
+      <button wx:if="{{currentCard.canAddLegacyItinerary}}" class="secondary-action" bindtap="addItinerary">加入行程</button>
     </block>
 
     <block wx:elif="{{currentCard.type === 'service_recommendation'}}">
-      <view wx:for="{{currentCard.data.services}}" wx:key="index" class="service-card">
+      <view wx:for="{{currentCard.data.items}}" wx:key="index" class="service-card">
         <view class="service-row">
           <view class="service-copy">
             <view class="item-title">{{item.title}}</view>
             <view wx:if="{{item.summary}}" class="item-summary">{{item.summary}}</view>
             <view wx:if="{{item.hasPrice}}" class="service-price">¥{{item.price}} 起</view>
           </view>
-          <text wx:if="{{item.isDemo}}" class="demo">演示数据</text>
+          <text wx:if="{{item.demoData}}" class="demo">演示数据</text>
         </view>
-        <view wx:if="{{item.actionServiceId}}" class="card-actions card-actions--three">
-          <button class="text-action" data-service-id="{{item.actionServiceId}}" bindtap="openService">查看详情</button>
-          <button class="text-action" data-service-id="{{item.actionServiceId}}" bindtap="joinService">加入行程</button>
-          <button class="text-action text-action--warm" data-service-id="{{item.actionServiceId}}" bindtap="bookService">预约</button>
+        <view wx:if="{{item.actions.length}}" class="card-actions card-actions--three">
+          <button
+            wx:for="{{item.actions}}"
+            wx:for-item="action"
+            wx:key="key"
+            class="text-action {{action.action === 'LEGACY_BOOK_SERVICE' ? 'text-action--warm' : ''}}"
+            data-action-key="{{action.key}}"
+            bindtap="runCardAction"
+          >{{action.label}}</button>
         </view>
       </view>
-      <view class="notice">请以服务方确认结果为准。</view>
+      <view class="notice">{{currentCard.data.notice || '请以服务方确认结果为准。'}}</view>
     </block>
 
-    <block wx:elif="{{currentCard.type === 'pending_booking'}}">
-      <view wx:if="{{currentCard.data.booking}}" class="booking-card">
-        <view class="section-caption">待确认预约</view>
-        <view class="booking-name">{{currentCard.data.booking.serviceName || '乌东体验'}}</view>
-        <view wx:if="{{currentCard.data.booking.travelDate}}" class="booking-line">日期：{{currentCard.data.booking.travelDate}}</view>
-        <view wx:if="{{currentCard.data.booking.peopleCount}}" class="booking-line">人数：{{currentCard.data.booking.peopleCount}} 人</view>
-        <view wx:if="{{currentCard.data.booking.status}}" class="booking-line">状态：待你在确认页核对</view>
-        <text wx:if="{{currentCard.data.booking.isDemo}}" class="demo">演示数据</text>
-        <button
-          wx:if="{{currentCard.data.booking.actionServiceId && currentCard.data.booking.actionBookingId}}"
-          class="secondary-action secondary-action--warm"
-          data-service-id="{{currentCard.data.booking.actionServiceId}}"
-          bindtap="bookService"
-        >继续确认</button>
-      </view>
+    <block wx:elif="{{currentCard.type === 'knowledge_answer'}}">
+      <view class="knowledge-card-copy">{{currentCard.data.answer}}</view>
     </block>
 
     <block wx:elif="{{currentCard.type === 'clarifying_question'}}">
-      <button
-        wx:if="{{currentCard.data.actionServiceId}}"
-        class="secondary-action"
-        data-service-id="{{currentCard.data.actionServiceId}}"
-        bindtap="bookService"
-      >前往预约页补全信息</button>
+      <view wx:if="{{currentCard.data.requiredFieldsText}}" class="notice">
+        还需要：{{currentCard.data.requiredFieldsText}}。
+      </view>
+      <view wx:if="{{currentCard.data.actions.length}}" class="card-actions">
+        <button
+          wx:for="{{currentCard.data.actions}}"
+          wx:for-item="action"
+          wx:key="key"
+          class="text-action"
+          data-action-key="{{action.key}}"
+          bindtap="runCardAction"
+        >{{action.label}}</button>
+      </view>
+    </block>
+
+    <block wx:elif="{{currentCard.type === 'pending_booking' && currentCard.data.proposal}}">
+      <view class="booking-card">
+        <view class="section-caption">待确认方案</view>
+        <view class="booking-name">{{currentCard.data.proposal.targetName || '乌东体验'}}</view>
+        <view class="booking-line">日期：{{currentCard.data.proposal.visitAt || currentCard.data.proposal.checkInDate || '待你选择'}}</view>
+        <view wx:if="{{currentCard.data.proposal.peopleCount}}" class="booking-line">人数：{{currentCard.data.proposal.peopleCount}} 人</view>
+        <view wx:if="{{currentCard.data.proposal.note}}" class="booking-line">说明：{{currentCard.data.proposal.note}}</view>
+        <view wx:if="{{!currentCard.data.proposal.status}}" class="booking-line">这只是方案，订单尚未创建。</view>
+        <text wx:if="{{currentCard.data.proposal.demoData}}" class="demo">演示数据</text>
+        <view wx:if="{{currentCard.data.proposal.actions.length}}" class="card-actions">
+          <button
+            wx:for="{{currentCard.data.proposal.actions}}"
+            wx:for-item="action"
+            wx:key="key"
+            class="text-action text-action--warm"
+            data-action-key="{{action.key}}"
+            bindtap="runCardAction"
+          >{{action.label}}</button>
+        </view>
+      </view>
     </block>
 
     <button wx:if="{{currentCard.canShowDemo}}" class="secondary-action" bindtap="showDemo">查看演示结果</button>
+
+    <view wx:if="{{currentCard.actions.length}}" class="card-actions">
+      <button
+        wx:for="{{currentCard.actions}}"
+        wx:for-item="action"
+        wx:key="key"
+        class="text-action"
+        data-action-key="{{action.key}}"
+        bindtap="runCardAction"
+      >{{action.label}}</button>
+    </view>
 
     <view wx:if="{{currentCard.sourceCount > 0}}" class="sources">
       <button class="source-toggle" bindtap="toggleSources">
@@ -132,27 +170,31 @@
 
       <block wx:if="{{previousCard.type === 'itinerary'}}">
         <view wx:for="{{previousCard.data.days}}" wx:key="index" class="previous-section">
-          <view class="item-title">{{item.dayLabel}}<text wx:if="{{item.theme}}"> · {{item.theme}}</text></view>
+          <view class="item-title">{{item.dayLabel || ('第' + item.day + '天')}}<text wx:if="{{item.theme}}"> · {{item.theme}}</text></view>
           <view wx:for="{{item.items}}" wx:for-item="entry" wx:key="index" class="previous-line">
-            {{entry.time}} {{entry.title}}<text wx:if="{{entry.isDemo}}" class="demo">演示数据</text>
+            {{entry.time}} {{entry.title}}<text wx:if="{{entry.demoData}}" class="demo">演示数据</text>
           </view>
         </view>
       </block>
 
       <block wx:elif="{{previousCard.type === 'service_recommendation'}}">
-        <view wx:for="{{previousCard.data.services}}" wx:key="index" class="previous-section">
+        <view wx:for="{{previousCard.data.items}}" wx:key="index" class="previous-section">
           <view class="item-title">{{item.title}}</view>
           <view wx:if="{{item.summary}}" class="previous-line">{{item.summary}}</view>
-          <text wx:if="{{item.isDemo}}" class="demo">演示数据</text>
+          <text wx:if="{{item.demoData}}" class="demo">演示数据</text>
         </view>
       </block>
 
-      <block wx:elif="{{previousCard.type === 'pending_booking' && previousCard.data.booking}}">
+      <block wx:elif="{{previousCard.type === 'pending_booking' && previousCard.data.proposal}}">
         <view class="previous-section">
-          <view class="item-title">{{previousCard.data.booking.serviceName || '乌东体验'}}</view>
-          <view class="previous-line">{{previousCard.data.booking.travelDate}} · {{previousCard.data.booking.peopleCount}} 人</view>
-          <text wx:if="{{previousCard.data.booking.isDemo}}" class="demo">演示数据</text>
+          <view class="item-title">{{previousCard.data.proposal.targetName || '乌东体验'}}</view>
+          <view class="previous-line">{{previousCard.data.proposal.visitAt || previousCard.data.proposal.checkInDate}} · {{previousCard.data.proposal.peopleCount}} 人</view>
+          <text wx:if="{{previousCard.data.proposal.demoData}}" class="demo">演示数据</text>
         </view>
+      </block>
+
+      <block wx:elif="{{previousCard.type === 'knowledge_answer'}}">
+        <view class="previous-line">{{previousCard.data.answer}}</view>
       </block>
 
       <view wx:if="{{previousCard.sourceCount > 0}}" class="previous-sources">

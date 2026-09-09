@@ -86,6 +86,19 @@ function joinLegacyAssistantItem(serviceId) {
   if (!joinedServiceIds.value.includes(serviceId)) joinedServiceIds.value.push(serviceId)
 }
 
+function runAssistantAction(action) {
+  if (!action || typeof action !== 'object') return
+  if (action.action === 'LEGACY_OPEN_SERVICE' || action.action === 'LEGACY_BOOK_SERVICE') {
+    return routeLegacyAssistantItem(action.serviceId)
+  }
+  if (action.action === 'LEGACY_JOIN_SERVICE') return joinLegacyAssistantItem(action.serviceId)
+  if (typeof action.targetId !== 'string' || !UUID_PATTERN.test(action.targetId)) return
+  if (action.action === 'OPEN_DETAIL' && action.targetType === 'PRODUCT') return go(detailPath('product', action.targetId))
+  if (action.action === 'OPEN_DETAIL' && action.targetType === 'FOOD') return go(detailPath('food', action.targetId))
+  if (action.action === 'OPEN_ORDER_CONFIRMATION' && action.targetType === 'FOOD') return go(confirmPath('food', action.targetId))
+  if (action.action === 'OPEN_ORDER_CONFIRMATION' && action.targetType === 'STAY') return go(confirmPath('stay', action.targetId))
+}
+
 function validString(value) {
   return typeof value === 'string' && value.trim().length > 0
 }
@@ -317,9 +330,7 @@ onUnmounted(() => {
           <AssistantWorkspace
             embedded
             :joined-service-ids="joinedServiceIds"
-            @open-service="routeLegacyAssistantItem"
-            @join-service="joinLegacyAssistantItem"
-            @book-service="routeLegacyAssistantItem"
+            @assistant-action="runAssistantAction"
           />
         </template>
       </HomePage>
@@ -350,9 +361,7 @@ onUnmounted(() => {
       <main v-else-if="route.name === 'assistant'" class="page assistant-page">
         <AssistantWorkspace
           :joined-service-ids="joinedServiceIds"
-          @open-service="routeLegacyAssistantItem"
-          @join-service="joinLegacyAssistantItem"
-          @book-service="routeLegacyAssistantItem"
+          @assistant-action="runAssistantAction"
         />
       </main>
 
