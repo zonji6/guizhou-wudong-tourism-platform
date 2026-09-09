@@ -65,7 +65,8 @@ frozen_review_findings:
   - id: F07
     severity: medium
     path: miniprogram/utils/assistantProtocol.js
-    required_change: v2 clarifying_question 的 data 固定提供 actions: []；小程序仍仅执行顶层 RETRY。
+    status: RETRACTED
+    required_change: 不修复；withActionKeys() 已将缺失 data.actions 归一化为 []。
   - id: F08
     severity: medium
     path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js
@@ -74,6 +75,10 @@ frozen_review_findings:
     severity: high
     path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js
     required_change: legacy ID 行为与 v2 targetId 分离：Web 保持大小写不敏感 UUID，小程序保持任意非空 legacy serviceId/bookingId；v2 targetId 才使用契约规定的 1..120 string。
+  - id: F10
+    severity: high
+    path: web/src/composables/useAssistantSession.js,miniprogram/pages/assistant/assistant.js
+    required_change: failed 终态必须同时确认 acceptedCardSeq 为本轮 seq；否则生成本轮安全错误卡后失败收口，禁止复用上一轮 error 卡。
 dirty_snapshot:
   captured_at: 2026-09-09T09:12:31.6191450+08:00
   worktree_head: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
