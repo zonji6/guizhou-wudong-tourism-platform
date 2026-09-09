@@ -23,14 +23,13 @@ read_scope:
   - tourism-service/src/main/java/com/guizhou/wudong/service/CommunityService.java
   - tourism-service/src/main/java/com/guizhou/wudong/service/InternalCatalogService.java
   - tourism-service/src/main/java/com/guizhou/wudong/domain/RouteNode.java
-write_scope:
-  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalRouteGuideController.java
-  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalRouteGuideService.java
+write_scope: []
 restricted_actions:
   - 仅 primary:/root 获得当前派发的写入权限；TourismBusinessDomainAgent 不得写入本任务 scope。仅使用 apply_patch；仅可暂存 write_scope，不得修改协作控制文件。
   - 不修改 TASK-014、TASK-015 已冻结文件、迁移、表、种子、领域实体、Repository、测试、Python、Web 或小程序。
   - 不新增任何写接口、订单状态、route-guide 写入、run summaries、地图、后台、外部能力或假攻略；不得读取或输出 visitorId、published、route_nodes_json、订单、联系人、sourceThreadId 或内部异常。
   - 不新增或运行测试；不得 Maven、构建、启动服务、Flyway、数据库、curl、浏览器、网络、外部调用或推送；不得执行 reset、checkout 或 clean。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - docs/contracts/tourism-api-v2.md
@@ -69,9 +68,16 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+implementation_status: IMPLEMENTED_NOT_RUNTIME_VERIFIED
+artifact_revision: ed5c492faef5673bf022c6e86baa254364e83425
+verification_target_artifact_revision: ed5c492faef5673bf022c6e86baa254364e83425
+changed_paths: 2
+independent_static_review: REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,worktree_clean:PASS,independent_static_review:PASS,runtime:NOT_RUN
 enforcement:
   write_scope: PROCESS_GOVERNED
   loopback_access: FROZEN_READ_ONLY
