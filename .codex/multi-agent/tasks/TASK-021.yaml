@@ -5,8 +5,8 @@ long_lived_responsibility_owner:
   write_authority_for_current_dispatch: false
 temporary_writer:
   route: primary:/root
-  route_status: ACTIVE_LIMITED_WRITE
-  write_authority_for_current_dispatch: true
+  route_status: FROZEN_READ_ONLY
+  write_authority_for_current_dispatch: false
 objective: 将 Java GET /internal/agent/knowledge/search 收紧为 v2 最小只读知识投影；仅公开已发布知识的白名单字段，不提供写入、外部来源或状态泄露能力。
 deliverables:
   - tourism-service/src/main/java/com/guizhou/wudong/api/InternalAgentController.java
@@ -62,9 +62,13 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+implementation_status: IMPLEMENTED_NOT_RUNTIME_VERIFIED
+artifact_revision: 334748a032231c17dc632c0078765ead4d1cc88b
+verification_target_artifact_revision: 334748a032231c17dc632c0078765ead4d1cc88b
+checks: scope:PASS,diff:PASS,worktree_clean:PASS,independent_static_review:PASS,runtime:NOT_RUN
 enforcement:
   write_scope: PROCESS_GOVERNED
   loopback_access: FROZEN_READ_ONLY
