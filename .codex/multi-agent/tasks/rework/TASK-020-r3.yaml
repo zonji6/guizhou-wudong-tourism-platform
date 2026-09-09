@@ -35,6 +35,43 @@ restricted_actions:
   - 保留本覆盖层 dirty_snapshot 的全部草稿；不得 reset、checkout、clean、restore、删除、覆盖或提交当前草稿。
   - primary:/root、ExperienceDomainAgent 与任何其他代理不得写入本任务 scope；TASK-021 保持排队，不得创建、读取为工作输入或派发。
 rework_round: 2
+frozen_review_findings:
+  - id: F01
+    severity: high
+    path: web/src/composables/useAssistantSession.js,miniprogram/pages/assistant/assistant.js
+    required_change: v2 单轮不同卡限制只可作用于 v2；legacy 必须保持逐卡更新。
+  - id: F02
+    severity: high
+    path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js,web/src/composables/useAssistantSession.js,miniprogram/pages/assistant/assistant.js
+    required_change: 从已校验且能力过滤前的安全规范化语义生成 streamFingerprint；禁止保存 raw；会话以该值判定 v2 第二张不同卡。
+  - id: F03
+    severity: high
+    path: web/src/protocol/assistantProtocol.js,web/src/components/assistant/AssistantWorkspace.vue
+    required_change: 受支持的顶层 OPEN_DETAIL 或 OPEN_ORDER_CONFIRMATION 动作需去重并可执行，不得因未绑定到条目而无声丢失。
+  - id: F04
+    severity: medium
+    path: miniprogram/utils/assistantProtocol.js
+    required_change: legacy itinerary item 不得产生 LEGACY_JOIN_SERVICE；行程项仅保留详情与预约，推荐项保留加入行程。
+  - id: F05
+    severity: high
+    path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js
+    required_change: 删除 legacyTypedActions；legacy 只执行经既有规则校验的 serviceId，legacy target pair 仅供展示。
+  - id: F06
+    severity: medium
+    path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js
+    required_change: 使用完整 ISO datetime 与日历、时分秒、时区边界校验；不得依赖 Date.parse 容错或仅前缀正则。
+  - id: F07
+    severity: medium
+    path: miniprogram/utils/assistantProtocol.js
+    required_change: v2 clarifying_question 的 data 固定提供 actions: []；小程序仍仅执行顶层 RETRY。
+  - id: F08
+    severity: medium
+    path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js
+    required_change: preferences、sourceTitles、tags 与 PublicSource.documentId 逐字段镜像冻结 Pydantic 契约；不得以额外单项 180 长度限制拒绝合法输出，documentId 允许空串或 null。
+  - id: F09
+    severity: high
+    path: web/src/protocol/assistantProtocol.js,miniprogram/utils/assistantProtocol.js
+    required_change: legacy ID 行为与 v2 targetId 分离：Web 保持大小写不敏感 UUID，小程序保持任意非空 legacy serviceId/bookingId；v2 targetId 才使用契约规定的 1..120 string。
 dirty_snapshot:
   captured_at: 2026-09-09T09:12:31.6191450+08:00
   worktree_head: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
