@@ -1,9 +1,9 @@
 task_ref: .codex/multi-agent/tasks/TASK-020.yaml
 dispatch_id: dispatch-TASK-020-r3
 rework_base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
-task_state: ACTIVE
-dispatch_state: ACKNOWLEDGED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
@@ -35,10 +35,13 @@ restricted_actions:
   - 仅 Coordinator 父代理可通过 collaboration.followup_task 调度的内部子代理 subagent:/root/task020_front_impl 是当前唯一候选产品 writer；其嵌套代理仅可只读审查。
   - r3 仅授权 F01-F09 的最小修复，且仅可修改当前 write_scope 四个文件。必须保留当前请求体、legacy/v2 边界、能力过滤与未列出的草稿内容。
   - temporary writer 仅可使用 apply_patch；不得暂存、提交或修改 Git 元数据。嵌套审查代理仅可只读，修复后必须等待独立只读复核。
-  - 已完成独立只读复核后，temporary writer 获得一次性 Git 制品权限：仅可精确暂存当前 write_scope 的 8 条原始路径并以 `feat: 兼容双版本助手协议` 创建一次提交；提交前必须只读核对 status、8 条路径和 git diff --check。禁止暂存其他路径、amend、push、reset、checkout、clean 或任何产品写入。
+  - 一次性 Git 制品权限已随提交 98a754c0ac920002079a244d972d6d04293e2f39 消耗完毕；所有产品和 Git 元数据写入已撤销。任务仅可只读，禁止 amend、push、reset、checkout、clean 或任何产品写入。
   - 保留本覆盖层 dirty_snapshot 的全部草稿；不得 reset、checkout、clean、restore、删除、覆盖或提交当前草稿。
   - primary:/root、ExperienceDomainAgent 与任何其他代理不得写入本任务 scope；TASK-021 保持排队，不得创建、读取为工作输入或派发。
 rework_round: 2
+delivery_status: IMPLEMENTED_NOT_RUNTIME_VERIFIED
+artifact_revision: 98a754c0ac920002079a244d972d6d04293e2f39
+artifact_parent_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
 frozen_review_findings:
   - id: F01
     severity: high
