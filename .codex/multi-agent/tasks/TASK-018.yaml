@@ -28,12 +28,7 @@ read_scope:
   - agent-service/app/tools/tourism_client.py
   - agent-service/app/tools/tourism_v2_contracts.py
   - agent-service/app/tools/tourism_v2_client.py
-write_scope:
-  - agent-service/app/graph/nodes.py
-  - agent-service/app/graph/builder.py
-  - agent-service/app/graph/state.py
-  - agent-service/app/streaming.py
-  - agent-service/app/tools/tourism_client.py
+write_scope: []
 restricted_actions:
   - 仅 primary:/root 获得当前派发的写入权限；IntelligenceDomainAgent 不得写入本任务 scope。仅使用 apply_patch；仅可暂存 write_scope，不得修改协作控制文件。
   - 不修改 app/contracts.py、app/main.py、tourism_v2_contracts.py、tourism_v2_client.py、Java、Web、小程序、依赖或既有知识/RAG/DeepSeek 实现。
@@ -41,6 +36,7 @@ restricted_actions:
   - 不创建或调用 pending booking；不得保留 create_pending_booking，且不得把 contactName、contactPhone、serviceId、travelDate、people 等预约字段写入 graph input、AgentState、消息、checkpoint、卡片或事件。
   - 仅作为 legacy 安全过渡：保留 legacy 卡片/事件以及旧 knowledge/RAG/DeepSeek 链，不得声称 Assistant Card v2、PersistentAgentState 或 v2 流端点已完整接线。
   - 不新增或运行测试；不得运行 Python、pytest、安装、构建、启动服务、curl、浏览器、数据库、Flyway、外部 API 或推送；不得执行 reset、checkout 或 clean。
+  - 制品已冻结为只读；本任务不再拥有任何产品路径写权，任何后续产品变更必须由独立任务包取得。
 read_first:
   - AGENTS.md
   - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\docs\contracts\tourism-api-v2.md
@@ -82,9 +78,22 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
-dispatch_state: DISPATCHED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+implementation_status: IMPLEMENTED_NOT_RUNTIME_VERIFIED
+artifact_revision: 63be4279f1a98ced1d1e2b909d1f6d830f09bb89
+verification_target_artifact_revision: 63be4279f1a98ced1d1e2b909d1f6d830f09bb89
+changed_paths: 5
+raw_binary_diff_bytes: 24168
+implementation_evidence_fingerprint: sha256:04e4c677bb7433403293909e1296ae39e4f3c4be9ad1212aae0f6765b520434d
+verification_target_evidence_fingerprint: sha256:04e4c677bb7433403293909e1296ae39e4f3c4be9ad1212aae0f6765b520434d
+nodes_review: REVIEW_PASS
+full_static_review: REVIEW_PASS
+privacy_review: REVIEW_PASS
+artifact_review: ARTIFACT_REVIEW_PASS
+dependency_contract_status: FROZEN_READ_ONLY
+checks: scope:PASS,diff:PASS,worktree_clean:PASS,nodes_review:PASS,full_static_review:PASS,privacy_review:PASS,artifact_review:PASS,runtime:NOT_RUN
 enforcement:
   write_scope: PROCESS_GOVERNED
   checkpoint_privacy: PROCESS_GOVERNED
