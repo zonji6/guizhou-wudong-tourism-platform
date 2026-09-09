@@ -1,0 +1,92 @@
+task_id: TASK-018
+dispatch_id: dispatch-TASK-018-r1
+long_lived_responsibility_owner:
+  agent_id: agent-7bb81b53-1847-4fcd-8c4c-28eca7c46b68
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: primary:/root
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: true
+objective: 将现有 legacy AI 图中的目录读取迁移到已实现的 v2 内部只读目录接口，并切断 AI 创建预约及联系人/预约字段进入 legacy checkpoint；这是明确标注的安全过渡，不实现或声称完整 v2 接线。
+deliverables:
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/streaming.py
+  - agent-service/app/tools/tourism_client.py
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai
+branch: feat/wudong-task3-ai
+read_scope:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\docs\contracts\tourism-api-v2.md
+  - agent-service/app/contracts.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+  - agent-service/app/tools/tourism_client.py
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+write_scope:
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/streaming.py
+  - agent-service/app/tools/tourism_client.py
+restricted_actions:
+  - 仅 primary:/root 获得当前派发的写入权限；IntelligenceDomainAgent 不得写入本任务 scope。仅使用 apply_patch；仅可暂存 write_scope，不得修改协作控制文件。
+  - 不修改 app/contracts.py、app/main.py、tourism_v2_contracts.py、tourism_v2_client.py、Java、Web、小程序、依赖或既有知识/RAG/DeepSeek 实现。
+  - 不新增 /api/v2/assistant、/ws/v2/assistant、catalog_nodes_v2.py 或任何并行端点；不实现 route-guide、订单状态、run-summary、正式订单或其他 Java 尚不存在的内部路由。
+  - 不创建或调用 pending booking；不得保留 create_pending_booking，且不得把 contactName、contactPhone、serviceId、travelDate、people 等预约字段写入 graph input、AgentState、消息、checkpoint、卡片或事件。
+  - 仅作为 legacy 安全过渡：保留 legacy 卡片/事件以及旧 knowledge/RAG/DeepSeek 链，不得声称 Assistant Card v2、PersistentAgentState 或 v2 流端点已完整接线。
+  - 不新增或运行测试；不得运行 Python、pytest、安装、构建、启动服务、curl、浏览器、数据库、Flyway、外部 API 或推送；不得执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data\docs\contracts\tourism-api-v2.md
+  - agent-service/app/contracts.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+  - agent-service/app/tools/tourism_client.py
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-010
+    artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-012
+    artifact_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+    interface_revision: assistant-card-v2-draft-r1
+  - task_id: TASK-015
+    artifact_revision: 47b46781076feca68fe84a549f1132ed7e5ca4fd
+  - task_id: TASK-017
+    artifact_revision: 6acbc6c5a0ffde0c5c9eafcb76123575b540df44
+acceptance:
+  - 现有 fast lane 与行程链的目录读取通过 TASK-017 的 v2 只读客户端获取已发布 Product、FoodItem、StayProperty、Place；不得继续调用 /internal/agent/services/search，也不得使用本地虚构目录回退。
+  - tourism_client.py 不再包含 create_pending_booking 或任何 POST/PUT/PATCH/DELETE；其 legacy 展示投影只能来自 v2 已发布目录，并保留 demoData 标记。
+  - builder.py 移除 pending_booking 节点和可达边；预约意图只返回不含预约字段的澄清/跳转提示，明确由 Web 独立确认页创建正式订单。
+  - streaming.py 以明确 allowlist 构造 legacy graph input；不得传入 contactName、contactPhone、serviceId、travelDate、people 或其 snake_case 变体。state.py 同步移除这些预约字段，避免其进入 checkpoint；本任务不改变已知 legacy user_text/messages 隐私债务，也不声称完成 TASK-012 的完整迁移。
+  - 保留 /api/assistant 与 /ws/assistant 既有端点、legacy 卡片/事件、知识/RAG/DeepSeek 行为；不新增 v2 端点、并行图或完整 v2 运行链。
+  - 仅作静态验收：scope、契约、无 AI 写预约、无联系人/预约字段进入 graph input 或 AgentState、无敏感泄露与 git diff --check；不运行测试、构建、服务、网络、数据库或 Flyway。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 6acbc6c5a0ffde0c5c9eafcb76123575b540df44
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+proceed: false
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  checkpoint_privacy: PROCESS_GOVERNED
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
