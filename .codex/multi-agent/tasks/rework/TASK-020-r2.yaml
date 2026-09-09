@@ -1,9 +1,9 @@
 task_ref: .codex/multi-agent/tasks/TASK-020.yaml
 dispatch_id: dispatch-TASK-020-r2
 rework_base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
-task_state: REWORK
+task_state: ACTIVE
 dispatch_state: DISPATCHED
-proceed: false
+proceed: true
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
