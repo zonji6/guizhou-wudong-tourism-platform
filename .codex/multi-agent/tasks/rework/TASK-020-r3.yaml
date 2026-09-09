@@ -2,8 +2,8 @@ task_ref: .codex/multi-agent/tasks/TASK-020.yaml
 dispatch_id: dispatch-TASK-020-r3
 rework_base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
 task_state: ACTIVE
-dispatch_state: ACKNOWLEDGED
-proceed: false
+dispatch_state: ACTIVE
+proceed: true
 permission_expiry:
   - task_state: VERIFYING
   - task_state: VERIFIED
@@ -23,20 +23,15 @@ read_scope:
   - miniprogram/pages/assistant/assistant.js
   - miniprogram/pages/assistant/assistant.wxml
 write_scope:
-  - web/src/protocol/assistantProtocol.js
   - web/src/composables/useAssistantSession.js
-  - web/src/components/assistant/AssistantWorkspace.vue
-  - web/src/App.vue
-  - miniprogram/utils/assistantProtocol.js
-  - miniprogram/utils/assistant.js
   - miniprogram/pages/assistant/assistant.js
-  - miniprogram/pages/assistant/assistant.wxml
 restricted_actions:
   - 仅 temporary writer subagent:/root/task020_front_impl 获得当前派发的写入权限；primary:/root 与 ExperienceDomainAgent 不得写入本任务 scope。仅使用 apply_patch；不得修改协作控制文件。
   - 当前请求始终保持 {"thread_id","user_text"}，不得发送 v2 request、修改 Python、端点、请求基础设施、样式、路由、详情页、确认页或新增依赖。
   - 不修改任何 write_scope 外文件；不直接在模板分散协议判断，必须通过严格协议适配器、统一展示模型和平台能力映射。
   - 不新增或运行测试；不得 npm install、构建、启动服务、浏览器、网络、外部调用或推送；不得执行 reset、checkout 或 clean。
-  - 在收到本 dispatch 的有效 ACK 且后续明确许可前，proceed=false：temporary writer 与其嵌套审查代理只可读取和静态审查，不得写入产品、控制文件或 Git 元数据。
+  - r3 仅修复已审查的 P1：在上述两个文件中，仅当锁定协议为 v2 时应用 receivedCardFingerprint 的单卡冲突限制；legacy 必须继续逐卡接受并更新 previousCard。不得修改其他行为或路径。
+  - temporary writer 可使用 apply_patch 完成该 P1 修复，但不得暂存、提交或修改任何 Git 元数据；嵌套审查代理继续只读。
   - 保留本覆盖层 dirty_snapshot 的全部草稿；不得 reset、checkout、clean、restore、删除、覆盖或提交当前草稿。
   - primary:/root、ExperienceDomainAgent 与任何其他代理不得写入本任务 scope；TASK-021 保持排队，不得创建、读取为工作输入或派发。
 rework_round: 2
