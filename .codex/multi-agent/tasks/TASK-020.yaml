@@ -4,8 +4,8 @@ long_lived_responsibility_owner:
   agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
   write_authority_for_current_dispatch: false
 temporary_writer:
-  route: codex_thread:01a08399-b23c-7553-bea7-187f8deb1400
-  route_status: NATIVE_INPUT_UNAVAILABLE
+  route: subagent:/root/task020_front_impl
+  route_status: PENDING_ACK
   write_authority_for_current_dispatch: false
 objective: 让 Web 与原生微信小程序严格兼容 legacy 与 Assistant Card v2 消费协议；当前请求格式和 Python 端点保持不变。
 deliverables:
@@ -76,8 +76,8 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: BLOCKED
-dispatch_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
 proceed: false
 rework_ref: .codex/multi-agent/tasks/rework/TASK-020-r3.yaml
 enforcement:

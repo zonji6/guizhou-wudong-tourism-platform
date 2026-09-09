@@ -1,8 +1,8 @@
 task_ref: .codex/multi-agent/tasks/TASK-020.yaml
 dispatch_id: dispatch-TASK-020-r3
 rework_base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
-task_state: BLOCKED
-dispatch_state: STALE
+task_state: REWORK
+dispatch_state: DISPATCHED
 proceed: false
 permission_expiry:
   - task_state: VERIFYING
@@ -32,8 +32,8 @@ restricted_actions:
   - 当前请求始终保持 {"thread_id","user_text"}，不得发送 v2 request、修改 Python、端点、请求基础设施、样式、路由、详情页、确认页或新增依赖。
   - 不修改任何 write_scope 外文件；不直接在模板分散协议判断，必须通过严格协议适配器、统一展示模型和平台能力映射。
   - 不新增或运行测试；不得 npm install、构建、启动服务、浏览器、网络、外部调用或推送；不得执行 reset、checkout 或 clean。
-  - 根会话临时路由 subagent:/root/task020_front_impl 及其嵌套代理永久仅可只读审查；不得将其视为产品 writer。
-  - 唯一候选产品 writer 为经原生工具核验的 Coordinator 内部路由 codex_thread:01a08399-b23c-7553-bea7-187f8deb1400。其回传当前 dispatch 的精确 ACK 且收到后续明确许可前，proceed=false：不得写入产品、控制文件或 Git 元数据；F01-F09 保持冻结。
+  - 仅 Coordinator 父代理可通过 collaboration.followup_task 调度的内部子代理 subagent:/root/task020_front_impl 是当前唯一候选产品 writer；其嵌套代理仅可只读审查。
+  - 该子代理回传当前 dispatch 的精确 ACK 且收到 ACK_ACCEPTED 后续明确许可前，proceed=false：不得写入产品、控制文件或 Git 元数据；F01-F09 保持冻结。
   - 保留本覆盖层 dirty_snapshot 的全部草稿；不得 reset、checkout、clean、restore、删除、覆盖或提交当前草稿。
   - primary:/root、ExperienceDomainAgent 与任何其他代理不得写入本任务 scope；TASK-021 保持排队，不得创建、读取为工作输入或派发。
 rework_round: 2
