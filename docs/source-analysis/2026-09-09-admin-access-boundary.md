@@ -12,7 +12,7 @@
 
 Spring 官方支持通过 `authorizeHttpRequests` 配合路径匹配和角色规则在服务器执行授权；本项目可据此对 `/api/admin/**` 要求管理权限，具体角色标识待选定。因此隐藏导航按钮只是入口调整，后续仍须保护后台 API。[官方说明][spring]
 
-候选建议仅设“游客／后台管理人员”两档；普通自助注册不应获得后台权限。开发、运营是否细分权限待用户确认；后台账号预置只是建议，尚未批准。不增加商户注册、动态权限编辑或独立微服务。
+2026-09-10 补充确认：首版仅设“游客／后台管理人员”两档；开发者和运营者各用独立账号，共用一档既定后台业务权限，不共享登录账号，普通自助注册不获得后台权限。不细分开发与运营职责，不增加商户注册、动态权限编辑或独立微服务。后台账号如何创建仍待确认，受控预置只是建议，尚未批准；共用业务权限不包含账号授权管理、数据库、服务器、部署或密钥访问权限，也不替代 AI 内部接口的独立访问控制。
 
 [admin]: D:/AI_Project/Codex_project/乌冬/.worktrees/frontend-redesign/tourism-service/src/main/java/com/guizhou/wudong/api/AdminController.java:15
 [service]: D:/AI_Project/Codex_project/乌冬/.worktrees/frontend-redesign/tourism-service/src/main/java/com/guizhou/wudong/service/TourismService.java:47
