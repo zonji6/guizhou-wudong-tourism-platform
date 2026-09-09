@@ -9,3 +9,11 @@
 *.pyc
 .idea/
 .vscode/
+.superpowers/
+
+# 本地资料阅读中间产物，含未授权原图与商户联系方式。
+/tmp/source-review/
+/resours/
+/web/public/images/wudong-local/
+/miniprogram/assets/wudong-local/
+/miniprogram/project.private.config.json

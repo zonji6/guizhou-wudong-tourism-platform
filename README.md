@@ -1,4 +1,4 @@
-# 贵州乌冬文旅综合服务平台
+# 贵州乌东文旅综合服务平台
 
 面向项目答辩的本机可操作原型，围绕“衣食住行 + 社区分享 + 平台管理”构建，并以“苗族文化茶旅体验”为核心差异化场景。
 
@@ -12,6 +12,9 @@
 - [开发文档](docs/开发文档.md)
 - [设计规格](docs/superpowers/specs/2026-09-08-udong-tourism-platform-design.md)
 - [实施计划](docs/superpowers/plans/2026-09-08-udong-tourism-platform.md)
+- [水彩旅行手账与五模块整合设计](docs/superpowers/specs/2026-09-09-wudong-watercolor-content-design.md)
+- [下一阶段整合开发计划](docs/superpowers/plans/2026-09-09-wudong-integrated-development.md)
+- [乌东衣食住行资料映射](docs/source-analysis/2026-09-09-content-data-audit.md)
 
 ## 计划技术栈
 
@@ -19,6 +22,10 @@
 
 ## 当前状态
 
-已完成需求、架构和实施计划，尚未开始应用代码开发。
+截至 2026-09-09，仓库已有 Web、小程序、Java 和 Python 服务代码，不再处于纯文档阶段。当前 `main` 保存整合计划与既有服务基线；最新水彩首页位于 [feat/wudong-frontend-redesign 分支](https://github.com/zonji6/guizhou-wudong-tourism-platform/tree/feat/wudong-frontend-redesign)，尚未合并到 `main`。本机视觉预览端口为 5174。
+
+已确认的下一阶段补充：缺失业务数值使用明确标注的演示配置；先实现水彩路线示意地图，后续再接真实地图；住宿增加离店日期与房间数，仍由后台确认。它们目前是实施约定，不表示新领域后端、三类订单、向量 RAG 或地图已开发完成。
+
+本次 GitHub 同步保留分支历史，不合并其他工作区。原始 Word/PDF、原始照片、授权未确认的实景派生图片与本机私有配置不公开；生成的水彩插画随前端分支提供。克隆仓库不会包含本机全部实景素材，素材准备与使用边界见 [视觉素材编排](docs/贵州乌东视觉素材编排.md)。
 
 > 所有未核验的资源、价格、库存与图片在演示中必须标注为“演示数据”。模型 API Key 仅能保存在本机环境变量中，不能提交到仓库。
