@@ -1,0 +1,79 @@
+task_id: TASK-019
+dispatch_id: dispatch-TASK-019-r1
+long_lived_responsibility_owner:
+  agent_id: agent-e6971939-ce68-49ab-aab3-87132cf1df36
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: primary:/root
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: true
+objective: 实现 Java 内部路线攻略只读检索；仅从已发布 ROUTE_GUIDE 的 public PostView 中按严格查询条件检索，不提供任何写入、订单或运行摘要能力。
+deliverables:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalRouteGuideController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalRouteGuideService.java
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task2-data
+branch: feat/wudong-task2-data
+read_scope:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CommunityService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalCatalogService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/RouteNode.java
+write_scope:
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalRouteGuideController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalRouteGuideService.java
+restricted_actions:
+  - 仅 primary:/root 获得当前派发的写入权限；TourismBusinessDomainAgent 不得写入本任务 scope。仅使用 apply_patch；仅可暂存 write_scope，不得修改协作控制文件。
+  - 不修改 TASK-014、TASK-015 已冻结文件、迁移、表、种子、领域实体、Repository、测试、Python、Web 或小程序。
+  - 不新增任何写接口、订单状态、route-guide 写入、run summaries、地图、后台、外部能力或假攻略；不得读取或输出 visitorId、published、route_nodes_json、订单、联系人、sourceThreadId 或内部异常。
+  - 不新增或运行测试；不得 Maven、构建、启动服务、Flyway、数据库、curl、浏览器、网络、外部调用或推送；不得执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - docs/contracts/tourism-api-v2.md
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiEnvelope.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/ApiExceptionHandler.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/CommunityViews.java
+  - tourism-service/src/main/java/com/guizhou/wudong/api/InternalCatalogController.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/CommunityService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/service/InternalCatalogService.java
+  - tourism-service/src/main/java/com/guizhou/wudong/domain/RouteNode.java
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-010
+    artifact_revision: c43b19077dd3d4727c3c6b69df191a73f0d26ac4
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-011
+    artifact_revision: 29caf0ba1f861d942218deaf5938e805759de48b
+  - task_id: TASK-014
+    artifact_revision: 4a4130c67cd1dd68b0496b20ed9da82daaa829ef
+  - task_id: TASK-015
+    artifact_revision: 47b46781076feca68fe84a549f1132ed7e5ca4fd
+acceptance:
+  - 实现 GET /internal/agent/route-guides/search?keywords=&tag=&tag=，返回 ApiEnvelope<List<CommunityViews.PostView>>；未知参数、重复 keywords 或不允许的重复单值参数均由边界拒绝为 400 VALIDATION_FAILED。
+  - 仅从 CommunityService.publicPosts("ROUTE_GUIDE", null) 读取，永不读取或返回 MOMENT、未发布数据或任何持久化内部字段；无结果返回成功空数组。
+  - keywords 可省略；出现时必须非空、无首尾空格且最长 120，并对 title、content、routeSummary、tags、routeNodes.placeName、routeNodes.note 执行不区分大小写包含匹配。
+  - tag 允许重复查询参数且按 AND 匹配；每个 tag 必须非空、无首尾空格、最长 80、不得含逗号，且重复 tag 值必须拒绝。查询和响应严格复用 PostView 白名单，不构造假攻略。
+  - 不提供写路由、订单状态、run summaries 或其他新能力；不泄露 visitorId、published、route_nodes_json、订单、联系人、sourceThreadId、URL、SQL、堆栈或原始内部异常。
+  - 仅作静态验收：scope、契约、无写路由、敏感字段排除与 git diff --check；不运行测试、Maven、构建、服务、Flyway、数据库、浏览器、网络或外部调用。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 47b46781076feca68fe84a549f1132ed7e5ca4fd
+interface_revision: tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+proceed: false
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  loopback_access: FROZEN_READ_ONLY
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
