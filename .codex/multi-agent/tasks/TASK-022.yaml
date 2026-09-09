@@ -1,0 +1,103 @@
+task_id: TASK-022
+dispatch_id: dispatch-TASK-022-r1
+long_lived_responsibility_owner:
+  agent_id: UNASSIGNED
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: primary:/root
+  route_status: PENDING_ACK
+  write_authority_for_current_dispatch: false
+objective: 将既有 /api/assistant 与 /ws/assistant 原位切换为 assistant-card-v2-draft-r1 完整输出链；不新增平行 v2 或 SSE 端点，所有 AI 可见数据仅来自已发布 Java 只读结果。
+deliverables:
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai
+branch: feat/wudong-task3-ai
+read_scope:
+  - AGENTS.md
+  - docs/contracts/assistant-card-v2.md
+  - docs/contracts/tourism-api-v2.md
+  - agent-service/app/contracts.py
+  - agent-service/app/privacy.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/graph/context.py
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+write_scope:
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+restricted_actions:
+  - 仅候选 temporary writer primary:/root 在 ACK_ACCEPTED proceed=true 后可写；当前 proceed=false，任何产品、Git 元数据或控制外文件写入均禁止。
+  - 只允许修改六条 write_scope；所有产品补丁仅能使用 apply_patch，且只可暂存/提交这六条路径。保留其他用户改动；禁止 reset、checkout、clean、amend 或 push。
+  - 不修改 contracts.py、privacy.py、graph/state.py、graph/context.py、DeepSeek、RAG、Java、Web、小程序、依赖或文档；不得新增平行 v2/SSE 端点、Redis checkpointer、云端 Embedding、run-summary、订单状态端点或正式订单能力。
+  - 不得调用 Java 写接口或生成含联系人的提案；不得写入或泄露原始话语、messages、检索正文、异常、URL、参数、密钥或 CoT 到 checkpoint、卡片或事件。
+  - 不新增或运行测试；不得运行 Python、pytest、安装、构建、服务、curl、浏览器、数据库、Flyway、外部 API、网络或推送；仅允许静态 scope/diff/导入/协议/隐私/事件序列审查与 git diff --check。
+read_first:
+  - AGENTS.md
+  - docs/contracts/assistant-card-v2.md
+  - docs/contracts/tourism-api-v2.md
+  - agent-service/app/contracts.py
+  - agent-service/app/privacy.py
+  - agent-service/app/graph/state.py
+  - agent-service/app/graph/context.py
+  - agent-service/app/tools/tourism_v2_contracts.py
+  - agent-service/app/tools/tourism_v2_client.py
+  - agent-service/app/graph/nodes.py
+  - agent-service/app/graph/builder.py
+  - agent-service/app/streaming.py
+  - agent-service/app/main.py
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-012
+    artifact_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+    interface_revision: assistant-card-v2-draft-r1
+  - task_id: TASK-017
+    artifact_revision: 6acbc6c5a0ffde0c5c9eafcb76123575b540df44
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-018
+    artifact_revision: 63be4279f1a98ced1d1e2b909d1f6d830f09bb89
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-019
+    artifact_revision: ed5c492faef5673bf022c6e86baa254364e83425
+    interface_revision: tourism-api-v2-draft-r2
+  - task_id: TASK-021
+    artifact_revision: 334748a032231c17dc632c0078765ead4d1cc88b
+    interface_revision: tourism-api-v2-draft-r2
+acceptance:
+  - 为 knowledge/search 与 route-guides/search 增加 camelCase、extra=forbid 的严格 Pydantic 响应 DTO 和只读客户端；精确映射 KnowledgeView、CommunityViews.PostView/RouteNode，不得写请求、重定向、非回环地址或接受不受控响应。
+  - 使用 PersistentAgentState 与 context_schema=RunContext；threadId/userText/pageAction/selectedTarget/conditions 仅经 runtime context 传递，threadId 仅作 checkpointer 配置键。每节点返回经 PersistentAgentState 验证、sanitize_checkpoint_payload 清洗后重新验证的完整八字段快照；仅声明 InMemorySaver 进程内连续性。
+  - 条件分支覆盖 ITINERARY、KNOWLEDGE、PRODUCT、FOOD、STAY、PLACE、ROUTE_GUIDE、ORDER_STATUS、CLARIFICATION，且只输出严格六类 AssistantCardV2。目录、知识、攻略来自 Java 已发布只读结果；无数据、地图未配置、订单端点未实现或依赖不可用时稳定 ErrorCard，禁止虚构。
+  - FOOD/STAY 仅在 selectedTarget 已由 Java 公开目录验证且时间/人数完整时生成无联系人、非持久化 OrderProposal；缺失时 ClarifyingQuestionCard，商品不得生成提案，禁止调用 Java 写接口。
+  - custom 事件仅 progress/tool_summary；run_assistant 独占 task_started、card_ready 和唯一 completed/failed，固定序列为 task_started、0..n custom、恰好一个 card_ready、恰好一个 completed 或 failed。出口再次验证，JSON 均 model_dump(mode="json", by_alias=True)。
+  - HTTP 与 WebSocket 共用 run_assistant，切换 AssistantRequestV2/AssistantResponseV2，并通过 populate_by_name=True 兼容当前 snake_case 请求输入；不新增端点。
+  - 仅静态验收：范围、导入引用、协议字段、隐私、事件序列与 git diff --check；标记 IMPLEMENTED_NOT_RUNTIME_VERIFIED，不运行运行时验证。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 63be4279f1a98ced1d1e2b909d1f6d830f09bb89
+interface_revision: assistant-card-v2-draft-r1,tourism-api-v2-draft-r2
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+proceed: false
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  checkpoint_privacy: PROCESS_GOVERNED
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED
