@@ -76,9 +76,9 @@ permission_expiry:
   - task_state: VERIFIED
   - task_state: CANCELLED
   - task_state: STALE
-task_state: ACTIVE
+task_state: BLOCKED
 dispatch_state: DISPATCHED
-proceed: true
+proceed: false
 enforcement:
   write_scope: PROCESS_GOVERNED
   protocol_adapter: PROCESS_GOVERNED
