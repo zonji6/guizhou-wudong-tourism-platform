@@ -1,0 +1,86 @@
+task_id: TASK-020
+dispatch_id: dispatch-TASK-020-r1
+long_lived_responsibility_owner:
+  agent_id: agent-624f20f2-cd2d-47c5-8b46-896664c8d90e
+  write_authority_for_current_dispatch: false
+temporary_writer:
+  route: subagent:/root/task020_front_impl
+  route_status: AVAILABLE
+  write_authority_for_current_dispatch: true
+objective: 让 Web 与原生微信小程序严格兼容 legacy 与 Assistant Card v2 消费协议；当前请求格式和 Python 端点保持不变。
+deliverables:
+  - web/src/protocol/assistantProtocol.js
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - web/src/App.vue
+  - miniprogram/utils/assistantProtocol.js
+  - miniprogram/utils/assistant.js
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.wxml
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\frontend-redesign
+branch: feat/wudong-frontend-redesign
+read_scope:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai\docs\contracts\assistant-card-v2.md
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - web/src/App.vue
+  - miniprogram/utils/assistant.js
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.wxml
+write_scope:
+  - web/src/protocol/assistantProtocol.js
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - web/src/App.vue
+  - miniprogram/utils/assistantProtocol.js
+  - miniprogram/utils/assistant.js
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.wxml
+restricted_actions:
+  - 仅 temporary writer subagent:/root/task020_front_impl 获得当前派发的写入权限；primary:/root 与 ExperienceDomainAgent 不得写入本任务 scope。仅使用 apply_patch；不得修改协作控制文件。
+  - 当前请求始终保持 {"thread_id","user_text"}，不得发送 v2 request、修改 Python、端点、请求基础设施、样式、路由、详情页、确认页或新增依赖。
+  - 不修改任何 write_scope 外文件；不直接在模板分散协议判断，必须通过严格协议适配器、统一展示模型和平台能力映射。
+  - 不新增或运行测试；不得 npm install、构建、启动服务、浏览器、网络、外部调用或推送；不得执行 reset、checkout 或 clean。
+read_first:
+  - AGENTS.md
+  - D:\AI_Project\Codex_project\乌冬\.worktrees\task3-ai\docs\contracts\assistant-card-v2.md
+  - web/src/composables/useAssistantSession.js
+  - web/src/components/assistant/AssistantWorkspace.vue
+  - web/src/App.vue
+  - miniprogram/utils/assistant.js
+  - miniprogram/pages/assistant/assistant.js
+  - miniprogram/pages/assistant/assistant.wxml
+dependencies: []
+frozen_read_only_contracts:
+  - task_id: TASK-012
+    artifact_revision: 4cef4e80cec8898dfcc0aa9c829ac2c3c25802dd
+    interface_revision: assistant-card-v2-draft-r1
+  - task_id: TASK-016
+    artifact_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+acceptance:
+  - Web 与小程序均通过严格协议适配器生成统一展示模型，并按平台能力映射执行动作；模板内不得散落 protocol 判别。
+  - 首个 task_started 的 thread_id 锁定 legacy，threadId 锁定 v2；混合、缺失或冲突字段安全失败。cardVersion 缺失才是 legacy；仅字符串 "2.0" 接受 v2，其他值拒绝。
+  - legacy 的六类卡片、阶段、演示回退与 serviceId 行为保持。v2 只接受六种白名单卡片及严格 sources、actions、target pair、枚举、数组长度、日期/时间、有限数字和正整数；未知键拒绝，原始对象及 tool_summary/failed code 不进入展示状态。
+  - v2 events 仅允许 task_started、progress、tool_summary、card_ready、completed、failed；每轮至多接收一张不同卡；completed 前必须已有合法非 error 卡，错误卡或 failed 不能被 completed 翻转，终态后忽略事件并关闭连接。
+  - v2 推荐读取 data.items、知识读取 data.answer、待确认读取 data.proposal；proposal 只能展示，绝不视为已创建订单。targetId 不得改名 serviceId，动作只来自严格 actions。
+  - Web 仅执行 OPEN_DETAIL 的 PRODUCT/FOOD、OPEN_ORDER_CONFIRMATION 的 FOOD/STAY（STAY targetId 是 roomTypeId）与 RETRY；其他 v2 能力隐藏。小程序 v2 仅执行 RETRY，其他 v2 动作隐藏，避免向 legacy API 发送 typed target；legacy 动作保持。
+  - 不修改样式、路由、详情/确认页或请求基础设施；仅作静态范围、协议审查与 git diff --check，不运行测试、构建、服务、浏览器或网络。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: a4f08a948c04398ef98ed2c8cf7b25ec3e50afbe
+interface_revision: assistant-card-v2-draft-r1
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+task_state: READY
+dispatch_state: DISPATCHED
+proceed: false
+enforcement:
+  write_scope: PROCESS_GOVERNED
+  protocol_adapter: PROCESS_GOVERNED
+  external_calls: UNAVAILABLE
+  remote_push: PROCESS_GOVERNED

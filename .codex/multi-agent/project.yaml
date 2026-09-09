@@ -39,3 +39,4 @@ active_task_refs:
   - .codex/multi-agent/tasks/TASK-017.yaml
   - .codex/multi-agent/tasks/TASK-018.yaml
   - .codex/multi-agent/tasks/TASK-019.yaml
+  - .codex/multi-agent/tasks/TASK-020.yaml
