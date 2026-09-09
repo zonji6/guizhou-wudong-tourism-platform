@@ -50,7 +50,7 @@ Web 与原生微信小程序使用同一套平台用户名、密码登录，个�
 
 ## 与现有技术栈的衔接建议
 
-已确认采用 Spring Security + JWT 替代此前 Spring Session Redis 登录方案，MySQL 保存用户归属和业务数据；Redis 仍在技术栈中，刷新与撤销状态是否由其管理留待设计，不增加未选用的配对挑战机制。Spring Security 保留为 Java 认证与授权框架；Python AI 服务的身份校验、凭据传输和连接过期规则须单独落实。具体依赖版本须匹配现有 Spring Boot 工程，不能照搬最新示例。[Spring Security JWT 官方说明](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html)
+已确认采用 Spring Security + JWT 替代此前 Spring Session Redis 登录方案，MySQL 保存用户归属和业务数据；Redis 已确认保存独立登录的有效状态，受保护请求同时校验 JWT 与该状态；服务端撤销成功后，旧令牌不能通过后续鉴权，Redis 不可用时不放行。刷新凭据的具体存储、轮换及并发处理另行细化，不增加未选用的配对挑战机制。Spring Security 保留为 Java 认证与授权框架；Python AI 服务的身份校验、凭据传输和连接过期规则须单独落实。具体依赖版本须匹配现有 Spring Boot 工程，不能照搬最新示例。[Spring Security JWT 官方说明](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html)
 
 讨论结果：用户选择轻量账号密码，不采纳此前优先讨论微信身份的初步倾向。微信与匿名配对部分仅作备选调研保留，不进入本期实现；不为未采用的方案新增配对票据或微信身份表。会话技术已确认，传输与失效细节、表结构和接口尚未锁定。
 
