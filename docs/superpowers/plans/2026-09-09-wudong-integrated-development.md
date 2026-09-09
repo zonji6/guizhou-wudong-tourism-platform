@@ -135,6 +135,8 @@ MySQL 是商品、商家、房型、订单、价格和发布状态的事实来�
 
 完成与取消均为终态。餐食状态作用于整张到店订单，不设置逐菜状态，也不新增支付、配送、退款或实时库存。后端同时检查当前状态、目标状态与类型，不能只验证目标字符串合法。建议更新带 `expectedStatus`，条件更新未命中返回冲突并要求刷新；没有支付的取消不产生退款记录。旧 `Booking.PROCESSING` 不传播到新领域状态机。
 
+游客取消权限已由用户确认：商品 `PENDING_PICKUP`、餐食 `PENDING_VISIT`、住宿 `PENDING_CONFIRMATION` 可由订单所属游客自行取消；住宿 `CONFIRMED` 的取消仅由后台处理。`PICKED_UP`、`COMPLETED`、`CANCELLED` 均不再允许取消。下一阶段 Java 补游客取消能力，检查访客归属、类型和当前状态，不能被过期请求覆盖后台已推进的状态；Web/小程序只对允许状态显示入口并使用服务端结果。具体接口与并发控制方式在技术讨论中确定，不增加退款、取消截止时间或线上取消审批流程。本段为已确认需求，不是功能已实现记录。
+
 ### 4.3 社区与行
 
 统一 `GET /api/posts?type=NORMAL|ROUTE_GUIDE&tag=...`，响应类型字段为 `postType`。发布请求为 `content, tags, postType`，路线攻略追加 `title, routeNodes`；节点包含 `order, placeId, note`。公开节点引用存在的地点 ID；未知地点只保留为正文，不伪造 ID。作者展示名由 Java 生成，用户不能冒充运营或商户身份。
