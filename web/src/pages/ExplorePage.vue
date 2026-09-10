@@ -5,7 +5,7 @@ import { authState } from '../services/authSession'
 import { createPost, getFood, listFoodMerchants, listFoods, listPlaces, listPosts, listProducts, listStays } from '../services/tourismApi'
 import { contentMediaUrl, placeMediaUrl, postMediaUrl } from '../utils/contentMedia'
 
-const props = defineProps({ section: { type: String, default: 'product' }, focusFoodId: { type: String, default: '' } })
+const props = defineProps({ section: { type: String, default: 'product' }, focusFoodId: { type: String, default: '' }, focusProductId: { type: String, default: '' }, focusRoomId: { type: String, default: '' }, focusPlaceId: { type: String, default: '' } })
 const emit = defineEmits(['navigate', 'checkout'])
 const tabs = [
   { id: 'product', label: '商品' },
@@ -263,6 +263,30 @@ async function focusRecommendedFood(foodId) {
   }
 }
 
+async function focusRecommendedResource() {
+  if (props.section === 'product' && props.focusProductId) {
+    const product = state.product.find(item => item.id === props.focusProductId)
+    if (product) await showProductDetail(product)
+    return
+  }
+  if (props.section === 'stay' && props.focusRoomId) {
+    const property = state.stay.find(item => (item.roomTypes || []).some(room => room.id === props.focusRoomId))
+    if (!property) return
+    selectedStayId.value = property.id
+    await nextTick()
+    document.getElementById(`stay-${property.id}`)?.scrollIntoView({ block: 'center' })
+    return
+  }
+  if (props.section === 'travel' && props.focusPlaceId) {
+    const place = (state.map?.places || []).find(item => item.id === props.focusPlaceId)
+    if (!place) return
+    selectedRouteIds.value = [place.id]
+    routeMessage.value = `已在水彩示意图中选中“${place.name}”。`
+    await nextTick()
+    document.getElementById(`place-${place.id}`)?.scrollIntoView({ block: 'center' })
+  }
+}
+
 function normalizeQuantity(itemId) {
   const quantity = Number(basket[itemId])
   basket[itemId] = Number.isInteger(quantity) && quantity > 0 ? Math.min(quantity, 99) : 0
@@ -343,9 +367,11 @@ watch(() => props.section, async () => {
   resetSectionState()
   await loadSection()
   await focusRecommendedFood(props.focusFoodId)
+  await focusRecommendedResource()
 }, { immediate: true })
 
 watch(() => props.focusFoodId, foodId => focusRecommendedFood(foodId))
+watch(() => [props.focusProductId, props.focusRoomId, props.focusPlaceId], () => focusRecommendedResource())
 </script>
 
 <template>
@@ -399,7 +425,7 @@ watch(() => props.focusFoodId, foodId => focusRecommendedFood(foodId))
     <section v-else-if="section === 'stay'" class="v3-stay-list">
       <header class="v3-count-strip"><p class="eyebrow">山居目录</p><strong>{{ state.stay.length }} 家住宿 · {{ roomTotal }} 种房型</strong><span>数量来自当前已发布目录；房价与容量均按演示信息展示，不代表实时房态。</span></header>
       <section class="v3-stay-tools"><label><span>找山居</span><input v-model="stayKeyword" type="search" placeholder="民宿名、位置、特色或房型"></label><label><span>入住人数</span><select v-model="stayPeople"><option value="">不限</option><option v-for="count in [1, 2, 3, 4, 5, 6]" :key="count" :value="count">{{ count }} 人</option></select></label><p>{{ stayKeyword || stayPeople ? `匹配 ${visibleStays.length} / ${state.stay.length} 家住宿` : '可按关键词或单间容纳人数筛选' }}</p></section>
-      <article v-for="property in visibleStays" :key="property.id" class="v3-resource-card v3-stay-card"><SafeImage :src="imageOf(property, 'stay')" :alt="`${property.name}资料图片`" :label="property.name" loading="lazy" /><div><p class="eyebrow">{{ property.locationText || property.merchantName }}</p><h2>{{ property.name }}</h2><p>{{ property.description }}</p><div class="v3-tag-row"><span v-for="tag in property.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(property) }}</p><button class="ghost" type="button" @click="selectedStayId = selectedStayId === property.id ? '' : property.id">{{ selectedStayId === property.id ? '收起房型' : `查看 ${property.roomTypes?.length || 0} 种房型` }}</button></div><section v-if="selectedStayId === property.id" class="v3-room-grid"><article v-for="room in property.roomTypes || []" :key="room.id"><SafeImage v-if="imageOf(room, 'stay')" :src="imageOf(room, 'stay')" :alt="`${room.name}房型资料图片`" :label="room.name" loading="lazy" /><div><p v-if="!imageOf(room, 'stay')" class="v3-room-image-note">住宿配图见上方，房型以文字资料为准。</p><h3>{{ room.name }}</h3><p>{{ room.description }}</p><p><b>每间演示容量 {{ room.maxGuestsPerRoom }} 人</b></p><p class="v3-source-note">{{ catalogNote(room) }}</p><p v-if="price(room)" class="v3-price">¥{{ price(room).amount }} / 间夜<small>{{ price(room).kind }} · {{ price(room).label }}</small></p><p v-else class="v3-muted">暂无演示价</p><button class="primary" type="button" :disabled="!room.orderable" @click="checkoutStay(property, room)">{{ room.orderable ? '选择此房型' : '当前仅供查看' }}</button></div></article></section></article>
+      <article v-for="property in visibleStays" :id="`stay-${property.id}`" :key="property.id" class="v3-resource-card v3-stay-card"><SafeImage :src="imageOf(property, 'stay')" :alt="`${property.name}资料图片`" :label="property.name" loading="lazy" /><div><p class="eyebrow">{{ property.locationText || property.merchantName }}</p><h2>{{ property.name }}</h2><p>{{ property.description }}</p><div class="v3-tag-row"><span v-for="tag in property.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(property) }}</p><button class="ghost" type="button" @click="selectedStayId = selectedStayId === property.id ? '' : property.id">{{ selectedStayId === property.id ? '收起房型' : `查看 ${property.roomTypes?.length || 0} 种房型` }}</button></div><section v-if="selectedStayId === property.id" class="v3-room-grid"><article v-for="room in property.roomTypes || []" :key="room.id"><SafeImage v-if="imageOf(room, 'stay')" :src="imageOf(room, 'stay')" :alt="`${room.name}房型资料图片`" :label="room.name" loading="lazy" /><div><p v-if="!imageOf(room, 'stay')" class="v3-room-image-note">住宿配图见上方，房型以文字资料为准。</p><h3>{{ room.name }}</h3><p>{{ room.description }}</p><p><b>每间演示容量 {{ room.maxGuestsPerRoom }} 人</b></p><p class="v3-source-note">{{ catalogNote(room) }}</p><p v-if="price(room)" class="v3-price">¥{{ price(room).amount }} / 间夜<small>{{ price(room).kind }} · {{ price(room).label }}</small></p><p v-else class="v3-muted">暂无演示价</p><button class="primary" type="button" :disabled="!room.orderable" @click="checkoutStay(property, room)">{{ room.orderable ? '选择此房型' : '当前仅供查看' }}</button></div></article></section></article>
       <p v-if="state.stay.length && !visibleStays.length" class="v3-state">没有符合当前关键词或单间人数条件的住宿，试试放宽筛选。</p>
       <p v-if="!state.stay.length" class="v3-state">当前没有已发布住宿。</p>
     </section>
@@ -409,7 +435,7 @@ watch(() => props.focusFoodId, foodId => focusRecommendedFood(foodId))
       <div class="v3-route-toolbar"><div><b>我的示意路线</b><span>{{ selectedRoutePlaces.length ? `${selectedRoutePlaces.length} 个公开地点` : '点击地图或地点卡片开始选择' }}</span></div><button v-if="selectedRoutePlaces.length" class="ghost" type="button" @click="selectedRouteIds = []; routeMessage = ''">清空</button></div>
       <div class="v3-map-canvas" role="group" aria-label="乌东地点相对位置与自选示意路线"><svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline v-if="drawableRoutePlaces.length > 1" :points="routePolyline" /></svg><button v-for="place in drawablePlaces" :key="place.id" type="button" class="v3-map-pin" :class="{ selected: routeOrder(place.id) }" :style="mapStyle(place)" @click="toggleRoute(place)"><i>{{ routeOrder(place.id) }}</i>{{ place.name }}</button></div>
       <ol v-if="selectedRoutePlaces.length" class="v3-route-sequence"><li v-for="(place, index) in selectedRoutePlaces" :key="place.id"><b>{{ index + 1 }}</b><span>{{ place.name }}<small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small></span><button type="button" @click="toggleRoute(place)">移除</button></li></ol><p v-if="routeMessage" class="v3-notice">{{ routeMessage }}</p>
-      <div class="v3-place-list"><article v-for="place in state.map?.places || []" :key="place.id" :class="{ selected: routeOrder(place.id) }"><SafeImage :src="placeMediaUrl(place.id)" :alt="`${place.name}资料图片`" :label="place.name" loading="lazy" /><div><p class="eyebrow">{{ place.category }}</p><h3>{{ place.name }}</h3><p>{{ place.description }}</p><div class="v3-tag-row"><span v-for="tag in place.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(place) }}</p><small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small><button class="ghost" type="button" @click="toggleRoute(place)">{{ routeOrder(place.id) ? `路线第 ${routeOrder(place.id)} 站` : '加入示意路线' }}</button></div></article></div>
+      <div class="v3-place-list"><article v-for="place in state.map?.places || []" :id="`place-${place.id}`" :key="place.id" :class="{ selected: routeOrder(place.id) }"><SafeImage :src="placeMediaUrl(place.id)" :alt="`${place.name}资料图片`" :label="place.name" loading="lazy" /><div><p class="eyebrow">{{ place.category }}</p><h3>{{ place.name }}</h3><p>{{ place.description }}</p><div class="v3-tag-row"><span v-for="tag in place.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(place) }}</p><small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small><button class="ghost" type="button" @click="toggleRoute(place)">{{ routeOrder(place.id) ? `路线第 ${routeOrder(place.id)} 站` : '加入示意路线' }}</button></div></article></div>
     </section>
 
     <template v-else>

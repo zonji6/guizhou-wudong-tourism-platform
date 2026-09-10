@@ -91,7 +91,7 @@ Page({
     active: 'product', tabs,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [], productSummary: '',
     merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, highlightedFoodId: '', foodHint: '', foodCategory: 'ALL', foodCategories,
-    stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '',
+    stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '', highlightedStayId: '', stayHint: '',
     map: null, routes: [], selectedRouteId: '', customRouteIds: [], routeSteps: [], routeSegments: [], routeMessage: '',
     loading: false, error: ''
   },
@@ -99,8 +99,10 @@ Page({
     this.getTabBar()?.setData({ selected: 1 })
     const requested = getApp().globalData.resourceCategory
     this._pendingFoodFocusId = getApp().globalData.resourceFocusFoodId
+    this._pendingRoomFocusId = getApp().globalData.resourceFocusRoomId
     getApp().globalData.resourceCategory = null
     getApp().globalData.resourceFocusFoodId = null
+    getApp().globalData.resourceFocusRoomId = null
     if (tabs.some(tab => tab.id === requested)) this.setData({ active: requested })
     this.loadActive()
   },
@@ -112,7 +114,7 @@ Page({
   loadActive() {
     const active = this.data.active
     const cached = active === 'product' ? this.data.products.length : active === 'food' ? this.data.merchants.length : active === 'stay' ? this.data.stays.length : this.data.map
-    if (cached) { this.applyPendingFoodFocus(); return }
+    if (cached) { this.applyPendingFoodFocus(); this.applyPendingRoomFocus(); return }
     this.setData({ loading: true, error: '' })
     if (active === 'travel') {
       Promise.all([request('/api/places'), request('/api/posts?type=ROUTE_GUIDE')]).then(([result, posts]) => {
@@ -138,7 +140,7 @@ Page({
       if (active === 'stay') {
         const stays = (result || []).map(stayView)
         const roomTypeCount = stays.reduce((total, item) => total + item.roomTypes.length, 0)
-        this.setData({ stays, visibleStays: stays, stayCount: stays.length, roomTypeCount, staySummary: `当前公开 ${stays.length} 家住宿，共 ${roomTypeCount} 个房型` })
+        this.setData({ stays, visibleStays: stays, stayCount: stays.length, roomTypeCount, staySummary: `当前公开 ${stays.length} 家住宿，共 ${roomTypeCount} 个房型` }, () => this.applyPendingRoomFocus())
       }
     }).catch(reason => this.setData({ error: reason?.message || '内容暂时无法读取。' })).finally(() => this.setData({ loading: false }))
   },
@@ -188,7 +190,7 @@ Page({
       return keywordMatches && capacityMatches
     })
     const conditions = [query ? '关键词' : '', requestedPeople ? `${requestedPeople} 人/间` : ''].filter(Boolean)
-    this.setData({ visibleStays, staySummary: conditions.length ? `匹配 ${visibleStays.length} / ${this.data.stayCount} 家（${conditions.join('，')}）` : `当前公开 ${this.data.stayCount} 家住宿，共 ${this.data.roomTypeCount} 个房型` })
+    this.setData({ visibleStays, highlightedStayId: '', stayHint: '', staySummary: conditions.length ? `匹配 ${visibleStays.length} / ${this.data.stayCount} 家（${conditions.join('，')}）` : `当前公开 ${this.data.stayCount} 家住宿，共 ${this.data.roomTypeCount} 个房型` })
   },
   chooseMerchant(event) { this.selectMerchantById(event.currentTarget.dataset.id) },
   selectMerchantById(merchantId, highlightedFoodId = '') {
@@ -256,6 +258,16 @@ Page({
       if (!food?.merchantId) throw new Error('推荐餐食暂时无法定位到公开店铺。')
       this.selectMerchantById(food.merchantId, food.id)
     }).catch(reason => this.setData({ error: reason?.message || '暂时无法定位推荐餐食。' }))
+  },
+  applyPendingRoomFocus() {
+    const roomId = this._pendingRoomFocusId
+    if (this.data.active !== 'stay' || !roomId || !this.data.stays.length) return
+    this._pendingRoomFocusId = ''
+    request(`/api/room-types/${encodeURIComponent(roomId)}`).then(room => {
+      const property = this.data.stays.find(item => item.id === room?.stayPropertyId)
+      if (!property) throw new Error('推荐房型所属住宿暂未在公开目录中展示。')
+      this.setData({ visibleStays: [property], highlightedStayId: property.id, stayHint: `已为你定位“${room.name}”所在住宿，可继续查看房型并主动核价。`, staySummary: '已收束到向导推荐的公开住宿' })
+    }).catch(reason => this.setData({ error: reason?.message || '暂时无法定位推荐房型。' }))
   },
   startCustomRoute() {
     const customRouteIds = []

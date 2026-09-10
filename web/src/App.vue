@@ -60,7 +60,7 @@ onUnmounted(() => removeEventListener('hashchange', syncRoute))
     <HomePage v-if="route.name === 'home'" @gate-change="homeOpened = $event" @navigate="navigateIntent">
       <template #assistant><div class="v3-home-guide"><p>可以免登录先体验向导；需要保存个人成果时，再登录并由你确认。</p><button class="primary" @click="go('/guide')">进入乌东向导</button></div></template>
     </HomePage>
-    <ExplorePage v-else-if="route.name === 'explore'" :section="route.section" :focus-food-id="route.focusFoodId" @navigate="go" @checkout="beginCheckout" />
+    <ExplorePage v-else-if="route.name === 'explore'" :section="route.section" :focus-food-id="route.focusFoodId" :focus-product-id="route.focusProductId" :focus-room-id="route.focusRoomId" :focus-place-id="route.focusPlaceId" @navigate="go" @checkout="beginCheckout" />
     <GuidePage v-else-if="route.name === 'guide'" />
     <MyOrdersPage v-else-if="route.name === 'my'" />
     <BookingPage v-else-if="route.name === 'checkout'" :selection="checkoutSelection" @back="go('/explore')" @go-my="go('/my')" />

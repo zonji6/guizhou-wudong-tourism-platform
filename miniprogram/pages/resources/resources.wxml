@@ -57,7 +57,8 @@
     <view class="search-box"><input value="{{stayQuery}}" placeholder="搜索住宿、房型、位置或标签" bindinput="staySearch"/></view>
     <view class="stay-people"><text>单间入住人数</text><input type="number" min="1" max="6" value="{{stayPeople}}" placeholder="不限" bindinput="stayPeopleChange"/><text>人</text></view>
     <view class="count-note">{{staySummary}}；容量和价格均为演示信息，不代表实时房态。</view>
-    <view wx:for="{{visibleStays}}" wx:key="id" class="resource-card">
+    <view wx:if="{{stayHint}}" class="stay-hint">{{stayHint}}</view>
+    <view wx:for="{{visibleStays}}" wx:key="id" class="resource-card {{item.id === highlightedStayId ? 'is-highlighted' : ''}}">
       <image wx:if="{{item.displayImageUrl}}" class="card-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
       <view wx:else class="card-image image-empty">图片暂缺</view>
       <view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view><view class="eyebrow">{{item.locationText || item.merchantName}}</view><view class="card-title">{{item.name}}</view><view class="muted">{{item.description}}</view>

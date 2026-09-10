@@ -18,7 +18,14 @@ export function parseHashRoute(hash = location.hash) {
   const [path, rawQuery = ''] = raw.split('?', 2)
   const query = new URLSearchParams(rawQuery)
   const focusFoodId = query.get('foodId') || ''
-  if ([...query.keys()].some(key => key !== 'foodId')) return { name: 'not-found', path: raw }
-  if (focusFoodId && path !== '/explore/food') return { name: 'not-found', path: raw }
-  return STATIC_ROUTES.has(path) ? { ...STATIC_ROUTES.get(path), path: raw, focusFoodId } : { name: 'not-found', path: raw }
+  const focusProductId = query.get('productId') || ''
+  const focusRoomId = query.get('roomId') || ''
+  const focusPlaceId = query.get('placeId') || ''
+  const allowedKeys = new Set(['foodId', 'productId', 'roomId', 'placeId'])
+  if ([...query.keys()].some(key => !allowedKeys.has(key))) return { name: 'not-found', path: raw }
+  const focused = [[focusFoodId, '/explore/food'], [focusProductId, '/explore/product'], [focusRoomId, '/explore/stay'], [focusPlaceId, '/explore/travel']]
+  if (focused.filter(([id]) => id).length > 1 || focused.some(([id, expectedPath]) => id && path !== expectedPath)) return { name: 'not-found', path: raw }
+  return STATIC_ROUTES.has(path)
+    ? { ...STATIC_ROUTES.get(path), path: raw, focusFoodId, focusProductId, focusRoomId, focusPlaceId }
+    : { name: 'not-found', path: raw }
 }

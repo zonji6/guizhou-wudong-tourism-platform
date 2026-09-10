@@ -114,8 +114,14 @@ Page({
   openRecommendedResource(type, id) {
     const category = { PRODUCT: 'product', FOOD: 'food', STAY: 'stay', PLACE: 'travel', ROUTE_GUIDE: 'travel' }[type]
     if (!category) { this.setData({ message: '当前建议请登录后到“我的”确认，或重新描述你的需求。' }); return }
+    if (type === 'PRODUCT' || type === 'PLACE') {
+      const kind = type === 'PRODUCT' ? 'product' : 'travel'
+      wx.navigateTo({ url: `/pages/detail/detail?kind=${kind}&id=${encodeURIComponent(id)}` })
+      return
+    }
     getApp().globalData.resourceCategory = category
     getApp().globalData.resourceFocusFoodId = type === 'FOOD' && id ? id : null
+    getApp().globalData.resourceFocusRoomId = type === 'STAY' && id ? id : null
     wx.switchTab({ url: '/pages/resources/resources' })
   },
   followRecommendation(event) {
