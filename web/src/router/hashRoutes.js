@@ -5,6 +5,7 @@ const STATIC_ROUTES = new Map([
   ['/explore/food', { name: 'explore', section: 'food' }],
   ['/explore/stay', { name: 'explore', section: 'stay' }],
   ['/explore/travel', { name: 'explore', section: 'travel' }],
+  ['/explore/community', { name: 'explore', section: 'community' }],
   ['/community', { name: 'explore', section: 'community' }],
   ['/guide', { name: 'guide' }],
   ['/my', { name: 'my' }],

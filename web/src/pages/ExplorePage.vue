@@ -37,6 +37,8 @@ const selectedRouteIds = ref([])
 const routeGuidePlaceIds = ref([])
 const routeMessage = ref('')
 const selectedPostId = ref('')
+const postFilter = ref('')
+const postTag = ref('')
 const postType = ref('MOMENT')
 const postForm = reactive({ title: '', content: '', tags: '', routeSummary: '' })
 const posting = ref(false)
@@ -85,6 +87,8 @@ const visibleStays = computed(() => {
   })
 })
 const drawablePlaces = computed(() => (state.map?.places || []).filter(place => place.schematicPosition))
+const communityTags = computed(() => [...new Set(state.posts.flatMap(post => Array.isArray(post.tags) ? post.tags : []))])
+const visiblePosts = computed(() => state.posts.filter(post => (!postFilter.value || post.postType === postFilter.value) && (!postTag.value || (post.tags || []).includes(postTag.value))))
 const selectedRoutePlaces = computed(() => selectedRouteIds.value
   .map(id => (state.map?.places || []).find(place => place.id === id))
   .filter(Boolean))
@@ -132,6 +136,12 @@ function mapStyle(place) {
 function routeOrder(placeId) {
   const index = selectedRouteIds.value.indexOf(placeId)
   return index < 0 ? '' : index + 1
+}
+
+function routeNotice(post) {
+  const summary = String(post?.routeSummary || '').trim().replace(/[。.!！?？]+$/, '')
+  if (/不提供真实导航/.test(summary)) return `${summary}。`
+  return `${summary || '路线仅表达地点顺序'}；不提供真实导航。`
 }
 
 function routeGuideOrder(placeId) {
@@ -379,7 +389,7 @@ watch(() => props.section, () => {
 
     <template v-else>
       <section class="v3-community-layout">
-        <div><header class="v3-reading-head"><p class="eyebrow">文化阅读与寨里分享</p><h2>从一篇文章，走近一段山里日常</h2><p>文化资料与个人分享并列呈现；路线内容始终只作示意。</p></header><article v-for="post in state.posts" :key="post.id" class="v3-post" :class="{ 'is-reading': selectedPostId === post.id }"><SafeImage v-if="postMediaUrl(post.id)" :src="postMediaUrl(post.id)" :alt="`${post.title}资料参考图`" :label="post.title || '乌东文化文章'" loading="lazy" /><div><p class="eyebrow">{{ postLabel(post) }} · {{ post.authorName }}</p><h2>{{ post.title || '山里片刻' }}</h2><p v-if="postMediaUrl(post.id)" class="v3-source-note">原始资料参考图，公开使用范围待确认</p><p class="v3-source-note">{{ post.legacyData ? '资料参考内容' : post.demoData ? '演示分享' : '公开分享' }}</p><p class="v3-post-copy">{{ selectedPostId === post.id ? post.content : postExcerpt(post) }}</p><button v-if="String(post.content || '').length > 120" class="v3-text-button" type="button" @click="selectedPostId = selectedPostId === post.id ? '' : post.id">{{ selectedPostId === post.id ? '收起全文' : '阅读全文' }}</button><template v-if="post.postType === 'ROUTE_GUIDE'"><div v-if="routePlaces(post).length" class="v3-route-sketch" role="img" :aria-label="`${post.title}水彩示意节点顺序`"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline :points="postRoutePolyline(post)" /></svg><span v-for="(entry, index) in routePlaces(post)" :key="`${post.id}-${entry.node.sequence}-${index}`" :style="mapStyle(entry.place)"><i>{{ entry.node.sequence }}</i>{{ entry.place.name }}</span></div><p class="v3-notice">{{ post.routeSummary }}。仅为水彩示意顺序，不提供真实导航。</p><ol><li v-for="(node, index) in post.routeNodes" :key="`${post.id}-${node.sequence}-${index}`">{{ node.placeName }}<small v-if="!node.drawable">（仅文字，不绘制）</small></li></ol><button class="ghost" type="button" @click="usePostRoute(post)">在示意图查看这条路线</button></template><footer>{{ post.tags?.join(' · ') }}</footer></div></article><p v-if="!state.posts.length" class="v3-state">寨里暂时没有公开分享。</p></div>
+        <div><header class="v3-reading-head"><p class="eyebrow">文化阅读与寨里分享</p><h2>从一篇文章，走近一段山里日常</h2><p>文化资料与个人分享并列呈现；路线内容始终只作示意。</p></header><section v-if="state.posts.length" class="v3-community-filters"><div><button type="button" :class="{ active: !postFilter }" @click="postFilter = ''">全部</button><button type="button" :class="{ active: postFilter === 'MOMENT' }" @click="postFilter = 'MOMENT'">寨里动态</button><button type="button" :class="{ active: postFilter === 'ROUTE_GUIDE' }" @click="postFilter = 'ROUTE_GUIDE'">示意路线</button></div><div v-if="communityTags.length"><button type="button" :class="{ active: !postTag }" @click="postTag = ''">全部标签</button><button v-for="tag in communityTags" :key="tag" type="button" :class="{ active: postTag === tag }" @click="postTag = postTag === tag ? '' : tag">{{ tag }}</button></div></section><article v-for="post in visiblePosts" :key="post.id" class="v3-post" :class="{ 'is-reading': selectedPostId === post.id }"><SafeImage v-if="postMediaUrl(post.id)" :src="postMediaUrl(post.id)" :alt="`${post.title}资料参考图`" :label="post.title || '乌东文化文章'" loading="lazy" /><div><p class="eyebrow">{{ postLabel(post) }} · {{ post.authorName }}</p><h2>{{ post.title || '山里片刻' }}</h2><p v-if="postMediaUrl(post.id)" class="v3-source-note">原始资料参考图，公开使用范围待确认</p><p class="v3-source-note">{{ post.legacyData ? '资料参考内容' : post.demoData ? '演示分享' : '公开分享' }}</p><p class="v3-post-copy">{{ selectedPostId === post.id ? post.content : postExcerpt(post) }}</p><button v-if="String(post.content || '').length > 120" class="v3-text-button" type="button" @click="selectedPostId = selectedPostId === post.id ? '' : post.id">{{ selectedPostId === post.id ? '收起全文' : '阅读全文' }}</button><template v-if="post.postType === 'ROUTE_GUIDE'"><div v-if="routePlaces(post).length" class="v3-route-sketch" role="img" :aria-label="`${post.title}水彩示意节点顺序`"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline :points="postRoutePolyline(post)" /></svg><span v-for="(entry, index) in routePlaces(post)" :key="`${post.id}-${entry.node.sequence}-${index}`" :style="mapStyle(entry.place)"><i>{{ entry.node.sequence }}</i>{{ entry.place.name }}</span></div><p class="v3-notice">{{ routeNotice(post) }}</p><ol><li v-for="(node, index) in post.routeNodes" :key="`${post.id}-${node.sequence}-${index}`">{{ node.placeName }}<small v-if="!node.drawable">（仅文字，不绘制）</small></li></ol><button class="ghost" type="button" @click="usePostRoute(post)">在示意图查看这条路线</button></template><footer>{{ post.tags?.join(' · ') }}</footer></div></article><p v-if="state.posts.length && !visiblePosts.length" class="v3-state">没有符合当前筛选的寨里内容，试试清空标签或类型。</p><p v-if="!state.posts.length" class="v3-state">寨里暂时没有公开分享。</p></div>
         <form class="v3-post-form" @submit.prevent="submitPost"><p class="eyebrow">登录后分享</p><h2>写一页寨里手账</h2><p v-if="!authState.user.account">请先到“我的”登录平台账号。</p><template v-else><label>类型<select v-model="postType"><option value="MOMENT">日常记录</option><option value="ROUTE_GUIDE">示意路线攻略</option></select></label><label v-if="postType === 'ROUTE_GUIDE'">标题<input v-model="postForm.title" maxlength="80" required></label><label>正文<textarea v-model="postForm.content" maxlength="2000" required></textarea></label><label>标签（逗号分隔）<input v-model="postForm.tags" placeholder="村寨生活"></label><template v-if="postType === 'ROUTE_GUIDE'"><label>路线说明<input v-model="postForm.routeSummary" maxlength="300" required></label><fieldset class="v3-route-picker"><legend>公开地点（最多 12 个）</legend><p>{{ routeGuidePlaceIds.length ? `已选 ${routeGuidePlaceIds.length} 个，按编号即发布顺序` : '点击地点加入路线，再次点击可移除。' }}</p><div><button v-for="place in state.map?.places || []" :key="place.id" type="button" :class="{ active: routeGuideOrder(place.id) }" @click="toggleRouteGuidePlace(place)"><i>{{ routeGuideOrder(place.id) || '+' }}</i>{{ place.name }}</button></div></fieldset><small>路线仅为水彩示意顺序，不提供真实导航。</small></template><button class="primary" :disabled="posting">{{ posting ? '发布中…' : '发布' }}</button><p v-if="postMessage">{{ postMessage }}</p></template></form>
       </section>
     </template>
