@@ -5,7 +5,7 @@ const { authState, ensureAnonymousMiniSession, randomUuid, userOptions } = requi
 const ASSISTANT_CONTRACT = 'assistant-card-v3-draft-r1'
 const EVENT_CONTRACT = 'assistant-event-v3-draft-r1'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-const stageLabels = { UNDERSTANDING: '理解需求', RETRIEVING: '检索乌东资料', VERIFYING_KNOWLEDGE: '核对资料版本', PREPARING_RESULT: '整理建议', PERSISTING_RESULT: '保存本轮结果' }
+const stageLabels = { UNDERSTANDING: '理解需求', RETRIEVING: '检索乌东资料', VERIFYING_KNOWLEDGE: '核对资料版本', PLANNING: '匹配体验', PREPARING_RESULT: '整理建议', PERSISTING_RESULT: '保存本轮结果' }
 const stagePhases = Object.entries(stageLabels).map(([id, label]) => ({ id, label }))
 
 function emptyConditions() {
@@ -110,5 +110,12 @@ Page({
   },
   retry() { this.sendPrompt() },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) },
-  toResources(event) { getApp().globalData.resourceCategory = event.currentTarget.dataset.kind; wx.switchTab({ url: '/pages/resources/resources' }) }
+  toResources(event) { getApp().globalData.resourceCategory = event.currentTarget.dataset.kind; wx.switchTab({ url: '/pages/resources/resources' }) },
+  followCardAction(event) {
+    const type = event.currentTarget.dataset.type
+    const category = { PRODUCT: 'product', FOOD: 'food', STAY: 'stay', PLACE: 'travel', ROUTE_GUIDE: 'travel' }[type]
+    if (!category) { this.setData({ message: '当前建议请登录后到“我的”确认，或重新描述你的需求。' }); return }
+    getApp().globalData.resourceCategory = category
+    wx.switchTab({ url: '/pages/resources/resources' })
+  }
 })
