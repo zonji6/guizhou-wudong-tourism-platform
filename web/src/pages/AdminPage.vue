@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { authState, login, logout, prepareAuth, refresh } from '../services/authSession'
-import { loadAdminKnowledge, loadAdminOperations, patchAdminCatalog, publishKnowledge, updateAdminCatalogStatus, updateAdminOrderStatus } from '../services/tourismApi'
+import { createAdminCatalog, loadAdminKnowledge, loadAdminOperations, patchAdminCatalog, publishKnowledge, updateAdminCatalogStatus, updateAdminOrderStatus } from '../services/tourismApi'
 
 const form = reactive({ username: '', password: '' })
 const data = reactive({ sources: [], documents: [], operations: {} })
@@ -13,7 +13,7 @@ const statusUpdating = ref('')
 const catalogSaving = ref(false)
 const selectedCatalogKind = ref('')
 const selectedCatalogItem = ref(null)
-const catalogForm = reactive({ name: '', description: '', tags: '', imageUrl: '', contactPhone: '', pickupPoint: '', visitTimeText: '', locationText: '', itemType: 'DISH', maxGuestsPerRoom: 1, priceAmount: '', priceNote: '', category: '', schematicX: '', schematicY: '' })
+const catalogForm = reactive({ parentId: '', name: '', description: '', tags: '', imageUrl: '', contactPhone: '', pickupPoint: '', visitTimeText: '', locationText: '', itemType: 'DISH', maxGuestsPerRoom: 1, priceAmount: '', priceNote: '', category: '', schematicX: '', schematicY: '' })
 
 const count = key => Array.isArray(data.operations[key]) ? data.operations[key].length : 0
 const allOrders = computed(() => ['products', 'foods', 'stays'].flatMap(kind => (data.operations[`orders:${kind}`] || []).map(order => ({ ...order, kind }))))
@@ -44,11 +44,26 @@ function openCatalogItem(kind, item) {
     schematicX: item.schematicPosition?.x || '', schematicY: item.schematicPosition?.y || ''
   })
 }
+function openCatalogCreate(kind) {
+  selectedCatalogKind.value = kind
+  selectedCatalogItem.value = null
+  Object.assign(catalogForm, {
+    parentId: '', name: '', description: '', tags: '', imageUrl: '', contactPhone: '', pickupPoint: '', visitTimeText: '', locationText: '',
+    itemType: 'DISH', maxGuestsPerRoom: 1, priceAmount: '', priceNote: '', category: '', schematicX: '', schematicY: ''
+  })
+}
 function catalogTags() { return catalogForm.tags.split(/[，,]/).map(value => value.trim()).filter(Boolean) }
 function priceUnit(kind) { return kind === 'products' ? 'ITEM' : kind === 'foods' ? 'PORTION' : 'ROOM_NIGHT' }
 function demoPrice(kind) {
   const amount = catalogForm.priceAmount.trim()
+  if (amount && (!Number.isFinite(Number(amount)) || Number(amount) < 0)) throw new Error('演示价格需为不小于 0 的数字。')
   return amount ? { amount: Number(amount).toFixed(2), currency: 'CNY', unit: priceUnit(kind), simulationNote: catalogForm.priceNote.trim() || '本机演示价格，以现场为准' } : null
+}
+function schematicPosition() {
+  const x = catalogForm.schematicX.trim(); const y = catalogForm.schematicY.trim()
+  if (!x && !y) return null
+  if (!x || !y || !Number.isFinite(Number(x)) || !Number.isFinite(Number(y)) || Number(x) < 0 || Number(x) > 1 || Number(y) < 0 || Number(y) > 1) throw new Error('示意坐标需同时填写 0 到 1 之间的横、纵坐标。')
+  return { x: Number(x).toFixed(4), y: Number(y).toFixed(4) }
 }
 function catalogPayload(kind) {
   const common = { name: catalogForm.name.trim(), description: catalogForm.description.trim(), tags: catalogTags(), imageUrl: catalogForm.imageUrl.trim() || null }
@@ -57,8 +72,13 @@ function catalogPayload(kind) {
   if (kind === 'foods') return { ...common, itemType: catalogForm.itemType, visitTimeText: catalogForm.visitTimeText.trim() || null, demoPrice: demoPrice(kind) }
   if (kind === 'stays') return { ...common, locationText: catalogForm.locationText.trim() || null }
   if (kind === 'room-types') return { name: common.name, description: common.description, imageUrl: common.imageUrl, maxGuestsPerRoom: Number(catalogForm.maxGuestsPerRoom), demoPrice: demoPrice(kind) }
-  const x = catalogForm.schematicX.trim(); const y = catalogForm.schematicY.trim()
-  return { ...common, category: catalogForm.category.trim(), schematicPosition: !x && !y ? null : { x: Number(x).toFixed(4), y: Number(y).toFixed(4) } }
+  return { ...common, category: catalogForm.category.trim(), schematicPosition: schematicPosition() }
+}
+function catalogCreatePayload(kind) {
+  const body = catalogPayload(kind)
+  if (kind === 'products' || kind === 'foods' || kind === 'stays') return { ...body, merchantId: catalogForm.parentId }
+  if (kind === 'room-types') return { ...body, stayPropertyId: catalogForm.parentId }
+  return body
 }
 function orderAction(order) {
   const options = { products: { PENDING_PICKUP: ['PICKED_UP', '已取货'] }, foods: { PENDING_VISIT: ['COMPLETED', '已到店完成'] }, stays: { PENDING_CONFIRMATION: ['CONFIRMED', '确认入住'], CONFIRMED: ['COMPLETED', '完成入住'] } }
@@ -76,9 +96,12 @@ async function publish(document) { publishingId.value = document.id; message.val
 async function advanceOrder(order) { const action = orderAction(order); if (!action) return; statusUpdating.value = `${order.kind}:${order.id}`; message.value = ''; try { await updateAdminOrderStatus(order.kind, order, action[0]); await reload(); message.value = `订单已更新为“${action[1]}”。` } catch (reason) { message.value = reason?.message || '订单状态更新失败。' } finally { statusUpdating.value = '' } }
 async function saveCatalogItem() {
   const item = selectedCatalogItem.value; const kind = selectedCatalogKind.value
-  if (!item || !kind) return
+  if (!kind) return
   catalogSaving.value = true; message.value = ''
-  try { const updated = await patchAdminCatalog(kind, item, catalogPayload(kind)); await reload(); openCatalogItem(kind, updated); message.value = '目录记录已保存。' } catch (reason) { message.value = reason?.message || '目录保存失败。' } finally { catalogSaving.value = false }
+  try {
+    const updated = item ? await patchAdminCatalog(kind, item, catalogPayload(kind)) : await createAdminCatalog(kind, catalogCreatePayload(kind))
+    await reload(); openCatalogItem(kind, updated); message.value = item ? '目录记录已保存。' : '目录记录已创建，初始状态为未发布。'
+  } catch (reason) { message.value = reason?.message || '目录保存失败。' } finally { catalogSaving.value = false }
 }
 async function setCatalogStatus(status) {
   const item = selectedCatalogItem.value; const kind = selectedCatalogKind.value
@@ -102,7 +125,41 @@ onMounted(() => prepareAuth('admin').catch(reason => { message.value = reason?.m
         <template v-else>
           <section v-if="tab === 'dashboard'" class="v3-admin-dashboard"><div class="v3-admin-hero"><div><p class="eyebrow">今日看板 · 数据随刷新更新</p><h2>沿着溪流，看见乌东的每一次相遇</h2><p>这是本机答辩演示的运营视图：目录、订单、社区与知识分别来自业务接口，不展示虚构 GMV 或实时客流。</p></div><span>乌东<br>运营</span></div><div class="v3-admin-metrics"><article v-for="card in dashboardCards" :key="card.label"><small>{{ card.label }}</small><strong>{{ card.value }}</strong><p>{{ card.note }}</p></article></div><section class="v3-admin-pulse"><header><div><p class="eyebrow">处理提醒</p><h2>订单与知识状态</h2></div><button class="ghost" @click="tab = 'orders'">查看订单</button></header><div><article><b>{{ allOrders.filter(item => /^PENDING/.test(item.status || '')).length }}</b><span>待推进订单</span><small>仅展示接口实际返回的订单</small></article><article><b>{{ data.documents.filter(item => item.currentTaskId).length }}</b><span>知识发布进行中</span><small>发布任务不等于已经生效</small></article><article><b>{{ count('catalog:places') }}</b><span>地图示意节点</span><small>不代表真实导航与比例</small></article></div></section></section>
           <section v-else-if="tab === 'orders'" class="v3-admin-orders"><header class="v3-section-heading"><div><p class="eyebrow">三类订单</p><h2>按状态推进服务</h2><p>商品、同店餐食、住宿各自独立处理；状态变更由服务端校验当前状态。</p></div></header><article v-for="order in allOrders" :key="`${order.kind}-${order.id}`" class="v3-admin-order"><header><span>{{ order.kind === 'products' ? '商品取货' : order.kind === 'foods' ? '到店餐食' : '住宿入住' }}</span><b>{{ order.status }}</b></header><h3>{{ displayName(order) }}</h3><p>{{ order.createdAt || '创建时间待返回' }} · {{ order.demoData ? '演示订单' : '业务订单' }}</p><footer><small>#{{ order.id }}</small><button v-if="orderAction(order)" class="primary" :disabled="statusUpdating" @click="advanceOrder(order)">{{ statusUpdating === `${order.kind}:${order.id}` ? '正在更新…' : orderAction(order)[1] }}</button><span v-else>当前状态无需后台推进</span></footer></article><p v-if="!allOrders.length" class="v3-state">暂无订单。游客完成提交后会在此处出现。</p></section>
-          <section v-else-if="tab === 'catalog'" class="v3-admin-catalog"><header class="v3-section-heading"><p class="eyebrow">五模块资源</p><h2>目录与内容管理</h2><p>编辑、发布、下架与归档都会调用 Java 领域接口；演示数据和示意地图的边界会继续保留。</p></header><div class="v3-admin-catalog-grid"><article v-for="group in catalogGroups" :key="group.key"><small>{{ group.hint }}</small><strong>{{ count(group.key) }}</strong><h3>{{ group.label }}</h3><ul><li v-for="item in (data.operations[group.key] || []).slice(0, 4)" :key="item.id"><button type="button" @click="openCatalogItem(group.key.replace('catalog:', ''), item)">{{ displayName(item) }}</button><i>{{ item.catalogStatus }}</i></li></ul><p v-if="count(group.key) > 4">另有 {{ count(group.key) - 4 }} 条记录</p></article></div><section v-if="selectedCatalogItem" class="v3-admin-editor"><header><div><p class="eyebrow">正在维护 · {{ selectedCatalogKind }}</p><h2>{{ selectedCatalogItem.name }}</h2><p>当前版本 {{ selectedCatalogItem.version }} · {{ selectedCatalogItem.catalogStatus }}</p></div><button class="ghost" type="button" @click="selectedCatalogItem = null">收起</button></header><form @submit.prevent="saveCatalogItem"><label>名称<input v-model="catalogForm.name" maxlength="120" required></label><label>简介<textarea v-model="catalogForm.description" maxlength="1000" required></textarea></label><label v-if="selectedCatalogKind !== 'room-types'">标签（逗号分隔）<input v-model="catalogForm.tags" maxlength="400"></label><label>图片路径（可留空）<input v-model="catalogForm.imageUrl" maxlength="500"></label><label v-if="selectedCatalogKind === 'merchants'">联系信息（内部维护项）<input v-model="catalogForm.contactPhone" maxlength="32"></label><label v-if="selectedCatalogKind === 'products'">自提说明<input v-model="catalogForm.pickupPoint" maxlength="160" required></label><label v-if="selectedCatalogKind === 'foods'">餐食类型<select v-model="catalogForm.itemType"><option value="DISH">菜品</option><option value="DRINK">饮品</option><option value="SET">套餐</option></select></label><label v-if="selectedCatalogKind === 'foods'">到店说明<input v-model="catalogForm.visitTimeText" maxlength="160"></label><label v-if="selectedCatalogKind === 'stays'">位置说明<input v-model="catalogForm.locationText" maxlength="160"></label><label v-if="selectedCatalogKind === 'room-types'">每间演示容量<input v-model.number="catalogForm.maxGuestsPerRoom" type="number" min="1" required></label><label v-if="selectedCatalogKind === 'places'">地点类别<input v-model="catalogForm.category" maxlength="64" required></label><template v-if="selectedCatalogKind === 'places'"><label>示意横坐标（0-1）<input v-model="catalogForm.schematicX" inputmode="decimal" placeholder="留空则不绘制"></label><label>示意纵坐标（0-1）<input v-model="catalogForm.schematicY" inputmode="decimal" placeholder="留空则不绘制"></label></template><template v-if="['products', 'foods', 'room-types'].includes(selectedCatalogKind)"><label>演示价格（元）<input v-model="catalogForm.priceAmount" inputmode="decimal" placeholder="留空即无演示价"></label><label>演示价格说明<input v-model="catalogForm.priceNote" maxlength="200" placeholder="例如：本机演示价格，以现场为准"></label></template><footer><button class="primary" :disabled="catalogSaving">{{ catalogSaving ? '保存中…' : '保存修改' }}</button><button v-for="status in ['PUBLISHED', 'UNPUBLISHED', 'ARCHIVED']" :key="status" class="ghost" type="button" :disabled="catalogSaving || selectedCatalogItem.catalogStatus === status" @click="setCatalogStatus(status)">{{ status === 'PUBLISHED' ? '发布' : status === 'UNPUBLISHED' ? '下架' : '归档' }}</button></footer></form></section></section>
+          <section v-else-if="tab === 'catalog'" class="v3-admin-catalog">
+            <header class="v3-section-heading"><p class="eyebrow">五模块资源</p><h2>目录与内容管理</h2><p>编辑、新建、发布、下架与归档都会调用 Java 领域接口；演示数据和示意地图的边界会继续保留。</p></header>
+            <div class="v3-admin-catalog-grid">
+              <article v-for="group in catalogGroups" :key="group.key">
+                <small>{{ group.hint }}</small><strong>{{ count(group.key) }}</strong><h3>{{ group.label }}</h3>
+                <button class="v3-admin-add" type="button" @click="openCatalogCreate(group.key.replace('catalog:', ''))">＋ 新建{{ group.label }}</button>
+                <ul><li v-for="item in (data.operations[group.key] || []).slice(0, 4)" :key="item.id"><button type="button" @click="openCatalogItem(group.key.replace('catalog:', ''), item)">{{ displayName(item) }}</button><i>{{ item.catalogStatus }}</i></li></ul>
+                <p v-if="count(group.key) > 4">另有 {{ count(group.key) - 4 }} 条记录</p>
+              </article>
+            </div>
+            <section v-if="selectedCatalogKind" class="v3-admin-editor">
+              <header>
+                <div><p class="eyebrow">{{ selectedCatalogItem ? `正在维护 · ${selectedCatalogKind}` : `新建目录 · ${selectedCatalogKind}` }}</p><h2>{{ selectedCatalogItem?.name || '填写一条新记录' }}</h2><p>{{ selectedCatalogItem ? `当前版本 ${selectedCatalogItem.version} · ${selectedCatalogItem.catalogStatus}` : '创建后默认为未发布，确认内容后再发布到游客端。' }}</p></div>
+                <button class="ghost" type="button" @click="selectedCatalogKind = ''; selectedCatalogItem = null">收起</button>
+              </header>
+              <form @submit.prevent="saveCatalogItem">
+                <label>名称<input v-model="catalogForm.name" maxlength="120" required></label>
+                <label>简介<textarea v-model="catalogForm.description" maxlength="1000" required></textarea></label>
+                <label v-if="selectedCatalogKind !== 'room-types'">标签（逗号分隔）<input v-model="catalogForm.tags" maxlength="400"></label>
+                <label>图片路径（可留空）<input v-model="catalogForm.imageUrl" maxlength="500"></label>
+                <label v-if="!selectedCatalogItem && ['products', 'foods', 'stays'].includes(selectedCatalogKind)">所属商家<select v-model="catalogForm.parentId" required><option disabled value="">请选择商家</option><option v-for="merchant in (data.operations['catalog:merchants'] || [])" :key="merchant.id" :value="merchant.id">{{ merchant.name }}</option></select></label>
+                <label v-if="!selectedCatalogItem && selectedCatalogKind === 'room-types'">所属住宿<select v-model="catalogForm.parentId" required><option disabled value="">请选择住宿</option><option v-for="stay in (data.operations['catalog:stays'] || [])" :key="stay.id" :value="stay.id">{{ stay.name }}</option></select></label>
+                <label v-if="selectedCatalogKind === 'merchants'">联系信息（内部维护项）<input v-model="catalogForm.contactPhone" maxlength="32"></label>
+                <label v-if="selectedCatalogKind === 'products'">自提说明<input v-model="catalogForm.pickupPoint" maxlength="160" required></label>
+                <label v-if="selectedCatalogKind === 'foods'">餐食类型<select v-model="catalogForm.itemType"><option value="DISH">菜品</option><option value="DRINK">饮品</option><option value="SET">套餐</option></select></label>
+                <label v-if="selectedCatalogKind === 'foods'">到店说明<input v-model="catalogForm.visitTimeText" maxlength="160"></label>
+                <label v-if="selectedCatalogKind === 'stays'">位置说明<input v-model="catalogForm.locationText" maxlength="160"></label>
+                <label v-if="selectedCatalogKind === 'room-types'">每间演示容量<input v-model.number="catalogForm.maxGuestsPerRoom" type="number" min="1" required></label>
+                <label v-if="selectedCatalogKind === 'places'">地点类别<input v-model="catalogForm.category" maxlength="64" required></label>
+                <template v-if="selectedCatalogKind === 'places'"><label>示意横坐标（0-1）<input v-model="catalogForm.schematicX" inputmode="decimal" placeholder="留空则不绘制"></label><label>示意纵坐标（0-1）<input v-model="catalogForm.schematicY" inputmode="decimal" placeholder="留空则不绘制"></label></template>
+                <template v-if="['products', 'foods', 'room-types'].includes(selectedCatalogKind)"><label>演示价格（元）<input v-model="catalogForm.priceAmount" inputmode="decimal" placeholder="留空即无演示价"></label><label>演示价格说明<input v-model="catalogForm.priceNote" maxlength="200" placeholder="例如：本机演示价格，以现场为准"></label></template>
+                <footer><button class="primary" :disabled="catalogSaving">{{ catalogSaving ? '保存中…' : selectedCatalogItem ? '保存修改' : '创建未发布记录' }}</button><template v-if="selectedCatalogItem"><button v-for="status in ['PUBLISHED', 'UNPUBLISHED', 'ARCHIVED']" :key="status" class="ghost" type="button" :disabled="catalogSaving || selectedCatalogItem.catalogStatus === status" @click="setCatalogStatus(status)">{{ status === 'PUBLISHED' ? '发布' : status === 'UNPUBLISHED' ? '下架' : '归档' }}</button></template></footer>
+              </form>
+            </section>
+          </section>
           <section v-else-if="tab === 'documents'" class="v3-admin-list"><header class="v3-section-heading"><p class="eyebrow">RAG 知识</p><h2>草稿、生效版本与发布任务</h2></header><article v-for="document in data.documents" :key="document.id"><header><span>{{ document.visibility }}</span><b>行版本 {{ document.version }} · 草稿修订 {{ document.draftRevision }}</b></header><h2>{{ document.draft?.title || document.liveSnapshot?.title || '未命名知识' }}</h2><p>{{ document.draft?.content }}</p><dl><dt>当前任务</dt><dd>{{ document.currentTaskId || '无' }}</dd><dt>生效快照</dt><dd>{{ document.liveSnapshot ? `修订 ${document.liveSnapshot.draftRevision}` : '尚未发布' }}</dd></dl><button class="primary" :disabled="!document.editable || publishingId" @click="publish(document)">{{ publishingId === document.id ? '正在请求…' : document.editable ? '发起发布任务' : '发布进行中，不可编辑' }}</button></article><p v-if="!data.documents.length" class="v3-state">还没有知识文档。</p></section>
           <section v-else class="v3-admin-list"><header class="v3-section-heading"><p class="eyebrow">资料脉络</p><h2>来源主档</h2></header><article v-for="source in data.sources" :key="source.id"><header><span>{{ source.readStatus }}</span><b>来源版本 {{ source.version }}</b></header><h2>{{ source.title }}</h2><p>{{ source.publisher || '发布方待补' }} · {{ source.sourceKind }}</p><footer>{{ source.locator || '定位信息待补' }}</footer></article><p v-if="!data.sources.length" class="v3-state">还没有知识来源。</p></section>
         </template>

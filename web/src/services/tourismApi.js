@@ -149,6 +149,13 @@ export async function patchAdminCatalog(kind, item, body) {
   })), '目录编辑回执')
 }
 
+export async function createAdminCatalog(kind, body) {
+  return expectObject(await request(`/api/admin/${encodeURIComponent(kind)}`, adminRequestOptions({
+    method: 'POST',
+    body: JSON.stringify(body)
+  })), '目录新建回执')
+}
+
 export async function updateAdminCatalogStatus(kind, item, catalogStatus) {
   return expectObject(await request(`/api/admin/${encodeURIComponent(kind)}/${encodeURIComponent(item.id)}/catalog-status`, adminRequestOptions({
     method: 'PATCH',

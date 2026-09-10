@@ -2619,6 +2619,8 @@ button:disabled {
 @keyframes leaf-ripple { from { opacity: .7; transform: scale(.55); } to { opacity: 0; transform: scale(1.7); } }
 
 .v3-admin-catalog-grid li { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+.v3-admin-add { margin: .15rem 0 .35rem; padding: .35rem .55rem; border: 1px dashed #82a698; border-radius: .45rem; color: #315f4b; background: #f4f8ef; cursor: pointer; font: inherit; font-size: .76rem; }
+.v3-admin-add:hover { color: #fff; border-color: #397f7a; background: #397f7a; }
 .v3-admin-catalog-grid li button { min-width: 0; overflow: hidden; padding: 0; border: 0; color: #315f4b; background: transparent; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .v3-admin-catalog-grid li button:hover { color: #c6734d; text-decoration: underline; }
 .v3-admin-catalog-grid li i { flex: 0 0 auto; color: #718077; font-size: .62rem; font-style: normal; }
