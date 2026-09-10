@@ -21,7 +21,7 @@
       <view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view>
       <view class="eyebrow">{{item.merchantName}}</view>
       <view class="card-title">{{item.name}}</view>
-      <view class="tag-row"><text wx:for="{{item.tags}}" wx:key="*this">{{item}}</text></view>
+      <view wx:if="{{item.displayTags.length}}" class="tag-row"><text wx:for="{{item.displayTags}}" wx:key="*this">{{item}}</text></view>
       <view class="muted">{{item.description}}</view>
       <view wx:if="{{item.priceView}}" class="price">¥{{item.priceView.amount}} <text>{{item.priceView.kind}} · {{item.priceView.note}}</text></view>
       <view wx:else class="muted">暂无可展示价格</view>

@@ -26,6 +26,7 @@ const foodCategories = [
 
 const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
 const productMetadataTags = new Set(['商品', '演示数据', '资料待核验', '资料参考', '待核验'])
+const resourceMetadataTags = new Set(['商品', '餐食', '演示数据', '资料待核验', '资料参考', '待核验', '资料菜单项', '资料候选', '共享示意图'])
 
 function priceView(item) {
   if (item?.demoPrice) return { amount: item.demoPrice.amount, note: item.demoPrice.simulationNote, kind: '演示价' }
@@ -42,7 +43,7 @@ function withImage(item, kind) {
 }
 
 function productView(item) {
-  return { ...withImage(item, 'product'), priceView: priceView(item) }
+  return { ...withImage(item, 'product'), priceView: priceView(item), displayTags: (item.tags || []).filter(tag => !resourceMetadataTags.has(tag)) }
 }
 
 function foodView(item) {
