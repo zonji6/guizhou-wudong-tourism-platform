@@ -39,10 +39,11 @@
       <view><view class="card-title">{{item.name}}</view><view class="muted">{{item.description}}</view><view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view></view>
     </view>
     <view wx:if="{{merchants.length && !visibleMerchants.length}}" class="state">没有匹配的店铺，试试清空关键词。</view>
-    <view id="food-menu" wx:if="{{selectedMerchant}}" class="menu">
+      <view id="food-menu" wx:if="{{selectedMerchant}}" class="menu">
       <view class="eyebrow">同店多菜</view><view class="section-title">{{selectedMerchant.name}}</view>
+      <view wx:if="{{foodHint}}" class="food-hint">{{foodHint}}</view>
       <scroll-view class="subfilters" scroll-x><view wx:for="{{foodCategories}}" wx:key="id" class="subfilter {{foodCategory === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="selectFoodCategory">{{item.name}}</view></scroll-view>
-      <view class="menu-row" wx:for="{{visibleFoods}}" wx:key="id">
+      <view class="menu-row {{item.id === highlightedFoodId ? 'is-highlighted' : ''}}" wx:for="{{visibleFoods}}" wx:key="id">
         <image wx:if="{{item.displayImageUrl}}" class="menu-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
         <view><view class="eyebrow">{{item.itemTypeLabel}}</view><view class="card-title">{{item.name}}</view><view class="muted">{{item.description}}</view><view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view><view wx:if="{{item.priceView}}" class="price">¥{{item.priceView.amount}} / 份<text>{{item.priceView.note}}</text></view></view>
         <input type="number" min="0" max="99" value="{{item.quantity}}" disabled="{{!item.orderable}}" data-id="{{item.id}}" bindinput="quantityChange"/>

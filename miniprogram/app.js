@@ -5,6 +5,7 @@ App({
     apiBase: 'http://127.0.0.1:8080',
     aiWsBase: 'ws://127.0.0.1:8002',
     resourceCategory: 'product',
+    resourceFocusFoodId: null,
     checkoutSelection: null,
     auth: null,
     anonymous: null

@@ -111,11 +111,17 @@ Page({
   retry() { this.sendPrompt() },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) },
   toResources(event) { getApp().globalData.resourceCategory = event.currentTarget.dataset.kind; wx.switchTab({ url: '/pages/resources/resources' }) },
-  followCardAction(event) {
-    const type = event.currentTarget.dataset.type
+  openRecommendedResource(type, id) {
     const category = { PRODUCT: 'product', FOOD: 'food', STAY: 'stay', PLACE: 'travel', ROUTE_GUIDE: 'travel' }[type]
     if (!category) { this.setData({ message: '当前建议请登录后到“我的”确认，或重新描述你的需求。' }); return }
     getApp().globalData.resourceCategory = category
+    getApp().globalData.resourceFocusFoodId = type === 'FOOD' && id ? id : null
     wx.switchTab({ url: '/pages/resources/resources' })
+  },
+  followRecommendation(event) {
+    this.openRecommendedResource(event.currentTarget.dataset.type, event.currentTarget.dataset.id)
+  },
+  followCardAction(event) {
+    this.openRecommendedResource(event.currentTarget.dataset.type, event.currentTarget.dataset.id)
   }
 })

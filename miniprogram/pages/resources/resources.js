@@ -90,7 +90,7 @@ Page({
   data: {
     active: 'product', tabs,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [], productSummary: '',
-    merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, foodCategory: 'ALL', foodCategories,
+    merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, highlightedFoodId: '', foodHint: '', foodCategory: 'ALL', foodCategories,
     stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '',
     map: null, routes: [], selectedRouteId: '', customRouteIds: [], routeSteps: [], routeSegments: [], routeMessage: '',
     loading: false, error: ''
@@ -98,7 +98,9 @@ Page({
   onShow() {
     this.getTabBar()?.setData({ selected: 1 })
     const requested = getApp().globalData.resourceCategory
+    this._pendingFoodFocusId = getApp().globalData.resourceFocusFoodId
     getApp().globalData.resourceCategory = null
+    getApp().globalData.resourceFocusFoodId = null
     if (tabs.some(tab => tab.id === requested)) this.setData({ active: requested })
     this.loadActive()
   },
@@ -110,7 +112,7 @@ Page({
   loadActive() {
     const active = this.data.active
     const cached = active === 'product' ? this.data.products.length : active === 'food' ? this.data.merchants.length : active === 'stay' ? this.data.stays.length : this.data.map
-    if (cached) return
+    if (cached) { this.applyPendingFoodFocus(); return }
     this.setData({ loading: true, error: '' })
     if (active === 'travel') {
       Promise.all([request('/api/places'), request('/api/posts?type=ROUTE_GUIDE')]).then(([result, posts]) => {
@@ -131,7 +133,7 @@ Page({
       }
       if (active === 'food') {
         const merchants = (result || []).map(item => withImage(item, 'food'))
-        this.setData({ merchants, visibleMerchants: merchants, merchantSummary: `当前 ${merchants.length} 家公开店铺` })
+        this.setData({ merchants, visibleMerchants: merchants, merchantSummary: `当前 ${merchants.length} 家公开店铺` }, () => this.applyPendingFoodFocus())
       }
       if (active === 'stay') {
         const stays = (result || []).map(stayView)
@@ -188,8 +190,9 @@ Page({
     const conditions = [query ? '关键词' : '', requestedPeople ? `${requestedPeople} 人/间` : ''].filter(Boolean)
     this.setData({ visibleStays, staySummary: conditions.length ? `匹配 ${visibleStays.length} / ${this.data.stayCount} 家（${conditions.join('，')}）` : `当前公开 ${this.data.stayCount} 家住宿，共 ${this.data.roomTypeCount} 个房型` })
   },
-  chooseMerchant(event) {
-    const merchant = this.data.merchants.find(item => item.id === event.currentTarget.dataset.id)
+  chooseMerchant(event) { this.selectMerchantById(event.currentTarget.dataset.id) },
+  selectMerchantById(merchantId, highlightedFoodId = '') {
+    const merchant = this.data.merchants.find(item => item.id === merchantId)
     if (!merchant) return
     const sameMerchant = this.data.selectedMerchant?.id === merchant.id
     if (sameMerchant && (this.data.foods.length || this._foodRequestMerchantId === merchant.id)) return
@@ -198,14 +201,15 @@ Page({
     this._foodRequestMerchantId = merchant.id
     this.setData({
       selectedMerchant: merchant,
-      ...(sameMerchant ? {} : { foods: [], visibleFoods: [], foodCategory: 'ALL' }),
+      ...(sameMerchant ? {} : { foods: [], visibleFoods: [], foodCategory: 'ALL', highlightedFoodId: '', foodHint: '' }),
       loading: true,
       error: ''
     })
     request(`/api/foods?merchantId=${encodeURIComponent(merchant.id)}`).then(items => {
       if (this._foodRequestSequence !== requestSequence || this.data.selectedMerchant?.id !== merchant.id) return
       const foods = (items || []).map(foodView)
-      this.setData({ foods, visibleFoods: foods })
+      const highlighted = highlightedFoodId && foods.some(item => item.id === highlightedFoodId) ? highlightedFoodId : ''
+      this.setData({ foods, visibleFoods: foods, highlightedFoodId: highlighted, foodHint: highlighted ? `已为你打开“${foods.find(item => item.id === highlighted).name}”所在店铺，可继续同店选餐。` : '' })
       this._foodMenuReadySequence = requestSequence
     }).catch(reason => {
       if (this._foodRequestSequence !== requestSequence || this.data.selectedMerchant?.id !== merchant.id) return
@@ -243,6 +247,15 @@ Page({
     const map = mapWithCustomSelection(this.data.map, [])
     const projection = routeProjection(map, route)
     this.setData({ map, selectedRouteId, customRouteIds: [], routeSteps: projection.steps, routeSegments: projection.segments, routeMessage: '' })
+  },
+  applyPendingFoodFocus() {
+    const foodId = this._pendingFoodFocusId
+    if (this.data.active !== 'food' || !foodId || !this.data.merchants.length) return
+    this._pendingFoodFocusId = ''
+    request(`/api/foods/${encodeURIComponent(foodId)}`).then(food => {
+      if (!food?.merchantId) throw new Error('推荐餐食暂时无法定位到公开店铺。')
+      this.selectMerchantById(food.merchantId, food.id)
+    }).catch(reason => this.setData({ error: reason?.message || '暂时无法定位推荐餐食。' }))
   },
   startCustomRoute() {
     const customRouteIds = []
