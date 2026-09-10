@@ -9,6 +9,14 @@ const tabs = [
   { id: 'community', name: '社区' }
 ]
 
+const tabIntros = {
+  product: { title: '把山里的手艺，慢慢带回家', description: '从茶、苗绣、银饰与蜡染里，读一读乌东山地生活留下的手感。' },
+  food: { title: '坐下来，尝一口寨里的烟火', description: '先选一家店，再把想吃的菜慢慢放进同一张到店订单。' },
+  stay: { title: '在山谷里，安稳睡一晚', description: '从住处与房型开始，慢慢安排停留；容量、价格与房态均以现场核对为准。' },
+  travel: { title: '沿着溪流，走进寨中日常', description: '把想去的地方连成水彩示意顺序，不把它当作真实导航。' },
+  community: { title: '把山里的片刻，写进手账', description: '文化资料与寨里分享并列呈现，让阅读成为旅行开始前的一次相遇。' }
+}
+
 const foodCategories = [
   { id: 'ALL', name: '全部' },
   { id: 'DISH', name: '菜品' },
@@ -88,7 +96,7 @@ function customRouteProjection(map, customRouteIds) {
 
 Page({
   data: {
-    active: 'product', tabs,
+    active: 'product', tabs, intro: tabIntros.product,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [], productSummary: '',
     merchants: [], visibleMerchants: [], foodStartingMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, highlightedFoodId: '', foodHint: '', foodCategory: 'ALL', foodCategories,
     stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '', highlightedStayId: '', stayHint: '',
@@ -103,13 +111,13 @@ Page({
     getApp().globalData.resourceCategory = null
     getApp().globalData.resourceFocusFoodId = null
     getApp().globalData.resourceFocusRoomId = null
-    if (tabs.some(tab => tab.id === requested)) this.setData({ active: requested })
+    if (tabs.some(tab => tab.id === requested)) this.setData({ active: requested, intro: tabIntros[requested] })
     this.loadActive()
   },
   changeTab(event) {
     const active = event.currentTarget.dataset.id
     if (active === 'community') { wx.switchTab({ url: '/pages/community/community' }); return }
-    this.setData({ active, error: '' }, () => this.loadActive())
+    this.setData({ active, intro: tabIntros[active], error: '' }, () => this.loadActive())
   },
   loadActive() {
     const active = this.data.active

@@ -1,7 +1,7 @@
 <view class="page">
   <view class="eyebrow">逛乌东 · 五模块</view>
-  <view class="title">沿着山路，慢慢遇见乌东</view>
-  <view class="muted">这里展示当前公开内容；演示价格、容量和示意路线均以页面说明为准。</view>
+  <view class="title">{{intro.title}}</view>
+  <view class="muted">{{intro.description}}</view>
   <scroll-view class="filters" scroll-x>
     <view wx:for="{{tabs}}" wx:key="id" class="filter {{active === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="changeTab">{{item.name}}</view>
   </scroll-view>

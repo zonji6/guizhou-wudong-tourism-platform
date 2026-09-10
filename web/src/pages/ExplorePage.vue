@@ -14,6 +14,13 @@ const tabs = [
   { id: 'travel', label: '行' },
   { id: 'community', label: '社区' }
 ]
+const moduleIntros = {
+  product: { title: '把山里的手艺，慢慢带回家', description: '从茶、苗绣、银饰与蜡染里，读一读乌东山地生活留下的手感。' },
+  food: { title: '坐下来，尝一口寨里的烟火', description: '先选一家店，再把想吃的菜慢慢放进同一张到店订单。' },
+  stay: { title: '在山谷里，安稳睡一晚', description: '从住处与房型开始，慢慢安排停留；容量、价格与房态均以现场核对为准。' },
+  travel: { title: '沿着溪流，走进寨中日常', description: '把想去的地方连成水彩示意顺序，不把它当作真实导航。' },
+  community: { title: '把山里的片刻，写进手账', description: '文化资料与寨里分享并列呈现，让阅读成为旅行开始前的一次相遇。' }
+}
 const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
 const state = reactive({ product: [], merchants: [], stay: [], posts: [], map: null })
 const loading = ref(false)
@@ -47,6 +54,7 @@ let sequence = 0
 let foodRequestSequence = 0
 
 const activeTab = computed(() => tabs.find(tab => tab.id === props.section) || tabs[0])
+const activeIntro = computed(() => moduleIntros[props.section] || moduleIntros.product)
 const productTags = computed(() => [...new Set(state.product.flatMap(item => Array.isArray(item.tags) ? item.tags : []))])
 const visibleProducts = computed(() => {
   const keyword = productKeyword.value.trim().toLocaleLowerCase('zh-CN')
@@ -379,8 +387,8 @@ watch(() => [props.focusProductId, props.focusRoomId, props.focusPlaceId], () =>
   <main class="page v3-explore">
     <header class="page-intro v3-content-intro">
       <p class="eyebrow">逛乌东 · {{ activeTab.label }}</p>
-      <h1>沿着山路，慢慢遇见乌东</h1>
-      <p>这里呈现平台已经发布的乌东内容；资料待核验、演示价格与示意信息都会如实标明。</p>
+      <h1>{{ activeIntro.title }}</h1>
+      <p>{{ activeIntro.description }}</p>
     </header>
 
     <nav class="v3-module-tabs" aria-label="五个体验模块">
