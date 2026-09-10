@@ -51,12 +51,15 @@ exclusive_resources:
     reason: 数据库迁移必须只有一个写入人。
 environment_isolation:
   worktree: D:\AI_Project\Codex_project\乌冬\.worktrees\content-business
-task_state: VERIFYING
-dispatch_state: RETURNED
+task_state: VERIFIED
+dispatch_state: VERIFIED
 proceed: false
 artifact_revision: 6ffb3a52b205a8e0a759df2d221fc60f5e746cf9
 receipt: static_sql_PASS,mvn_skip_tests_compile_BUILD_SUCCESS,git_diff_check_PASS,scope_PASS,worktree_clean,tests_NOT_RUN_BY_TASK_RULE
 implementation_evidence_fingerprint: sha256:eef65d8984e2fddc1add837d401deed86f3f084739ecaf95caada40870ab922b
+verification_record: .codex/multi-agent/verification/TASK-031.md
+verification_verdict: PASS
+verification_runtime: NOT_EXECUTED
 enforcement:
   write_scope: WORKTREE_ISOLATED
   migration_serialization: PROCESS_GOVERNED
