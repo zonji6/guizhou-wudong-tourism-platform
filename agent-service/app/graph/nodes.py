@@ -212,8 +212,8 @@ def _flatten_catalog(target_type: str, rows: list[object]) -> list[tuple[Recomme
                     RecommendationItem(
                         target_type="FOOD",
                         target_id=row.id,
-                        target_name=row.name,
-                        summary=row.description,
+                        target_name=f"{row.merchant_name} · {row.name}",
+                        summary=f"{row.description} 到店选餐请在同一家店内完成。",
                         reference_price=row.reference_price,
                         demo_price=row.demo_price,
                         tags=row.tags,
