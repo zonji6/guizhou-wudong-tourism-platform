@@ -1,4 +1,5 @@
 server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${SERVER_PORT:8080}
 spring:
   application:
@@ -10,12 +11,40 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
   jackson:
-    default-property-inclusion: non_null
+    default-property-inclusion: always
+    deserialization:
+      fail-on-unknown-properties: true
 management:
   endpoints:
     web:
       exposure:
         include: health,info
 info:
-  app: 贵州乌冬文旅演示服务
+  app: 贵州乌东文旅演示服务
+wudong:
+  contract-version: tourism-api-v3-draft-r3
+  public-web-origin: http://127.0.0.1:5174
+  auth:
+    issuer: wudong-java-local
+    key-id: ${JWT_KEY_ID:}
+    private-key-file: ${JWT_PRIVATE_KEY_FILE:}
+    public-key-file: ${JWT_PUBLIC_KEY_FILE:}
+    access-ttl-seconds: 900
+    user-login-ttl-seconds: 604800
+    admin-login-ttl-seconds: 28800
+  internal:
+    ai-to-java-credential-file: ${AI_TO_JAVA_CREDENTIAL_FILE:}
+    java-to-ai-credential-file: ${JAVA_TO_AI_CREDENTIAL_FILE:}
+    ai-base-url: ${AI_BASE_URL:http://127.0.0.1:8000}
+  anonymous:
+    idle-ttl-seconds: 86400
+    carrier-max-age-seconds: 604800
+  knowledge:
+    retrieval-mode: ${KNOWLEDGE_RETRIEVAL_MODE:KEYWORD_DEMO}
+    max-results: 10
+  admin-init: ${WUDONG_ADMIN_INIT:false}

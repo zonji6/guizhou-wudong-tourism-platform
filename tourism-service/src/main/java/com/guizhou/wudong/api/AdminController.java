@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.annotation.Profile;
 
 @RestController
+@Profile("legacy-v2")
 @RequestMapping("/api/admin")
 public class AdminController {
     private final TourismService tourismService;

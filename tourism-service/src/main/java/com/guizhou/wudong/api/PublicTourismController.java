@@ -1,7 +1,6 @@
 package com.guizhou.wudong.api;
 
 import com.guizhou.wudong.domain.Booking;
-import com.guizhou.wudong.domain.CommunityPost;
 import com.guizhou.wudong.domain.KnowledgeDocument;
 import com.guizhou.wudong.domain.ServiceResource;
 import com.guizhou.wudong.service.TourismService;
@@ -13,10 +12,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.annotation.Profile;
 
 import java.util.List;
 
 @RestController
+@Profile("legacy-v2")
 @RequestMapping("/api")
 public class PublicTourismController {
     private final TourismService tourismService;
@@ -33,11 +34,6 @@ public class PublicTourismController {
     @GetMapping("/services/{id}")
     ApiEnvelope<ServiceResource> service(@PathVariable String id) {
         return ApiEnvelope.ok(tourismService.service(id));
-    }
-
-    @GetMapping("/posts")
-    ApiEnvelope<List<CommunityPost>> posts() {
-        return ApiEnvelope.ok(tourismService.posts());
     }
 
     @GetMapping("/knowledge-documents")
