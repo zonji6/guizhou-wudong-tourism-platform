@@ -275,9 +275,15 @@ public class V3IdentityController {
     }
 
     private void requireOrigin(HttpServletRequest request) {
-        if (!publicOrigin.equals(request.getHeader(HttpHeaders.ORIGIN))) {
-            throw new ApiRequestException(HttpStatus.FORBIDDEN, "ORIGIN_REJECTED", "浏览器来源不受信任");
+        String origin = request.getHeader(HttpHeaders.ORIGIN);
+        if (publicOrigin.equals(origin)) {
+            return;
         }
+        String referer = request.getHeader(HttpHeaders.REFERER);
+        if (origin == null && referer != null && referer.startsWith(publicOrigin + "/")) {
+            return;
+        }
+        throw new ApiRequestException(HttpStatus.FORBIDDEN, "ORIGIN_REJECTED", "浏览器来源不受信任");
     }
 
     private static void requireMiniOrigin(HttpServletRequest request) {
