@@ -21,7 +21,8 @@ Page({
   data: {
     loggedIn: false, tab: 'orders', orders: [], drafts: [], itineraries: [], legacy: [], loading: false, error: '',
     draftEditor: null, saveStatus: '', savePaused: false, saveUnknown: false, saving: false,
-    quote: null, oldQuote: null, submitStatus: '', submitting: false, submitLocked: false
+    quote: null, oldQuote: null, submitStatus: '', submitting: false, submitLocked: false,
+    tripEditor: null, tripSaving: false, tripMessage: ''
   },
   onShow() {
     const loggedIn = Boolean(authState().account)
@@ -31,8 +32,8 @@ Page({
   onUnload() { clearTimeout(this._saveTimer) },
   changeTab(event) { this.setData({ tab: event.currentTarget.dataset.tab }) },
   async load() {
-    if (this.data.draftEditor) {
-      this.setData({ error: '当前草稿编辑内容不会被刷新覆盖；请先确认保存状态并关闭编辑器。' })
+    if (this.data.draftEditor || this.data.tripEditor) {
+      this.setData({ error: '当前编辑内容不会被刷新覆盖；请先保存或关闭编辑器。' })
       return
     }
     const paths = ['/api/me/product-orders', '/api/me/food-orders', '/api/me/stay-bookings', '/api/me/food-drafts', '/api/me/stay-drafts', '/api/me/itineraries', '/api/me/legacy-records']
@@ -92,6 +93,84 @@ Page({
     this._pendingSave = null
     this._submitAttempt = null
     this.setData({ draftEditor: null, quote: null, oldQuote: null, submitStatus: '', submitLocked: false, saveStatus: '' })
+  },
+  openTrip(event) {
+    if (this.data.draftEditor || this.data.tripEditor) {
+      wx.showToast({ title: '请先关闭当前编辑器', icon: 'none' })
+      return
+    }
+    const trip = this.data.itineraries.find(item => item.id === event.currentTarget.dataset.id)
+    if (!trip) return
+    this.setData({ tripEditor: { id: trip.id, version: trip.version, content: clone(trip.content) }, tripMessage: '可调整每日主题、停留顺序与说明，确认后主动保存。', error: '' })
+  },
+  closeTrip() {
+    if (this.data.tripSaving) return
+    this.setData({ tripEditor: null, tripMessage: '' })
+  },
+  editTripMeta(event) {
+    const field = event.currentTarget.dataset.field
+    this.setData({ [`tripEditor.content.${field}`]: event.detail.value })
+  },
+  editTripDayTheme(event) {
+    const dayIndex = Number(event.currentTarget.dataset.dayIndex)
+    this.setData({ [`tripEditor.content.days[${dayIndex}].theme`]: event.detail.value })
+  },
+  editTripStop(event) {
+    const dayIndex = Number(event.currentTarget.dataset.dayIndex)
+    const stopIndex = Number(event.currentTarget.dataset.stopIndex)
+    const field = event.currentTarget.dataset.field
+    this.setData({ [`tripEditor.content.days[${dayIndex}].stops[${stopIndex}].${field}`]: event.detail.value })
+  },
+  moveTripStop(event) {
+    const dayIndex = Number(event.currentTarget.dataset.dayIndex)
+    const stopIndex = Number(event.currentTarget.dataset.stopIndex)
+    const direction = Number(event.currentTarget.dataset.direction)
+    const days = clone(this.data.tripEditor.content.days)
+    const stops = days[dayIndex].stops
+    const nextIndex = stopIndex + direction
+    if (nextIndex < 0 || nextIndex >= stops.length) return
+    const [stop] = stops.splice(stopIndex, 1)
+    stops.splice(nextIndex, 0, stop)
+    stops.forEach((item, index) => { item.sequence = index + 1 })
+    this.setData({ 'tripEditor.content.days': days })
+  },
+  removeTripStop(event) {
+    const dayIndex = Number(event.currentTarget.dataset.dayIndex)
+    const stopIndex = Number(event.currentTarget.dataset.stopIndex)
+    const days = clone(this.data.tripEditor.content.days)
+    days[dayIndex].stops.splice(stopIndex, 1)
+    days[dayIndex].stops.forEach((item, index) => { item.sequence = index + 1 })
+    this.setData({ 'tripEditor.content.days': days })
+  },
+  addTripStop(event) {
+    const dayIndex = Number(event.currentTarget.dataset.dayIndex)
+    const days = clone(this.data.tripEditor.content.days)
+    const stops = days[dayIndex].stops
+    stops.push({ sequence: stops.length + 1, targetType: null, targetId: null, title: '新的一站', note: null })
+    this.setData({ 'tripEditor.content.days': days })
+  },
+  normalizedTrip() {
+    const content = clone(this.data.tripEditor.content)
+    return {
+      title: String(content.title || '').trim(), travelDate: nullableText(content.travelDate), peopleCount: nullableInteger(content.peopleCount),
+      days: (content.days || []).map((day, dayIndex) => ({ day: dayIndex + 1, theme: nullableText(day.theme), stops: (day.stops || []).map((stop, stopIndex) => ({
+        sequence: stopIndex + 1, targetType: stop.targetType || null, targetId: stop.targetId || null, title: String(stop.title || '').trim(), note: nullableText(stop.note)
+      })) }))
+    }
+  },
+  async saveTrip() {
+    const editor = this.data.tripEditor
+    if (!editor || this.data.tripSaving) return
+    this.setData({ tripSaving: true, tripMessage: '正在保存行程…' })
+    try {
+      const requestKey = await randomUuid()
+      const receipt = await request(`/api/me/itineraries/${encodeURIComponent(editor.id)}`, userOptions({ method: 'PUT', idempotencyKey: requestKey, data: { expectedVersion: editor.version, content: this.normalizedTrip() } }))
+      if (!Number.isInteger(receipt.committedVersion) || !receipt.resource?.content) throw new Error('行程保存回执不完整。')
+      const itineraries = this.data.itineraries.map(item => item.id === editor.id ? receipt.resource : item)
+      this.setData({ itineraries, 'tripEditor.version': receipt.committedVersion, 'tripEditor.content': receipt.resource.content, tripMessage: `已保存版本 ${receipt.committedVersion}。` })
+    } catch (reason) {
+      this.setData({ tripMessage: `${reason?.message || '保存失败。'} 页面内容仍保留，请读取最新版本后再决定如何调整。` })
+    } finally { this.setData({ tripSaving: false }) }
   },
   editField(event) {
     if (this._submitting || this._submitAttempt) return
