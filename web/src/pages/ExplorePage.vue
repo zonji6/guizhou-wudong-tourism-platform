@@ -110,7 +110,10 @@ const selectedRoutePlaces = computed(() => selectedRouteIds.value
   .filter(Boolean))
 const drawableRoutePlaces = computed(() => selectedRoutePlaces.value.filter(place => place.schematicPosition))
 const routePolyline = computed(() => drawableRoutePlaces.value
-  .map(place => `${Number(place.schematicPosition.x) * 100},${Number(place.schematicPosition.y) * 100}`)
+  .map(place => {
+    const position = mapPinPosition(place)
+    return `${position.x * 100},${position.y * 100}`
+  })
   .join(' '))
 
 function price(item) {
@@ -147,6 +150,19 @@ function postExcerpt(post) {
 function mapStyle(place) {
   const position = place?.schematicPosition
   return position ? { left: `${Number(position.x) * 100}%`, top: `${Number(position.y) * 100}%` } : {}
+}
+
+function mapPinPosition(place) {
+  const position = place?.schematicPosition
+  if (!position) return { x: .5, y: .5 }
+  const x = Math.min(.86, Math.max(.15, Number(position.x)))
+  const y = Math.min(.86, Math.max(.14, Number(position.y)))
+  return { x, y }
+}
+
+function mapPinStyle(place) {
+  const { x, y } = mapPinPosition(place)
+  return { left: `${x * 100}%`, top: `${y * 100}%` }
 }
 
 function routeOrder(placeId) {
@@ -448,7 +464,7 @@ watch(() => [props.focusProductId, props.focusRoomId, props.focusPlaceId], () =>
     <section v-else-if="section === 'travel'" class="v3-map-panel">
       <header><p class="eyebrow">水彩示意地图</p><h2>按自己的顺序，串起乌东地点</h2><p>{{ state.map?.notice }}</p><p class="v3-notice">非等比例、非实时导航；不据此计算道路、距离、时长或安全承诺。</p></header>
       <div class="v3-route-toolbar"><div><b>我的示意路线</b><span>{{ selectedRoutePlaces.length ? `${selectedRoutePlaces.length} 个公开地点` : '点击地图或地点卡片开始选择' }}</span></div><button v-if="selectedRoutePlaces.length" class="ghost" type="button" @click="selectedRouteIds = []; routeMessage = ''">清空</button></div>
-      <div class="v3-map-canvas" role="group" aria-label="乌东地点相对位置与自选示意路线"><svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline v-if="drawableRoutePlaces.length > 1" :points="routePolyline" /></svg><button v-for="place in drawablePlaces" :key="place.id" type="button" class="v3-map-pin" :class="{ selected: routeOrder(place.id) }" :style="mapStyle(place)" @click="toggleRoute(place)"><i>{{ routeOrder(place.id) }}</i>{{ place.name }}</button></div>
+      <div class="v3-map-canvas" role="group" aria-label="乌东地点相对位置与自选示意路线"><svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline v-if="drawableRoutePlaces.length > 1" :points="routePolyline" /></svg><button v-for="place in drawablePlaces" :key="place.id" type="button" class="v3-map-pin" :class="{ selected: routeOrder(place.id) }" :style="mapPinStyle(place)" @click="toggleRoute(place)"><i>{{ routeOrder(place.id) }}</i>{{ place.name }}</button></div>
       <ol v-if="selectedRoutePlaces.length" class="v3-route-sequence"><li v-for="(place, index) in selectedRoutePlaces" :key="place.id"><b>{{ index + 1 }}</b><span>{{ place.name }}<small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small></span><button type="button" @click="toggleRoute(place)">移除</button></li></ol><p v-if="routeMessage" class="v3-notice">{{ routeMessage }}</p>
       <div class="v3-place-list"><article v-for="place in state.map?.places || []" :id="`place-${place.id}`" :key="place.id" :class="{ selected: routeOrder(place.id) }"><SafeImage :src="placeMediaUrl(place.id)" :alt="`${place.name}资料图片`" :label="place.name" loading="lazy" /><div><p class="eyebrow">{{ place.category }}</p><h3>{{ place.name }}</h3><p>{{ place.description }}</p><div class="v3-tag-row"><span v-for="tag in place.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(place) }}</p><small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small><button class="ghost" type="button" @click="toggleRoute(place)">{{ routeOrder(place.id) ? `路线第 ${routeOrder(place.id)} 站` : '加入示意路线' }}</button></div></article></div>
     </section>
