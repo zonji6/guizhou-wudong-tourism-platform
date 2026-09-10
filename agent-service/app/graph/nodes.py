@@ -368,19 +368,35 @@ async def service_recommender(state: WorkflowState, runtime: Any) -> dict[str, o
                 card, candidate = error_card("TOOL_UNAVAILABLE", "未找到当前公开目录内容", retryable=False), None
             else:
                 actions: list[dict[str, object]] = []
+                action_keys: set[tuple[str, str]] = set()
+                detail_labels = {
+                    "PRODUCT": "查看商品目录",
+                    "FOOD": "去同店选餐",
+                    "STAY": "查看住宿目录",
+                    "PLACE": "查看地点",
+                }
                 for item, drawable in flattened[:8]:
                     if item.target_type == "ROUTE_GUIDE":
-                        actions.append(
-                            {"action": "OPEN_ROUTE_GUIDE", "label": "查看攻略", "targetType": "ROUTE_GUIDE", "targetId": item.target_id}
-                        )
-                    else:
-                        actions.append(
-                            {"action": "OPEN_DETAIL", "label": "查看详情", "targetType": item.target_type, "targetId": item.target_id}
-                        )
-                        if item.target_type == "PLACE" and drawable:
+                        key = ("OPEN_ROUTE_GUIDE", item.target_type)
+                        if key not in action_keys:
                             actions.append(
-                                {"action": "OPEN_MAP", "label": "查看水彩示意", "targetType": "PLACE", "targetId": item.target_id}
+                                {"action": "OPEN_ROUTE_GUIDE", "label": "查看示意路线", "targetType": "ROUTE_GUIDE", "targetId": item.target_id}
                             )
+                            action_keys.add(key)
+                    else:
+                        key = ("OPEN_DETAIL", item.target_type)
+                        if key not in action_keys:
+                            actions.append(
+                                {"action": "OPEN_DETAIL", "label": detail_labels[item.target_type], "targetType": item.target_type, "targetId": item.target_id}
+                            )
+                            action_keys.add(key)
+                        if item.target_type == "PLACE" and drawable:
+                            key = ("OPEN_MAP", item.target_type)
+                            if key not in action_keys:
+                                actions.append(
+                                    {"action": "OPEN_MAP", "label": "查看水彩示意", "targetType": "PLACE", "targetId": item.target_id}
+                                )
+                                action_keys.add(key)
                 card = AssistantCardV3(
                     root=ServiceRecommendationCard(
                         card_version="3.0",
