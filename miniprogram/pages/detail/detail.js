@@ -1,4 +1,18 @@
-const { services } = require('../../utils/demo')
 const { request } = require('../../utils/api')
-Page({ data: { item: services[0] }, onLoad(options) { const fallback = services.find(item => item.id === Number(options.id)) || services[0]; this.setData({ item: fallback }); request('/api/services/' + options.id).then(item => this.setData({ item: normalize(item) })).catch(() => {}) }, booking() { wx.navigateTo({ url: '/pages/booking/booking?id=' + this.data.item.id }) } })
-function normalize(item) { return { ...item, title:item.name || item.title, image:item.imageUrl || item.image, intro:item.description || item.intro, tags:item.tags || [] } }
+
+const PATHS = { product: '/api/products', food: '/api/foods', stay: '/api/room-types', travel: '/api/places' }
+
+Page({
+  data: { item: null, kind: '', loading: false, error: '', imageFailed: false },
+  onLoad(options) {
+    const kind = options.kind
+    const id = options.id
+    if (!PATHS[kind] || !id) { this.setData({ error: '详情链接缺少 v3 资源类型或标识。' }); return }
+    this.setData({ kind, loading: true })
+    request(`${PATHS[kind]}/${encodeURIComponent(id)}`).then(item => {
+      if (item?.id !== id) throw new Error('详情与当前链接不一致。')
+      this.setData({ item })
+    }).catch(reason => this.setData({ error: reason?.message || '详情暂时无法读取。' })).finally(() => this.setData({ loading: false }))
+  },
+  imageError() { this.setData({ imageFailed: true }) }
+})
