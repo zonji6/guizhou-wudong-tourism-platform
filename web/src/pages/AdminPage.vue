@@ -13,6 +13,7 @@ const statusUpdating = ref('')
 const catalogSaving = ref(false)
 const selectedCatalogKind = ref('')
 const selectedCatalogItem = ref(null)
+const expandedCatalogGroups = reactive({})
 const catalogForm = reactive({ parentId: '', name: '', description: '', tags: '', imageUrl: '', contactPhone: '', pickupPoint: '', visitTimeText: '', locationText: '', itemType: 'DISH', maxGuestsPerRoom: 1, priceAmount: '', priceNote: '', category: '', schematicX: '', schematicY: '' })
 
 const count = key => Array.isArray(data.operations[key]) ? data.operations[key].length : 0
@@ -52,6 +53,11 @@ function openCatalogCreate(kind) {
     itemType: 'DISH', maxGuestsPerRoom: 1, priceAmount: '', priceNote: '', category: '', schematicX: '', schematicY: ''
   })
 }
+function visibleCatalogItems(group) {
+  const items = data.operations[group.key] || []
+  return expandedCatalogGroups[group.key] ? items : items.slice(0, 4)
+}
+function toggleCatalogGroup(key) { expandedCatalogGroups[key] = !expandedCatalogGroups[key] }
 function catalogTags() { return catalogForm.tags.split(/[，,]/).map(value => value.trim()).filter(Boolean) }
 function priceUnit(kind) { return kind === 'products' ? 'ITEM' : kind === 'foods' ? 'PORTION' : 'ROOM_NIGHT' }
 function demoPrice(kind) {
@@ -131,8 +137,8 @@ onMounted(() => prepareAuth('admin').catch(reason => { message.value = reason?.m
               <article v-for="group in catalogGroups" :key="group.key">
                 <small>{{ group.hint }}</small><strong>{{ count(group.key) }}</strong><h3>{{ group.label }}</h3>
                 <button class="v3-admin-add" type="button" @click="openCatalogCreate(group.key.replace('catalog:', ''))">＋ 新建{{ group.label }}</button>
-                <ul><li v-for="item in (data.operations[group.key] || []).slice(0, 4)" :key="item.id"><button type="button" @click="openCatalogItem(group.key.replace('catalog:', ''), item)">{{ displayName(item) }}</button><i>{{ item.catalogStatus }}</i></li></ul>
-                <p v-if="count(group.key) > 4">另有 {{ count(group.key) - 4 }} 条记录</p>
+                <ul><li v-for="item in visibleCatalogItems(group)" :key="item.id"><button type="button" @click="openCatalogItem(group.key.replace('catalog:', ''), item)">{{ displayName(item) }}</button><i>{{ item.catalogStatus }}</i></li></ul>
+                <button v-if="count(group.key) > 4" class="v3-text-button" type="button" @click="toggleCatalogGroup(group.key)">{{ expandedCatalogGroups[group.key] ? '收起目录' : `查看其余 ${count(group.key) - 4} 条` }}</button>
               </article>
             </div>
             <section v-if="selectedCatalogKind" class="v3-admin-editor">
