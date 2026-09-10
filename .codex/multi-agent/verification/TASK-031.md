@@ -16,5 +16,6 @@ task_id: TASK-031
 task_revision: task-r1
 verdict: PASS
 artifact: commit:6ffb3a52b205a8e0a759df2d221fc60f5e746cf9
+integrated_artifact: commit:99381aa5ed24b16338dff84f52dbdb2f704d2bc7
 runtime: NOT_EXECUTED
 ```
