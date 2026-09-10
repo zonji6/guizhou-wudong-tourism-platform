@@ -30,6 +30,12 @@ const workspaceReady = computed(() => status.value === 'ready')
 const references = computed(() => Array.isArray(card.value?.references) ? card.value.references : [])
 const actions = computed(() => Array.isArray(card.value?.actions) ? card.value.actions : [])
 
+function actionLabel(action) {
+  if (!userMode.value && action?.action === 'SAVE_ITINERARY') return '登录后保存行程'
+  if (!userMode.value && ['ADOPT_FOOD_DRAFT', 'ADOPT_STAY_DRAFT'].includes(action?.action)) return '登录后保存草稿'
+  return action?.label || '查看详情'
+}
+
 const uuid = () => crypto.randomUUID().toLowerCase()
 
 function exactKeys(value, keys) {
@@ -267,7 +273,7 @@ onBeforeUnmount(() => { leaving = true; closeSocket() })
         <section v-if="card.type === 'itinerary'" class="v3-guide-days"><article v-for="day in card.data?.content?.days || []" :key="day.day"><b>第 {{ day.day }} 天 · {{ day.theme || '慢游乌东' }}</b><ol><li v-for="stop in day.stops || []" :key="stop.sequence"><span>{{ stop.sequence }}</span><div><strong>{{ stop.title }}</strong><small v-if="stop.note">{{ stop.note }}</small></div></li></ol></article><p>{{ card.data?.notice }}</p></section>
         <section v-else-if="card.type === 'service_recommendation'" class="v3-guide-recommendations"><article v-for="item in card.data?.items || []" :key="item.targetId"><div><h3>{{ item.targetName }}</h3><p>{{ item.summary }}</p><span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span><button v-if="recommendationActionLabel(item)" type="button" class="v3-recommendation-action" @click="openRecommendation(item)">{{ recommendationActionLabel(item) }}</button></div><b v-if="item.demoPrice">¥{{ item.demoPrice.amount }}<small>演示价</small></b></article><p>{{ card.data?.notice }}</p></section>
         <p v-else-if="card.type === 'knowledge_answer'" class="v3-guide-answer">{{ card.data?.answer }}</p><p v-else-if="card.type === 'clarifying_question'" class="v3-guide-answer">还需要：{{ (card.data?.requiredFields || []).join('、') }}。补充后可再次生成。</p><dl v-else-if="card.type === 'pending_booking'" class="v3-guide-proposal"><dt>本轮方案</dt><dd>{{ card.data?.candidate?.candidateType === 'FOOD_DRAFT' ? '同店多菜到店方案' : '住宿入住方案' }}</dd><dt>人数</dt><dd>{{ card.data?.proposal?.peopleCount || '待补充' }}</dd><dt>说明</dt><dd>{{ card.data?.notice }}</dd></dl>
-        <div v-if="actions.length" class="v3-guide-card-actions"><button v-for="action in actions" :key="`${action.action}-${action.label}`" type="button" class="ghost" :disabled="savingItinerary" @click="followAction(action)">{{ savingItinerary && action.action === 'SAVE_ITINERARY' ? '正在保存…' : action.label }}</button></div><details v-if="references.length" class="v3-guide-references"><summary>参考了 {{ references.length }} 条乌东资料</summary><ul><li v-for="reference in references" :key="reference.detailPath">{{ reference.sourceTitle }}</li></ul></details>
+        <div v-if="actions.length" class="v3-guide-card-actions"><button v-for="action in actions" :key="`${action.action}-${action.label}`" type="button" class="ghost" :disabled="savingItinerary" @click="followAction(action)">{{ savingItinerary && action.action === 'SAVE_ITINERARY' ? '正在保存…' : actionLabel(action) }}</button></div><details v-if="references.length" class="v3-guide-references"><summary>参考了 {{ references.length }} 条乌东资料</summary><ul><li v-for="reference in references" :key="reference.detailPath">{{ reference.sourceTitle }}</li></ul></details>
       </article>
     </section>
     <section class="v3-guide-links"><a href="#/explore/product"><span>01</span><b>先看看商品</b><small>公开目录无需登录</small></a><a href="#/explore/food"><span>02</span><b>同店选餐</b><small>核价前需要登录</small></a><a href="#/explore/travel"><span>03</span><b>查看示意路线</b><small>不作为真实导航</small></a></section>
