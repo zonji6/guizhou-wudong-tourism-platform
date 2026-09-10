@@ -102,6 +102,14 @@ export async function adoptItinerary(candidate, requestKey = newRequestKey()) {
   return expectObject(await request(path, userRequestOptions({ method: 'POST', idempotencyKey: requestKey, body: JSON.stringify(body) })), '行程保存回执')
 }
 
+export async function saveItinerary(id, expectedVersion, content, requestKey = newRequestKey()) {
+  return expectObject(await request(`/api/me/itineraries/${encodeURIComponent(id)}`, userRequestOptions({
+    method: 'PUT',
+    idempotencyKey: requestKey,
+    body: JSON.stringify({ expectedVersion, content })
+  })), '行程保存回执')
+}
+
 export async function loadAdminOperations() {
   const catalogKinds = ['merchants', 'products', 'foods', 'stays', 'room-types', 'places']
   const orderKinds = ['products', 'foods', 'stays']

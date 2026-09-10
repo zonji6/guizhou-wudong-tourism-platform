@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { authState, login, logout, prepareAuth, refresh, registerUser } from '../services/authSession'
-import { loadMyWorkspace, newRequestKey, quoteOrder, reconcileDraft, saveDraft, submitDraft } from '../services/tourismApi'
+import { loadMyWorkspace, newRequestKey, quoteOrder, reconcileDraft, saveDraft, saveItinerary, submitDraft } from '../services/tourismApi'
 
 const mode = ref('login')
 const form = reactive({ username: '', password: '', nickname: '' })
@@ -10,6 +10,9 @@ const busy = ref(false)
 const message = ref('')
 const active = ref('orders')
 const draftEditor = ref(null)
+const tripEditor = ref(null)
+const tripSaving = ref(false)
+const tripMessage = ref('')
 const draftSave = reactive({ status: '', saving: false, paused: false, unknown: false, lastErrorCode: '', editRevision: 0, savedRevision: 0, queued: false, pending: null })
 const draftSubmit = reactive({ quote: null, oldQuote: null, status: '', submitting: false, attempt: null })
 let draftTimer
@@ -106,6 +109,82 @@ function draftTypeLabel(type) {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))
+}
+
+function openTrip(trip) {
+  if (draftEditor.value) {
+    message.value = '请先关闭食宿草稿编辑器，再调整行程。'
+    return
+  }
+  tripEditor.value = { id: trip.id, version: trip.version, content: clone(trip.content) }
+  tripMessage.value = '可以调整标题、主题和每一天的停留顺序；修改后请主动保存。'
+}
+
+function closeTrip() {
+  if (tripSaving.value) return
+  tripEditor.value = null
+  tripMessage.value = ''
+}
+
+function renumberStops(day) {
+  day.stops.forEach((stop, index) => { stop.sequence = index + 1 })
+}
+
+function moveStop(day, index, direction) {
+  const target = index + direction
+  if (target < 0 || target >= day.stops.length) return
+  const [stop] = day.stops.splice(index, 1)
+  day.stops.splice(target, 0, stop)
+  renumberStops(day)
+}
+
+function removeStop(day, index) {
+  day.stops.splice(index, 1)
+  renumberStops(day)
+}
+
+function addStop(day) {
+  day.stops.push({ sequence: day.stops.length + 1, targetType: null, targetId: null, title: '新的一站', note: null })
+}
+
+function normalizedTripContent() {
+  const content = clone(tripEditor.value.content)
+  return {
+    title: String(content.title || '').trim(),
+    travelDate: content.travelDate || null,
+    peopleCount: content.peopleCount === '' || content.peopleCount === null ? null : Number(content.peopleCount),
+    days: (content.days || []).map((day, dayIndex) => ({
+      day: dayIndex + 1,
+      theme: day.theme?.trim() || null,
+      stops: (day.stops || []).map((stop, stopIndex) => ({
+        sequence: stopIndex + 1,
+        targetType: stop.targetType || null,
+        targetId: stop.targetId || null,
+        title: String(stop.title || '').trim(),
+        note: stop.note?.trim() || null
+      }))
+    }))
+  }
+}
+
+async function saveTrip() {
+  const editor = tripEditor.value
+  if (!editor || tripSaving.value) return
+  tripSaving.value = true
+  tripMessage.value = '正在保存行程…'
+  try {
+    const receipt = await saveItinerary(editor.id, editor.version, normalizedTripContent())
+    const saved = receipt.resource
+    if (!saved?.content || !Number.isInteger(receipt.committedVersion)) throw new Error('行程保存回执不完整。')
+    editor.version = receipt.committedVersion
+    editor.content = clone(saved.content)
+    tripMessage.value = `已保存版本 ${editor.version}。`
+    await reload()
+  } catch (reason) {
+    tripMessage.value = `${errorText(reason, '行程保存失败。')} 页面修改仍保留，请读取最新版本后再决定如何调整。`
+  } finally {
+    tripSaving.value = false
+  }
 }
 
 function openDraft(draft) {
@@ -363,7 +442,7 @@ onBeforeUnmount(() => clearTimeout(draftTimer))
           <div class="v3-draft-submit" @input.stop><button type="button" class="ghost" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt) || draftSave.saving || draftSave.paused || draftSave.savedRevision !== draftSave.editRevision" @click="quoteCurrentDraft">按已保存版本核价</button><template v-if="draftSubmit.quote"><p v-if="draftSubmit.oldQuote">旧报价：¥{{ draftSubmit.oldQuote.totalAmount }} {{ draftSubmit.oldQuote.currency }}</p><p>当前报价：¥{{ draftSubmit.quote.totalAmount }} {{ draftSubmit.quote.currency }} · {{ draftSubmit.quote.notice }}</p><button type="button" class="primary" :disabled="draftSubmit.submitting" @click="submitCurrentDraft">{{ draftSubmit.submitting ? '提交中…' : draftSubmit.attempt ? '继续核对这次提交' : draftSubmit.oldQuote ? '确认新报价并提交' : '确认该报价并提交' }}</button></template><p v-if="draftSubmit.status">{{ draftSubmit.status }}</p></div>
         </form>
       </section>
-      <section v-else-if="active === 'itineraries'" class="v3-list"><article v-for="trip in workspace.itineraries" :key="trip.id"><header><span>已保存行程</span><b>保存版本 {{ trip.version }}</b></header><h2>{{ trip.content?.title }}</h2><p>{{ trip.content?.days?.length || 0 }} 天 · {{ trip.content?.travelDate || '日期待定' }} · {{ trip.content?.peopleCount || '人数待定' }}</p><footer>{{ trip.updatedAt }}</footer></article><p v-if="!workspace.itineraries.length" class="v3-state">还没有已保存行程。</p></section>
+      <section v-else-if="active === 'itineraries'" class="v3-list"><article v-for="trip in workspace.itineraries" :key="trip.id"><header><span>已保存行程</span><b>保存版本 {{ trip.version }}</b></header><h2>{{ trip.content?.title }}</h2><p>{{ trip.content?.days?.length || 0 }} 天 · {{ trip.content?.travelDate || '日期待定' }} · {{ trip.content?.peopleCount || '人数待定' }}</p><footer>{{ trip.updatedAt }}</footer><button class="ghost" :disabled="Boolean(tripEditor)" @click="openTrip(trip)">调整行程</button></article><p v-if="!workspace.itineraries.length" class="v3-state">还没有已保存行程。</p><form v-if="tripEditor" class="v3-trip-editor" @submit.prevent="saveTrip"><header><div><p class="eyebrow">手动调整行程</p><h2>保存版本 {{ tripEditor.version }}</h2></div><button class="ghost" type="button" :disabled="tripSaving" @click="closeTrip">关闭</button></header><label>行程标题<input v-model="tripEditor.content.title" maxlength="80" required></label><label>出行日期<input v-model="tripEditor.content.travelDate" type="date"></label><label>人数<input v-model.number="tripEditor.content.peopleCount" type="number" min="1"></label><section v-for="day in tripEditor.content.days" :key="day.day" class="v3-trip-day"><header><b>第 {{ day.day }} 天</b><input v-model="day.theme" maxlength="80" placeholder="当天主题"></header><article v-for="(stop, index) in day.stops" :key="`${day.day}-${stop.sequence}-${index}`"><span>{{ index + 1 }}</span><div><input v-model="stop.title" maxlength="120" required placeholder="停留地点或安排"><textarea v-model="stop.note" maxlength="500" placeholder="给自己留一句提醒"></textarea></div><nav><button type="button" :disabled="index === 0" @click="moveStop(day, index, -1)">上移</button><button type="button" :disabled="index === day.stops.length - 1" @click="moveStop(day, index, 1)">下移</button><button type="button" @click="removeStop(day, index)">移除</button></nav></article><button class="ghost" type="button" @click="addStop(day)">添加一站</button></section><p :class="{ 'v3-error': tripMessage.includes('失败') || tripMessage.includes('读取最新') }">{{ tripMessage }}</p><button class="primary" :disabled="tripSaving">{{ tripSaving ? '保存中…' : '保存行程修改' }}</button></form></section>
       <section v-else class="v3-list"><article v-for="record in workspace.legacyRecords" :key="record.id"><header><span>合法旧记录</span><b>只读</b></header><h2>{{ record.title || record.name || record.id }}</h2><p>{{ record.message || record.summary || '该记录保留原归属，不会自动认领到当前账号。' }}</p></article><p v-if="!workspace.legacyRecords.length" class="v3-state">没有可归属到当前账号的旧记录。</p></section>
     </template>
     <p v-if="message" class="v3-error" role="status">{{ message }}</p>
