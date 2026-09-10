@@ -110,6 +110,20 @@ export async function saveItinerary(id, expectedVersion, content, requestKey = n
   })), '行程保存回执')
 }
 
+export async function adoptDraft(draftType, candidate, requestKey = newRequestKey()) {
+  const segment = draftType === 'FOOD' ? 'food-drafts' : draftType === 'STAY' ? 'stay-drafts' : ''
+  if (!segment || !candidate?.candidateRef) throw new Error('当前草稿候选不可保存。')
+  const base = candidate.baseResource
+  const isUpdate = candidate.adoptionAction === 'UPDATE' && base?.resourceId && Number.isInteger(base.resourceVersion)
+  const path = isUpdate
+    ? `/api/me/${segment}/${encodeURIComponent(base.resourceId)}/adoptions`
+    : `/api/me/${segment}/adoptions`
+  const body = isUpdate
+    ? { candidateRef: candidate.candidateRef, expectedVersion: base.resourceVersion }
+    : { candidateRef: candidate.candidateRef }
+  return expectObject(await request(path, userRequestOptions({ method: 'POST', idempotencyKey: requestKey, body: JSON.stringify(body) })), '草稿保存回执')
+}
+
 export async function loadAdminOperations() {
   const catalogKinds = ['merchants', 'products', 'foods', 'stays', 'room-types', 'places']
   const orderKinds = ['products', 'foods', 'stays']

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { anonymousWebSocketUrl, CONTRACT_VERSION, userWebSocketUrl } from '../services/api'
 import { anonymousWebState, authState, ensureAnonymousWebSession } from '../services/authSession'
-import { adoptItinerary } from '../services/tourismApi'
+import { adoptDraft, adoptItinerary } from '../services/tourismApi'
 
 const ASSISTANT_CONTRACT = 'assistant-card-v3-draft-r1'
 const EVENT_CONTRACT = 'assistant-event-v3-draft-r1'
@@ -206,6 +206,28 @@ async function followAction(action) {
       message.value = '行程已保存到“我的”，你可以继续查看和调整。'
     } catch (reason) {
       message.value = reason?.message || '保存行程失败。'
+    } finally {
+      savingItinerary.value = false
+    }
+    return
+  }
+  if (['ADOPT_FOOD_DRAFT', 'ADOPT_STAY_DRAFT'].includes(action?.action)) {
+    if (!userMode.value) {
+      message.value = '免登录预览不能保存食宿草稿；请先到“我的”登录后重新生成并确认。'
+      return
+    }
+    const candidate = card.value?.data?.candidate
+    const expectedType = action.action === 'ADOPT_FOOD_DRAFT' ? 'FOOD_DRAFT' : 'STAY_DRAFT'
+    if (!candidate || candidate.candidateType !== expectedType || action.candidateRef?.candidateId !== candidate.candidateRef?.candidateId) {
+      message.value = '当前食宿候选无法确认，请重新生成后再保存。'
+      return
+    }
+    savingItinerary.value = true
+    try {
+      await adoptDraft(expectedType === 'FOOD_DRAFT' ? 'FOOD' : 'STAY', candidate)
+      message.value = '方案已保存为草稿，请到“我的”补齐联系人、核价后再正式提交。'
+    } catch (reason) {
+      message.value = reason?.message || '保存草稿失败。'
     } finally {
       savingItinerary.value = false
     }

@@ -87,6 +87,27 @@ Page({
       this.setData({ message: reason?.message || '保存行程失败。' })
     } finally { this.setData({ savingItinerary: false }) }
   },
+  async saveDraftCandidate() {
+    if (this.data.savingItinerary) return
+    if (!authState().account) { this.setData({ message: '匿名预览不能保存食宿草稿；请先到“我的”登录后重新生成。' }); return }
+    const candidate = this.data.card?.data?.candidate
+    const candidateType = candidate?.candidateType
+    const segment = candidateType === 'FOOD_DRAFT' ? 'food-drafts' : candidateType === 'STAY_DRAFT' ? 'stay-drafts' : ''
+    if (!segment || !candidate?.candidateRef) { this.setData({ message: '当前食宿候选无法确认，请重新生成后再保存。' }); return }
+    const base = candidate.baseResource
+    const updating = candidate.adoptionAction === 'UPDATE' && base?.resourceId && Number.isInteger(base.resourceVersion)
+    if (candidate.adoptionAction !== 'CREATE' && !updating) { this.setData({ message: '此草稿候选缺少可确认的保存版本，请重新生成。' }); return }
+    this.setData({ savingItinerary: true, message: '正在保存食宿草稿…' })
+    try {
+      const requestKey = await randomUuid()
+      const path = updating ? `/api/me/${segment}/${encodeURIComponent(base.resourceId)}/adoptions` : `/api/me/${segment}/adoptions`
+      const data = updating ? { candidateRef: candidate.candidateRef, expectedVersion: base.resourceVersion } : { candidateRef: candidate.candidateRef }
+      await request(path, userOptions({ method: 'POST', idempotencyKey: requestKey, data }))
+      this.setData({ message: '方案已保存为草稿，请到“我的”补齐联系人、核价后再正式提交。' })
+    } catch (reason) {
+      this.setData({ message: reason?.message || '保存草稿失败。' })
+    } finally { this.setData({ savingItinerary: false }) }
+  },
   retry() { this.sendPrompt() },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) },
   toResources(event) { getApp().globalData.resourceCategory = event.currentTarget.dataset.kind; wx.switchTab({ url: '/pages/resources/resources' }) }
