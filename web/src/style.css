@@ -2289,6 +2289,7 @@ button:disabled {
 .v3-price--large { font-size: clamp(2rem, 5vw, 3.6rem); }
 .v3-muted { color: #718077; }
 .v3-food-layout, .v3-community-layout, .v3-checkout-layout, .v3-auth-layout, .v3-admin-login { display: grid; grid-template-columns: minmax(220px, 31%) 1fr; gap: 1.4rem; align-items: start; }
+.v3-community-layout { grid-template-columns: minmax(0, 1fr) minmax(260px, 330px); }
 .v3-merchant-list, .v3-menu, .v3-post-form, .v3-order-form, .v3-quote-card, .v3-auth-card, .v3-auth-note, .v3-guide-card { padding: 1.4rem; background: #fffdf8; border: 1px solid rgba(71, 91, 75, .13); border-radius: 1.3rem; }
 .v3-merchant-list { display: grid; gap: .75rem; }
 .v3-merchant-search { display: grid; gap: .35rem; color: #315f4b; font-size: .8rem; font-weight: 700; }
