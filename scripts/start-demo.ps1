@@ -140,6 +140,17 @@ Require-Path $javaPath '请先完成 Java 文旅服务。'
 Require-Path $pythonPath '请先完成 Python AI 服务。'
 Require-Path $webPath '请先完成 Vue 网页端。'
 
+$mediaScript = Join-Path $projectRoot 'scripts\prepare-local-media.ps1'
+$mediaSentinel = Join-Path $projectRoot 'web\public\images\wudong-local\mountain-thumb.jpg'
+if (-not (Test-Path -LiteralPath $mediaSentinel) -and (Test-Path -LiteralPath $mediaScript)) {
+    try {
+        & $mediaScript
+    }
+    catch {
+        Write-Host "提示：本机实景图生成失败，将显示文字占位。$($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 if (-not (Test-Path (Join-Path $pythonPath '.env'))) {
     Write-Host '提示：未发现 agent-service/.env。目录和下单仍可演示；配置 DeepSeek Key 后再演示 AI。' -ForegroundColor Yellow
 }
