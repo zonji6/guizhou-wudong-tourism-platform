@@ -2,10 +2,10 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import SafeImage from '../components/common/SafeImage.vue'
 import { authState } from '../services/authSession'
-import { createPost, listFoodMerchants, listFoods, listPlaces, listPosts, listProducts, listStays } from '../services/tourismApi'
+import { createPost, getFood, listFoodMerchants, listFoods, listPlaces, listPosts, listProducts, listStays } from '../services/tourismApi'
 import { contentMediaUrl, placeMediaUrl, postMediaUrl } from '../utils/contentMedia'
 
-const props = defineProps({ section: { type: String, default: 'product' } })
+const props = defineProps({ section: { type: String, default: 'product' }, focusFoodId: { type: String, default: '' } })
 const emit = defineEmits(['navigate', 'checkout'])
 const tabs = [
   { id: 'product', label: '商品' },
@@ -246,6 +246,23 @@ async function chooseMerchant(merchant) {
   }
 }
 
+async function focusRecommendedFood(foodId) {
+  if (props.section !== 'food' || !foodId) return
+  try {
+    const food = await getFood(foodId)
+    if (!state.merchants.length) state.merchants = await listFoodMerchants()
+    const merchant = state.merchants.find(item => item.id === food.merchantId)
+    if (!merchant) throw new Error('该菜品所属店铺暂未在公开目录中展示。')
+    await chooseMerchant(merchant)
+    if (selectedMerchant.value?.id !== merchant.id) return
+    selectedFood.value = foods.value.find(item => item.id === food.id) || food
+    await nextTick()
+    foodDetailRef.value?.scrollIntoView({ block: 'center' })
+  } catch (reason) {
+    error.value = reason?.message || '暂时无法定位这道餐食。'
+  }
+}
+
 function normalizeQuantity(itemId) {
   const quantity = Number(basket[itemId])
   basket[itemId] = Number.isInteger(quantity) && quantity > 0 ? Math.min(quantity, 99) : 0
@@ -322,10 +339,13 @@ async function submitPost() {
   }
 }
 
-watch(() => props.section, () => {
+watch(() => props.section, async () => {
   resetSectionState()
-  loadSection()
+  await loadSection()
+  await focusRecommendedFood(props.focusFoodId)
 }, { immediate: true })
+
+watch(() => props.focusFoodId, foodId => focusRecommendedFood(foodId))
 </script>
 
 <template>

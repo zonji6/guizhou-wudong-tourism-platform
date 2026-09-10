@@ -20,6 +20,7 @@ function expectList(value, label = '列表') {
 export const listProducts = async () => expectList(await request('/api/products'), '商品目录')
 export const listFoodMerchants = async () => expectList(await request('/api/food-merchants'), '餐食店铺')
 export const listFoods = async merchantId => expectList(await request(`/api/foods?merchantId=${encodeURIComponent(merchantId)}`), '餐食菜单')
+export const getFood = async foodId => expectObject(await request(`/api/foods/${encodeURIComponent(foodId)}`), '餐食详情')
 export const listStays = async () => expectList(await request('/api/stays'), '住宿目录')
 export const listPlaces = async () => expectObject(await request('/api/places'), '示意地图')
 export const listPosts = async () => expectList(await request('/api/posts'), '社区内容')

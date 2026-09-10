@@ -233,7 +233,8 @@ async function followAction(action) {
     }
     return
   }
-  const destination = { PRODUCT: '/explore/product', FOOD: '/explore/food', STAY: '/explore/stay', PLACE: '/explore/travel', ROUTE_GUIDE: '/explore/travel' }[action?.targetType]
+  let destination = { PRODUCT: '/explore/product', FOOD: '/explore/food', STAY: '/explore/stay', PLACE: '/explore/travel', ROUTE_GUIDE: '/explore/travel' }[action?.targetType]
+  if (action?.targetType === 'FOOD' && action?.targetId) destination += `?foodId=${encodeURIComponent(action.targetId)}`
   if (destination) location.hash = destination
   else message.value = userMode.value ? '请到“我的”查看并确认已生成的个人成果。' : '登录后可把这份方案保存到“我的”；当前仅为免登录预览。'
 }

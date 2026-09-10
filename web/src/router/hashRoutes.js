@@ -14,7 +14,11 @@ const STATIC_ROUTES = new Map([
 ])
 
 export function parseHashRoute(hash = location.hash) {
-  const path = hash.startsWith('#') ? hash.slice(1) || '/' : hash || '/'
-  if (path.includes('?')) return { name: 'not-found', path }
-  return STATIC_ROUTES.has(path) ? { ...STATIC_ROUTES.get(path), path } : { name: 'not-found', path }
+  const raw = hash.startsWith('#') ? hash.slice(1) || '/' : hash || '/'
+  const [path, rawQuery = ''] = raw.split('?', 2)
+  const query = new URLSearchParams(rawQuery)
+  const focusFoodId = query.get('foodId') || ''
+  if ([...query.keys()].some(key => key !== 'foodId')) return { name: 'not-found', path: raw }
+  if (focusFoodId && path !== '/explore/food') return { name: 'not-found', path: raw }
+  return STATIC_ROUTES.has(path) ? { ...STATIC_ROUTES.get(path), path: raw, focusFoodId } : { name: 'not-found', path: raw }
 }
