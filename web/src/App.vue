@@ -54,7 +54,7 @@ onUnmounted(() => removeEventListener('hashchange', syncRoute))
   <div v-else class="visitor-shell">
     <header v-if="route.name !== 'home' || homeOpened" class="topbar v3-topbar">
       <a class="brand" href="#/">贵州乌东</a>
-      <nav aria-label="主导航"><a href="#/explore">逛乌东</a><a href="#/guide">乌东向导</a><a href="#/my">我的</a></nav>
+      <nav aria-label="主导航"><a href="#/explore" :class="{ active: route.name === 'explore' }" :aria-current="route.name === 'explore' ? 'page' : undefined">逛乌东</a><a href="#/guide" :class="{ active: route.name === 'guide' }" :aria-current="route.name === 'guide' ? 'page' : undefined">乌东向导</a><a href="#/my" :class="{ active: route.name === 'my' }" :aria-current="route.name === 'my' ? 'page' : undefined">我的</a></nav>
     </header>
 
     <HomePage v-if="route.name === 'home'" @gate-change="homeOpened = $event" @navigate="navigateIntent">

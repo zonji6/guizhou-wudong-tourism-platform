@@ -2268,7 +2268,10 @@ button:disabled {
 /* tourism-api-v3 本机体验主链 */
 .v3-topbar { background: rgba(248, 245, 235, .94); border-bottom: 1px solid rgba(71, 91, 75, .13); backdrop-filter: blur(14px); }
 .v3-topbar nav { display: flex; align-items: center; gap: clamp(1rem, 3vw, 2.5rem); }
-.v3-topbar nav a { color: #315f4b; text-decoration: none; }
+.v3-topbar nav a { position: relative; color: #315f4b; text-decoration: none; }
+.v3-topbar nav a::after { position: absolute; right: .1rem; bottom: -.42rem; left: .1rem; height: 2px; border-radius: 999px; background: #c6734d; content: ''; opacity: 0; transform: scaleX(.35); transition: opacity .2s ease, transform .2s ease; }
+.v3-topbar nav a:hover::after, .v3-topbar nav a.active::after { opacity: 1; transform: scaleX(1); }
+.v3-topbar nav a.active { color: #294c50; font-weight: 700; }
 .v3-home-guide { display: grid; justify-items: center; gap: 1rem; }
 .v3-home-guide p { margin: 0; color: #607168; }
 .v3-explore, .v3-my-page, .v3-checkout, .v3-guide-page { max-width: 1180px; margin: 0 auto; padding-top: 7.5rem; }
