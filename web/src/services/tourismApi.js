@@ -107,6 +107,20 @@ export async function updateAdminOrderStatus(kind, order, status) {
   })), '订单状态回执')
 }
 
+export async function patchAdminCatalog(kind, item, body) {
+  return expectObject(await request(`/api/admin/${encodeURIComponent(kind)}/${encodeURIComponent(item.id)}`, adminRequestOptions({
+    method: 'PATCH',
+    body: JSON.stringify({ ...body, expectedVersion: item.version })
+  })), '目录编辑回执')
+}
+
+export async function updateAdminCatalogStatus(kind, item, catalogStatus) {
+  return expectObject(await request(`/api/admin/${encodeURIComponent(kind)}/${encodeURIComponent(item.id)}/catalog-status`, adminRequestOptions({
+    method: 'PATCH',
+    body: JSON.stringify({ expectedVersion: item.version, catalogStatus })
+  })), '目录状态回执')
+}
+
 export async function publishKnowledge(document) {
   return expectObject(await request(`/api/admin/knowledge-documents/${encodeURIComponent(document.id)}/publications`, adminRequestOptions({
     method: 'POST',
