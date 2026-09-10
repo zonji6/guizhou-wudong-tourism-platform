@@ -1,7 +1,7 @@
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
-const emit = defineEmits(['opened'])
+const emit = defineEmits(['opening', 'opened'])
 const KEY = 'wudong:scroll-opened'
 const gateState = ref(sessionStorage.getItem(KEY) === '1' ? 'open' : 'closed')
 const openButton = ref(null)
@@ -9,7 +9,9 @@ const motionQuery = matchMedia('(prefers-reduced-motion: reduce)')
 const reducedMotion = ref(motionQuery.matches)
 
 function openScroll() {
-  if (gateState.value === 'closed') gateState.value = 'opening'
+  if (gateState.value !== 'closed') return
+  emit('opening')
+  gateState.value = 'opening'
 }
 
 function finishOpen() {

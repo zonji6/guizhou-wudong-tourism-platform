@@ -15,6 +15,7 @@ const assistantAnchor = ref(null)
 const scrollGate = ref(null)
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const gateOpen = ref(sessionStorage.getItem('wudong:scroll-opened') === '1')
+const gateOpening = ref(false)
 let assistantObserver
 
 const serviceEntries = [
@@ -43,6 +44,7 @@ function handleJourneyEntered() {
 }
 
 function handleGateOpened() {
+  gateOpening.value = false
   gateOpen.value = true
   emit('gate-change', true)
   nextTick(observeAssistant)
@@ -51,12 +53,18 @@ function handleGateOpened() {
 function replayScroll() {
   selectedScene.value = null
   gateOpen.value = false
+  gateOpening.value = false
   leafVisible.value = false
   nearAssistant.value = false
   assistantObserver?.disconnect()
   emit('gate-change', false)
   scrollGate.value?.replay()
   window.scrollTo({ top: 0, behavior: 'instant' })
+}
+
+function handleGateOpening() {
+  // 五景先在画卷下就位，门帘离开时不会露出空白底色。
+  gateOpening.value = true
 }
 
 function scrollToAssistant() {
@@ -86,8 +94,8 @@ onBeforeUnmount(() => assistantObserver?.disconnect())
 
 <template>
   <main class="home-page">
-    <ScrollGate ref="scrollGate" @opened="handleGateOpened" />
-    <template v-if="gateOpen">
+    <ScrollGate ref="scrollGate" @opening="handleGateOpening" @opened="handleGateOpened" />
+    <template v-if="gateOpen || gateOpening">
       <FiveSceneHero :scenes="scenes" @open-scene="selectScene" @replay="replayScroll" />
       <SceneExplorer
         v-if="selectedScene"
