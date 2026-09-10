@@ -26,7 +26,11 @@ const foodCategories = [
 
 const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
 const productMetadataTags = new Set(['商品', '演示数据', '资料待核验', '资料参考', '待核验'])
-const resourceMetadataTags = new Set(['商品', '餐食', '演示数据', '资料待核验', '资料参考', '待核验', '资料菜单项', '资料候选', '共享示意图'])
+const resourceMetadataTags = new Set(['商品', '餐食', '住宿', '乌东', '演示数据', '资料待核验', '资料参考', '待核验', '资料菜单项', '资料候选', '共享示意图'])
+
+function displayTags(item) {
+  return (item?.tags || []).filter(tag => !resourceMetadataTags.has(tag))
+}
 
 function priceView(item) {
   if (item?.demoPrice) return { amount: item.demoPrice.amount, note: item.demoPrice.simulationNote, kind: '演示价' }
@@ -43,7 +47,7 @@ function withImage(item, kind) {
 }
 
 function productView(item) {
-  return { ...withImage(item, 'product'), priceView: priceView(item), displayTags: (item.tags || []).filter(tag => !resourceMetadataTags.has(tag)) }
+  return { ...withImage(item, 'product'), priceView: priceView(item), displayTags: displayTags(item) }
 }
 
 function foodView(item) {
@@ -149,7 +153,7 @@ Page({
       }
       if (active === 'food') {
         const merchants = (result || []).map(item => withImage(item, 'food'))
-        this.setData({ merchants, visibleMerchants: merchants, foodStartingMerchants: merchants.slice(0, 3).map(item => ({ ...item, guideTags: (item.tags || []).slice(0, 2).join(' · ') || '乌东餐食资料' })), merchantSummary: `当前 ${merchants.length} 家公开店铺` }, () => this.applyPendingFoodFocus())
+        this.setData({ merchants, visibleMerchants: merchants, foodStartingMerchants: merchants.slice(0, 3).map(item => ({ ...item, guideTags: displayTags(item).slice(0, 2).join(' · ') || '乌东餐食资料' })), merchantSummary: `当前 ${merchants.length} 家公开店铺` }, () => this.applyPendingFoodFocus())
       }
       if (active === 'stay') {
         const stays = (result || []).map(stayView)
@@ -185,7 +189,7 @@ Page({
       const text = [item.name, item.description, ...(item.tags || [])].filter(Boolean).join(' ').toLocaleLowerCase()
       return !query || text.includes(query)
     })
-    this.setData({ merchantQuery, visibleMerchants, foodStartingMerchants: visibleMerchants.slice(0, 3).map(item => ({ ...item, guideTags: (item.tags || []).slice(0, 2).join(' · ') || '乌东餐食资料' })), merchantSummary: query ? `匹配 ${visibleMerchants.length} / ${this.data.merchants.length} 家` : `当前 ${this.data.merchants.length} 家公开店铺` })
+    this.setData({ merchantQuery, visibleMerchants, foodStartingMerchants: visibleMerchants.slice(0, 3).map(item => ({ ...item, guideTags: displayTags(item).slice(0, 2).join(' · ') || '乌东餐食资料' })), merchantSummary: query ? `匹配 ${visibleMerchants.length} / ${this.data.merchants.length} 家` : `当前 ${this.data.merchants.length} 家公开店铺` })
   },
   staySearch(event) {
     this.setData({ stayQuery: event.detail.value }, () => this.applyStayFilters())
