@@ -152,7 +152,17 @@ if (-not (Test-Path -LiteralPath $mediaSentinel) -and (Test-Path -LiteralPath $m
 }
 
 $contentMediaScript = Join-Path $projectRoot 'scripts\prepare-content-media.ps1'
-if (-not (Test-Path (Join-Path $projectRoot 'web\public\images\wudong-content\image1.jpg'))) {
+$contentMediaRoot = Join-Path $projectRoot 'web\public\images\wudong-content'
+$contentMediaComplete = $true
+# 当前获批的《乌东衣食住行》包含 228 张原图，每张均需正图和缩略图。
+foreach ($imageNumber in 1..228) {
+    if (-not [System.IO.File]::Exists((Join-Path $contentMediaRoot "image$imageNumber.jpg")) -or
+        -not [System.IO.File]::Exists((Join-Path $contentMediaRoot "image$imageNumber-thumb.jpg"))) {
+        $contentMediaComplete = $false
+        break
+    }
+}
+if (-not $contentMediaComplete) {
     try { & $contentMediaScript }
     catch { Write-Warning $_.Exception.Message }
 }
