@@ -1,120 +1,73 @@
 const { CONTRACT_VERSION } = require('../../utils/api')
-const { anonymousState, authState, ensureAnonymousMiniSession } = require('../../utils/auth')
+const { authState, ensureAnonymousMiniSession, randomUuid } = require('../../utils/auth')
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-const AUTH_FAILED_CODES = new Set(['AUTH_REQUIRED', 'AUTH_EXPIRED', 'SESSION_REVOKED', 'ANONYMOUS_REQUIRED', 'ANONYMOUS_EXPIRED', 'ANONYMOUS_REVOKED', 'ORIGIN_REJECTED', 'FORBIDDEN', 'AUTH_MODE_MISMATCH', 'CONTRACT_INCOMPATIBLE', 'RATE_LIMITED', 'AUTH_STATE_UNAVAILABLE'])
+const ASSISTANT_CONTRACT = 'assistant-card-v3-draft-r1'
+const EVENT_CONTRACT = 'assistant-event-v3-draft-r1'
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const stageLabels = { UNDERSTANDING: '理解需求', RETRIEVING: '检索乌东资料', VERIFYING_KNOWLEDGE: '核对资料版本', PREPARING_RESULT: '整理建议', PERSISTING_RESULT: '保存本轮结果' }
+const stagePhases = Object.entries(stageLabels).map(([id, label]) => ({ id, label }))
 
-function authFailureMessage(frame) {
-  if (frame.code === 'RATE_LIMITED') return `操作有点频繁，请在 ${frame.retryAfterSeconds} 秒后重试。`
-  if (frame.code === 'AUTH_STATE_UNAVAILABLE') return '向导暂时无法确认身份，请稍后重试。'
-  if (frame.code === 'CONTRACT_INCOMPATIBLE') return '应用版本需要更新后才能继续使用向导。'
-  if (['ORIGIN_REJECTED', 'FORBIDDEN', 'AUTH_MODE_MISMATCH'].includes(frame.code)) return '当前环境无法使用向导。'
-  return '当前身份已失效，请重新登录或重新开始匿名预览。'
+function emptyConditions() {
+  return { travelDate: null, visitAt: null, checkInDate: null, checkOutDate: null, roomCount: null, peopleCount: null, preferences: [], selectedTargets: [], merchantItems: null }
 }
 
-function exactKeys(value, keys) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-  const actual = Object.keys(value).sort()
-  const expected = [...keys].sort()
-  return actual.length === expected.length && actual.every((key, index) => key === expected[index])
-}
-
-function validTimestamp(value) {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value) && Number.isFinite(Date.parse(value))
-}
-
-function validAuthOk(frame, expectedMode) {
-  return exactKeys(frame, ['type', 'authVersion', 'contractVersion', 'connectionId', 'mode', 'authExpiresAt']) && frame.type === 'auth_ok' &&
-    frame.authVersion === 'wudong-ws-auth-v1' && frame.contractVersion === CONTRACT_VERSION && frame.mode === expectedMode &&
-    UUID_PATTERN.test(frame.connectionId) && validTimestamp(frame.authExpiresAt)
-}
-
-function validAuthFailed(frame) {
-  const rateLimited = frame?.code === 'RATE_LIMITED'
-  const keys = ['type', 'authVersion', 'contractVersion', 'code', 'message', 'retryable', ...(rateLimited ? ['retryAfterSeconds'] : [])]
-  return exactKeys(frame, keys) && frame.type === 'auth_failed' && frame.authVersion === 'wudong-ws-auth-v1' &&
-    frame.contractVersion === CONTRACT_VERSION && AUTH_FAILED_CODES.has(frame.code) && typeof frame.message === 'string' &&
-    frame.retryable === ['AUTH_STATE_UNAVAILABLE', 'RATE_LIMITED'].includes(frame.code) &&
-    (!rateLimited || Number.isInteger(frame.retryAfterSeconds) && frame.retryAfterSeconds > 0)
+function validSession(frame) {
+  return frame && frame.type === 'session_state' && frame.assistantContractVersion === ASSISTANT_CONTRACT && frame.tourismContractVersion === CONTRACT_VERSION && UUID.test(frame.threadId || '')
 }
 
 Page({
-  data: { account: null, status: 'idle', message: '', anonymousNeedsRenew: false },
-  onShow() {
-    this._closing = false
-    this.getTabBar()?.setData({ selected: 2 })
-    this.setData({ account: authState().account, status: 'idle', message: '', anonymousNeedsRenew: false })
+  data: {
+    account: null, status: 'idle', message: '', prompt: '周末两位，想在乌东体验苗族文化和茶旅，请安排两天一夜的慢游建议。',
+    busy: false, threadId: '', checkpointRevision: null, activeStage: '', card: null, dialogue: [], stageLabels, stagePhases
   },
+  onShow() { this._closing = false; this.getTabBar()?.setData({ selected: 2 }); this.setData({ account: authState().account, status: 'idle', message: '', busy: false, card: null, dialogue: [] }) },
   onHide() { this.closeSocket('page_hidden') },
   onUnload() { this.closeSocket('page_leave') },
-  closeSocket(reason) {
-    this._closing = true
-    this.socket?.close({ code: 1000, reason })
-    this.socket = null
-  },
+  closeSocket(reason) { this._closing = true; this.socket?.close({ code: 1000, reason }); this.socket = null },
   async connect() {
     if (this.data.status === 'connecting' || this.data.status === 'ready') return
-    const state = authState()
-    const userMode = Boolean(state.account)
-    if (userMode && !state.accessToken) {
-      this.setData({ status: 'error', message: '当前登录已失效，请先到“我的”重新登录；不会自动切换到匿名体验。' })
-      return
-    }
-    this._closing = false
-    this._terminalFrame = false
-    this.setData({ status: 'connecting', message: userMode ? '正在连接专属乌东向导…' : '正在准备匿名预览…' })
+    const account = authState(); const userMode = Boolean(account.account)
+    if (userMode && !account.accessToken) { this.setData({ status: 'error', message: '当前登录已失效，请先到“我的”重新登录。' }); return }
+    this._closing = false; this._terminal = false; this.setData({ status: 'connecting', message: userMode ? '正在连接账号向导…' : '正在准备匿名预览…' })
     let anonymous
-    try {
-      if (!userMode) {
-        anonymous = await ensureAnonymousMiniSession({ renew: this.data.anonymousNeedsRenew })
-        this.setData({ anonymousNeedsRenew: false })
-      }
-    } catch (reason) {
-      this.setData({ status: 'error', message: reason?.message || '匿名预览会话暂时无法准备。' })
-      return
-    }
+    try { if (!userMode) anonymous = await ensureAnonymousMiniSession() } catch (reason) { this.setData({ status: 'error', message: reason?.message || '匿名预览会话暂时无法准备。' }); return }
     const socket = wx.connectSocket({ url: `${getApp().globalData.aiWsBase}${userMode ? '/ws/mini/user' : '/ws/mini/anonymous'}` })
     this.socket = socket
-    const requestedMode = userMode ? 'USER' : 'ANONYMOUS_MINI'
-    const expectedMode = userMode ? 'USER' : 'ANONYMOUS'
     socket.onOpen(() => {
-      const frame = { type: 'auth', authVersion: 'wudong-ws-auth-v1', contractVersion: CONTRACT_VERSION, mode: requestedMode }
-      if (userMode) frame.accessToken = state.accessToken
+      const frame = { type: 'auth', authVersion: 'wudong-ws-auth-v1', contractVersion: CONTRACT_VERSION, mode: userMode ? 'USER' : 'ANONYMOUS_MINI' }
+      if (userMode) frame.accessToken = account.accessToken
       else frame.anonymousCredential = anonymous.anonymousCredential
       socket.send({ data: JSON.stringify(frame) })
     })
-    socket.onMessage(({ data }) => {
-      let frame
-      try { frame = JSON.parse(data) } catch (_) { frame = null }
-      if (validAuthOk(frame, expectedMode)) {
-        this.setData({ status: 'ready', message: userMode ? '账号向导已准备好。' : '匿名向导预览已准备好。', anonymousNeedsRenew: false })
-        return
-      }
-      if (validAuthFailed(frame)) {
-        this._terminalFrame = true
-        const needsRenew = !userMode && ['AUTH_REQUIRED', 'ANONYMOUS_REQUIRED', 'ANONYMOUS_EXPIRED', 'ANONYMOUS_REVOKED'].includes(frame.code)
-        this.setData({
-          status: frame.retryable ? 'error' : 'blocked',
-          anonymousNeedsRenew: needsRenew,
-          message: authFailureMessage(frame)
-        })
-        return
-      }
-      this._terminalFrame = true
-      this.setData({ status: 'blocked', message: '向导返回了暂不可展示的内容，请稍后再试。' })
-      socket.close({ code: 4403, reason: 'CONTRACT_INCOMPATIBLE' })
-    })
-    socket.onError(() => {
-      if (this.socket === socket && !this._closing && !this._terminalFrame) this.setData({ status: 'error', message: '乌东向导暂未准备好。' })
-    })
-    socket.onClose(event => {
-      if (this.socket !== socket) return
-      this.socket = null
-      if (this._closing || this._terminalFrame) return
-      const anonymousNeedsRenew = !userMode && event.code === 4401
-      this.setData({ status: 'error', anonymousNeedsRenew, message: anonymousNeedsRenew ? '匿名体验已失效；请明确重新开始。' : '向导连接已关闭；如已重新登录或服务恢复，可手动重新连接。' })
-    })
+    socket.onMessage(({ data }) => this.receive(data, socket, userMode))
+    socket.onError(() => { if (this.socket === socket && !this._closing && !this._terminal) this.setData({ status: 'error', busy: false, message: '乌东向导暂未准备好。' }) })
+    socket.onClose(() => { if (this.socket === socket) { this.socket = null; if (!this._closing && !this._terminal) this.setData({ status: 'error', busy: false, message: '向导连接已关闭；可手动重新连接。' }) } })
   },
+  receive(raw, socket, userMode) {
+    let frame; try { frame = JSON.parse(raw) } catch (_) { frame = null }
+    if (frame?.type === 'auth_ok' && frame.authVersion === 'wudong-ws-auth-v1' && frame.contractVersion === CONTRACT_VERSION) {
+      socket.send({ data: JSON.stringify({ type: 'session_state_request', assistantContractVersion: ASSISTANT_CONTRACT, tourismContractVersion: CONTRACT_VERSION, threadId: null, runId: null, lastEventSequence: 0 }) }); return
+    }
+    if (validSession(frame)) { this.setData({ threadId: frame.threadId, checkpointRevision: frame.checkpointRevision, card: frame.lastCard || null, status: 'ready', message: userMode ? '账号向导已就绪。' : '匿名向导已就绪。' }); return }
+    if (frame?.type === 'auth_failed') { this._terminal = true; this.setData({ status: frame.retryable ? 'error' : 'blocked', busy: false, message: frame.message || '身份状态暂不可用。' }); return }
+    if (!frame || frame.assistantContractVersion !== ASSISTANT_CONTRACT || frame.tourismContractVersion !== CONTRACT_VERSION || frame.eventVersion !== EVENT_CONTRACT || frame.threadId !== this.data.threadId) { this._terminal = true; this.setData({ status: 'blocked', busy: false, message: '收到无法确认的向导消息，已停止展示。' }); return }
+    if (frame.type === 'run_started') this.setData({ busy: true, activeStage: 'UNDERSTANDING' })
+    if (frame.type === 'progress') this.setData({ activeStage: frame.data?.status === 'COMPLETED' ? '' : frame.data?.stage || this.data.activeStage })
+    if (frame.type === 'card_ready' && frame.data?.card?.cardVersion === '3.0') {
+      const summary = frame.data.card.summary || frame.data.card.title
+      this.setData({ card: frame.data.card, checkpointRevision: frame.data.checkpointRevision, dialogue: [...this.data.dialogue.slice(-3), { role: 'guide', content: summary }] })
+    }
+    if (['completed', 'failed', 'stopped'].includes(frame.type)) this.setData({ busy: false, activeStage: '', message: frame.type === 'completed' ? '本轮建议已整理完毕。' : '本轮生成中断，可调整需求后重试。' })
+  },
+  input(event) { this.setData({ prompt: event.detail.value }) },
+  async sendPrompt(event) {
+    const text = String(event?.currentTarget?.dataset?.text || this.data.prompt || '').trim()
+    if (!text || this.data.busy || this.data.status !== 'ready' || !this.socket) return
+    const clientRequestId = await randomUuid()
+    this.setData({ prompt: text, card: null, busy: true, activeStage: 'UNDERSTANDING', message: '乌东向导正在读取你的需求。', dialogue: [...this.data.dialogue.slice(-3), { role: 'user', content: text }] })
+    this.socket.send({ data: JSON.stringify({ type: 'generate', assistantContractVersion: ASSISTANT_CONTRACT, tourismContractVersion: CONTRACT_VERSION, clientRequestId, threadId: this.data.threadId, expectedCheckpointRevision: this.data.checkpointRevision, userText: text, pageAction: null, selectedTarget: null, baseResource: null, conditions: emptyConditions(), retrievalMode: 'KEYWORD_DEMO' }) })
+  },
+  retry() { this.sendPrompt() },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) },
   toResources(event) { getApp().globalData.resourceCategory = event.currentTarget.dataset.kind; wx.switchTab({ url: '/pages/resources/resources' }) }
 })

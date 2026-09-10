@@ -1,1 +1,21 @@
-<view class="page"><view class="eyebrow">乌东向导</view><view class="title">先确认身份，再把心愿交给山茶</view><view class="muted">向导目前可以确认身份并建立连接，更多行程内容正在准备中。</view><view class="guide-card"><view class="leaf">叶</view><view><view class="card-title">{{account ? account.nickname + '，准备连接账号向导' : '免登录体验匿名向导'}}</view><view class="muted">{{message || (account ? '登录失效时不会自动切换身份，也不会自动重发需求。' : '匿名预览不能读取账号资料；需要保存成果时再登录并再次确认。')}}</view></view><button class="primary" disabled="{{status === 'connecting' || status === 'ready'}}" bindtap="connect">{{status === 'ready' ? '向导已就绪' : status === 'connecting' ? '连接中…' : anonymousNeedsRenew ? '重新开始匿名预览' : account ? '连接账号向导' : '开始匿名预览'}}</button><button wx:if="{{!account}}" class="link" bindtap="toProfile">已有账号？去“我的”登录</button></view><view class="quick"><button data-kind="product" bindtap="toResources">先看看商品</button><button data-kind="food" bindtap="toResources">同店选餐</button><button data-kind="travel" bindtap="toResources">看示意路线</button></view></view>
+<view class="page">
+  <view class="eyebrow">一叶同行 · 乌东向导</view><view class="title">把想去的地方，慢慢说给我听</view><view class="muted">先匿名体验资料建议；保存个人行程时再登录并确认。</view>
+  <view class="guide-card"><view class="leaf">叶</view><view><view class="card-title">{{account ? account.nickname + '，准备连接账号向导' : '免登录体验乌东向导'}}</view><view class="muted">{{message || '匿名预览不能读取账号资料；演示价格、房态与路线不代表实时信息。'}}</view></view><button class="primary" disabled="{{status === 'connecting' || status === 'ready'}}" bindtap="connect">{{status === 'ready' ? '向导已就绪' : status === 'connecting' ? '连接中…' : account ? '连接账号向导' : '开始匿名预览'}}</button><button wx:if="{{!account}}" class="link" bindtap="toProfile">已有账号？去“我的”登录</button></view>
+  <view wx:if="{{status === 'ready'}}" class="workspace">
+    <view class="workspace-head"><view><view class="eyebrow">多智能体编排</view><view class="section-title">山水、寨、茶与人</view></view><text>{{busy ? '正在' + (stageLabels[activeStage] || '整理建议') : '资料演示模式'}}</text></view>
+    <view wx:if="{{dialogue.length}}" class="dialogue"><view wx:for="{{dialogue}}" wx:key="index" class="message {{item.role === 'user' ? 'user' : ''}}"><text>{{item.role === 'user' ? '你' : '乌东向导'}}</text><view>{{item.content}}</view></view></view>
+    <view class="quick"><button data-text="周末两位，安排两天一夜的苗族文化茶旅" disabled="{{busy}}" bindtap="sendPrompt">两天一夜茶旅</button><button data-text="推荐适合亲子的苗绣体验" disabled="{{busy}}" bindtap="sendPrompt">亲子苗绣</button><button data-text="介绍一下乌东的茶旅体验" disabled="{{busy}}" bindtap="sendPrompt">认识乌东茶旅</button></view>
+    <textarea value="{{prompt}}" maxlength="2000" placeholder="例如：周末两位，想体验苗族文化和茶旅" bindinput="input"/>
+    <button class="primary" disabled="{{busy || !prompt}}" bindtap="sendPrompt">{{busy ? '正在编排…' : '为我安排乌东之行'}}</button>
+    <view class="phases"><text wx:for="{{stagePhases}}" wx:key="id" class="{{activeStage === item.id ? 'active' : ''}}">{{item.label}}</text></view>
+    <view wx:if="{{card}}" class="result">
+      <view class="eyebrow">{{card.type === 'itinerary' ? '行程建议' : card.type === 'knowledge_answer' ? '资料解答' : card.type === 'service_recommendation' ? '在地推荐' : '向导说明'}}</view><view class="section-title">{{card.title}}</view><view class="muted">{{card.summary}}</view>
+      <block wx:if="{{card.type === 'itinerary'}}"><view wx:for="{{card.data.content.days}}" wx:key="day" class="day"><view>第 {{item.day}} 天 · {{item.theme}}</view><view wx:for="{{item.stops}}" wx:key="sequence" class="stop"><text>{{item.sequence}}</text><view><view>{{item.title}}</view><small>{{item.note}}</small></view></view></view><view class="notice">{{card.data.notice}}</view></block>
+      <block wx:elif="{{card.type === 'knowledge_answer'}}"><view class="answer">{{card.data.answer}}</view></block>
+      <block wx:elif="{{card.type === 'service_recommendation'}}"><view wx:for="{{card.data.items}}" wx:key="targetId" class="recommend"><view>{{item.targetName}}</view><small>{{item.summary}}</small></view></block>
+      <block wx:elif="{{card.type === 'error'}}"><button wx:if="{{card.data.retryable}}" class="ghost" bindtap="retry">重新尝试</button></block>
+      <view wx:if="{{card.references.length}}" class="references">参考了 {{card.references.length}} 条乌东资料</view>
+    </view>
+  </view>
+  <view class="quick bottom"><button data-kind="product" bindtap="toResources">先看看商品</button><button data-kind="food" bindtap="toResources">同店选餐</button><button data-kind="travel" bindtap="toResources">看示意路线</button></view>
+</view>
