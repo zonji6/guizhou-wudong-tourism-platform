@@ -1,0 +1,58 @@
+task_id: TASK-032
+agent_id: agent-24696605-09d4-4129-9cbc-cbfab3b798fa
+dispatch_id: dispatch-TASK-032-r1
+objective: 在既有水彩首页和 tourism-api-v3 客户端边界内，完善 Web 与原生小程序的商品、餐食、住宿、出行及社区内容展示和既有操作流程；不改变接口、模型、鉴权或订单协议。
+deliverables:
+  - web/**
+  - miniprogram/**
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\content-experience
+branch: codex/wudong-content-experience
+read_scope:
+  - docs/contracts/tourism-api-v3.md
+  - web/**
+  - miniprogram/**
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\content-catalog-draft.json
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\image-manifest.json
+  - D:\AI_Project\Codex_project\乌冬\docs\source-analysis\2026-09-09-content-data-audit.md
+write_scope:
+  - web/**
+  - miniprogram/**
+restricted_actions:
+  - 仅修改 Web 与原生小程序页面、样式、既有客户端数据映射和媒体 URL helper；不得修改 Java、AI、契约、数据库迁移、根脚本、控制文件或图片文件。
+  - 保留水彩首页与既有 tourism-api-v3 请求、登录、鉴权、订单和社区投稿边界；不得新增接口、模型、JWT/契约开发术语、身份传递或订单协议。
+  - Web 与小程序均需完善商品搜索/类别标签/可操作详情、同店多菜、住宿房型、地点路线选择、文化文章阅读及既有社区发布。
+  - 演示价格、容量、资料参考和示意地图必须保持用户可见标识，不能承诺实时库存、经营状态、真实导航或素材授权。
+  - 媒体 URL 只能经 helper 处理 imageN；小程序使用 127.0.0.1:5174 静态地址且不打包图片；无图房型为紧凑文字卡，不可把酒店照片称为房型实拍。
+  - 文化文章映射为 450...101→193、102→194、103→196、104→201；不得读取或扩展 v3 coverUrl 字段。
+  - 禁止自动化测试、服务、数据库、网络、push、reset、checkout、clean；仅允许 Web npm run build、静态小程序语法/绑定和差异/范围检查。
+read_first:
+  - docs/contracts/tourism-api-v3.md
+  - web/src/pages/ExplorePage.vue
+  - miniprogram/pages/resources/resources.js
+  - D:\AI_Project\Codex_project\乌冬\docs\source-analysis\2026-09-09-content-data-audit.md
+dependencies: []
+acceptance:
+  - 两端保持水彩首页，并以既有 v3 读取结果展示充实后的商品、餐食、住宿、地点/路线和社区文化内容。
+  - 两端商品可检索并进入既有操作详情；餐食同店多菜；住宿房型选择；路线明确为水彩示意；社区保留文化阅读和既有发布。
+  - 两端媒体 helper 正确处理 imageN URL 和无图空值，不打包图片，且演示/资料参考标识和游客文案满足要求。
+  - Web npm run build 成功；静态小程序页面绑定/语法和提交差异/路径范围通过。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 3f2a6986dd896bae6efe0d446fa21827c716b324
+interface_revision: tourism-api-v3-draft-r3
+verification_profile: standard
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+environment_isolation:
+  worktree: D:\AI_Project\Codex_project\乌冬\.worktrees\content-experience
+task_state: ACTIVE
+dispatch_state: ACKNOWLEDGED
+proceed: true
+enforcement:
+  write_scope: WORKTREE_ISOLATED
+  shared_interface: PROCESS_GOVERNED
+  local_media: PROCESS_GOVERNED
+  remote_push: PROCESS_GOVERNED

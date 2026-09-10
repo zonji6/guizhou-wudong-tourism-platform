@@ -1,0 +1,64 @@
+task_id: TASK-031
+agent_id: agent-c5a0dec2-9f45-4257-bc37-e7133f55f210
+dispatch_id: dispatch-TASK-031-r1
+objective: 在既有 tourism-api-v3 演示链中，以唯一 V6 前向数据迁移充实乌东商品、餐食、住宿、地点、路线与文化社区目录；不改变接口、鉴权、订单事务或业务模型。
+deliverables:
+  - tourism-service/src/main/resources/db/migration/V6__wudong_content_demo_data.sql
+workspace: D:\AI_Project\Codex_project\乌冬\.worktrees\content-business
+branch: codex/wudong-content-business
+read_scope:
+  - docs/contracts/tourism-api-v3.md
+  - tourism-service/src/main/resources/db/migration/V1__create_tourism_tables.sql
+  - tourism-service/src/main/resources/db/migration/V4__five_domain_catalogs.sql
+  - tourism-service/src/main/resources/db/migration/V5__tourism_api_v3_demo_chain.sql
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\source-summary.json
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\source-blocks.json
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\content-catalog-draft.json
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\image-manifest.json
+  - D:\AI_Project\Codex_project\乌冬\docs\source-analysis\2026-09-09-content-data-audit.md
+write_scope:
+  - tourism-service/src/main/resources/db/migration/V6__wudong_content_demo_data.sql
+restricted_actions:
+  - 仅新增唯一 V6 演示数据迁移；不得修改既有迁移、Java 代码、契约、前端、小程序、根脚本、控制文件或图片文件。
+  - 不得改动三订单鉴权、报价、防重、草稿或事务逻辑；联系人、手机号及外部链接不得导入或公开。
+  - 商品固定为 22 个原文类别加 5 个银球茶规格，共 27 个演示 SKU；模拟单价、容量、资料参考必须明确为演示，不能冒充实时事实。
+  - 导入 10 家民宿和 33 个房型、12 家餐馆和至少 100 个菜品及 14 套餐、至少 6 个地点、3 条示意路线及 4 篇文化文章；同名餐馆各为独立店铺。
+  - 配图 URL 只能是 /images/wudong-content/imageN.jpg；房型无独立图填空值；文化文章稳定映射为 450...101→193、102→194、103→196、104→201。
+  - 禁止自动化测试、服务、数据库、网络、push、reset、checkout、clean；仅允许 mvn -DskipTests compile 与静态 SQL/差异/范围检查。
+read_first:
+  - docs/contracts/tourism-api-v3.md
+  - tourism-service/src/main/resources/db/migration/V5__tourism_api_v3_demo_chain.sql
+  - D:\AI_Project\Codex_project\乌冬\tmp\source-review\content\source-summary.json
+  - D:\AI_Project\Codex_project\乌冬\docs\source-analysis\2026-09-09-content-data-audit.md
+dependencies: []
+acceptance:
+  - V6 是唯一新增迁移，目录读取可返回 27 个演示 SKU、10 家民宿/33 个房型、12 店/至少 100 菜/14 套餐、至少 6 地点/3 路线/4 文化文章，且所有 ID 稳定。
+  - 资料来源、模拟值、容量缺失、地图示意和图片缺失均不伪装为已核实实时事实；不导入公开联系人或外部链接。
+  - 迁移只充实既有表及既有 v3 读取形状，不改变订单、鉴权、防重、草稿、事务或接口。
+  - mvn -DskipTests compile 成功，提交差异/路径范围只包含该 V6 文件。
+project_revision: project-r1
+task_revision: task-r1
+base_revision: 3f2a6986dd896bae6efe0d446fa21827c716b324
+interface_revision: tourism-api-v3-draft-r3
+verification_profile: high_risk
+permission_expiry:
+  - task_state: VERIFYING
+  - task_state: VERIFIED
+  - task_state: CANCELLED
+  - task_state: STALE
+exclusive_resources:
+  - resource: migration:V6__wudong_content_demo_data.sql
+    reason: 数据库迁移必须只有一个写入人。
+environment_isolation:
+  worktree: D:\AI_Project\Codex_project\乌冬\.worktrees\content-business
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+artifact_revision: 6ffb3a52b205a8e0a759df2d221fc60f5e746cf9
+receipt: static_sql_PASS,mvn_skip_tests_compile_BUILD_SUCCESS,git_diff_check_PASS,scope_PASS,worktree_clean,tests_NOT_RUN_BY_TASK_RULE
+implementation_evidence_fingerprint: sha256:eef65d8984e2fddc1add837d401deed86f3f084739ecaf95caada40870ab922b
+enforcement:
+  write_scope: WORKTREE_ISOLATED
+  migration_serialization: PROCESS_GOVERNED
+  database_and_network: PROCESS_GOVERNED
+  remote_push: PROCESS_GOVERNED
