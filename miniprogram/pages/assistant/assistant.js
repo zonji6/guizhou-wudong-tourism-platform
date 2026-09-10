@@ -16,6 +16,19 @@ function validSession(frame) {
   return frame && frame.type === 'session_state' && frame.assistantContractVersion === ASSISTANT_CONTRACT && frame.tourismContractVersion === CONTRACT_VERSION && UUID.test(frame.threadId || '')
 }
 
+function presentCard(card) {
+  if (card?.type !== 'service_recommendation' || !Array.isArray(card?.data?.items)) return card
+  return {
+    ...card,
+    data: {
+      ...card.data,
+      items: card.data.items.map(item => item?.targetType === 'PRODUCT'
+        ? { ...item, targetName: String(item.targetName || '').trim().replace(/\s*演示\s*SKU\s*$/i, '') || item.targetName }
+        : item)
+    }
+  }
+}
+
 Page({
   data: {
     account: null, status: 'idle', message: '', prompt: '周末两位，想在乌东体验苗族文化和茶旅，请安排两天一夜的慢游建议。',
@@ -56,7 +69,7 @@ Page({
     if (frame.type === 'progress') this.setData({ activeStage: frame.data?.status === 'COMPLETED' ? '' : frame.data?.stage || this.data.activeStage })
     if (frame.type === 'card_ready' && frame.data?.card?.cardVersion === '3.0') {
       const summary = frame.data.card.summary || frame.data.card.title
-      this.setData({ card: frame.data.card, checkpointRevision: frame.data.checkpointRevision, dialogue: [...this.data.dialogue.slice(-3), { role: 'guide', content: summary }] })
+      this.setData({ card: presentCard(frame.data.card), checkpointRevision: frame.data.checkpointRevision, dialogue: [...this.data.dialogue.slice(-3), { role: 'guide', content: summary }] })
     }
     if (['completed', 'failed', 'stopped'].includes(frame.type)) this.setData({ busy: false, activeStage: '', message: frame.type === 'completed' ? '本轮建议已整理完毕。' : '本轮生成中断，可调整需求后重试。' })
   },

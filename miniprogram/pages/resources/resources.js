@@ -32,6 +32,11 @@ function displayTags(item) {
   return (item?.tags || []).filter(tag => !resourceMetadataTags.has(tag))
 }
 
+function publicName(name) {
+  const value = String(name || '').trim()
+  return value.replace(/\s*演示\s*SKU\s*$/i, '') || value
+}
+
 function priceView(item) {
   if (item?.demoPrice) return { amount: item.demoPrice.amount, note: item.demoPrice.simulationNote, kind: '演示价' }
   if (item?.referencePrice) return { amount: item.referencePrice.amount, note: `参考来源：${item.referencePrice.sourceTitle}`, kind: '参考价' }
@@ -47,7 +52,7 @@ function withImage(item, kind) {
 }
 
 function productView(item) {
-  return { ...withImage(item, 'product'), priceView: priceView(item), displayTags: displayTags(item) }
+  return { ...withImage(item, 'product'), displayName: publicName(item.name), priceView: priceView(item), displayTags: displayTags(item) }
 }
 
 function foodView(item) {
@@ -316,7 +321,7 @@ Page({
   },
   checkoutProduct(event) {
     const resource = this.data.products.find(item => item.id === event.currentTarget.dataset.id)
-    if (resource?.orderable) this.openCheckout({ kind: 'product', title: resource.name, resource })
+    if (resource?.orderable) this.openCheckout({ kind: 'product', title: resource.displayName || resource.name, resource })
   },
   checkoutFood() {
     const items = this.data.foods.filter(item => item.quantity > 0).map(item => ({ foodItemId: item.id, quantity: item.quantity, resource: item }))

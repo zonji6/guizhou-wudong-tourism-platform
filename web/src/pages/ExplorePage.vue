@@ -134,6 +134,11 @@ function imageOf(item, kind) {
   return contentMediaUrl(item?.imageUrl, kind)
 }
 
+function publicName(item) {
+  const name = String(item?.name || '').trim()
+  return name.replace(/\s*演示\s*SKU\s*$/i, '') || name
+}
+
 function postLabel(post) {
   if (post?.postType === 'ROUTE_GUIDE') return '示意路线攻略'
   return post?.legacyData ? '文化文章' : '寨里动态'
@@ -346,7 +351,7 @@ function usePostRoute(post) {
 }
 
 function checkoutProduct(item) {
-  emit('checkout', { kind: 'product', title: item.name, resource: item })
+  emit('checkout', { kind: 'product', title: publicName(item), resource: item })
 }
 
 function checkoutFood() {
@@ -429,14 +434,14 @@ watch(() => [props.focusProductId, props.focusRoomId, props.focusPlaceId], () =>
       </section>
 
       <article v-if="selectedProduct" ref="productDetailRef" class="v3-detail-sheet">
-        <SafeImage :src="imageOf(selectedProduct, 'product')" :alt="`${selectedProduct.name}资料图片`" :label="selectedProduct.name" />
-        <div><button class="v3-detail-close" type="button" aria-label="关闭商品详情" @click="selectedProduct = null">×</button><p class="eyebrow">商品详情 · {{ selectedProduct.merchantName }}</p><h2>{{ selectedProduct.name }}</h2><p>{{ selectedProduct.description }}</p><div v-if="displayTags(selectedProduct).length" class="v3-tag-row"><span v-for="tag in displayTags(selectedProduct)" :key="tag">{{ tag }}</span></div><p v-if="isTeaIllustration(selectedProduct)" class="v3-notice">茶品资料示意，不代表当前商品实物。</p><dl><dt>取货地点</dt><dd>{{ selectedProduct.pickupPoint }}</dd><dt>资料状态</dt><dd>{{ catalogNote(selectedProduct) }}</dd></dl><p v-if="price(selectedProduct)" class="v3-price">¥{{ price(selectedProduct).amount }} <small>{{ price(selectedProduct).kind }} · {{ price(selectedProduct).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="primary" type="button" :disabled="!selectedProduct.orderable" @click="checkoutProduct(selectedProduct)">{{ selectedProduct.orderable ? '选择数量并核价' : '当前仅供查看' }}</button></div>
+        <SafeImage :src="imageOf(selectedProduct, 'product')" :alt="`${publicName(selectedProduct)}资料图片`" :label="publicName(selectedProduct)" />
+        <div><button class="v3-detail-close" type="button" aria-label="关闭商品详情" @click="selectedProduct = null">×</button><p class="eyebrow">商品详情 · {{ selectedProduct.merchantName }}</p><h2>{{ publicName(selectedProduct) }}</h2><p>{{ selectedProduct.description }}</p><div v-if="displayTags(selectedProduct).length" class="v3-tag-row"><span v-for="tag in displayTags(selectedProduct)" :key="tag">{{ tag }}</span></div><p v-if="isTeaIllustration(selectedProduct)" class="v3-notice">茶品资料示意，不代表当前商品实物。</p><dl><dt>取货地点</dt><dd>{{ selectedProduct.pickupPoint }}</dd><dt>资料状态</dt><dd>{{ catalogNote(selectedProduct) }}</dd></dl><p v-if="price(selectedProduct)" class="v3-price">¥{{ price(selectedProduct).amount }} <small>{{ price(selectedProduct).kind }} · {{ price(selectedProduct).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="primary" type="button" :disabled="!selectedProduct.orderable" @click="checkoutProduct(selectedProduct)">{{ selectedProduct.orderable ? '选择数量并核价' : '当前仅供查看' }}</button></div>
       </article>
 
       <section class="v3-card-grid">
         <article v-for="item in visibleProducts" :key="item.id" class="v3-resource-card">
-          <SafeImage :src="imageOf(item, 'product')" :alt="`${item.name}资料图片`" :label="item.name" loading="lazy" />
-          <div><p class="eyebrow">{{ item.merchantName }}</p><h2>{{ item.name }}</h2><p>{{ item.description }}</p><div v-if="displayTags(item).length" class="v3-tag-row"><span v-for="tag in displayTags(item)" :key="tag">{{ tag }}</span></div><p v-if="isTeaIllustration(item)" class="v3-source-note">茶品资料示意，不代表当前商品实物</p><p class="v3-source-note">{{ catalogNote(item) }}</p><p v-if="price(item)" class="v3-price">¥{{ price(item).amount }} <small>{{ price(item).kind }} · {{ price(item).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="ghost" type="button" @click="showProductDetail(item)">查看详情</button></div>
+          <SafeImage :src="imageOf(item, 'product')" :alt="`${publicName(item)}资料图片`" :label="publicName(item)" loading="lazy" />
+          <div><p class="eyebrow">{{ item.merchantName }}</p><h2>{{ publicName(item) }}</h2><p>{{ item.description }}</p><div v-if="displayTags(item).length" class="v3-tag-row"><span v-for="tag in displayTags(item)" :key="tag">{{ tag }}</span></div><p v-if="isTeaIllustration(item)" class="v3-source-note">茶品资料示意，不代表当前商品实物</p><p class="v3-source-note">{{ catalogNote(item) }}</p><p v-if="price(item)" class="v3-price">¥{{ price(item).amount }} <small>{{ price(item).kind }} · {{ price(item).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="ghost" type="button" @click="showProductDetail(item)">查看详情</button></div>
         </article>
         <p v-if="state.product.length && !visibleProducts.length" class="v3-state">没有匹配的商品，试试清空关键词或标签。</p>
         <p v-if="!state.product.length" class="v3-state">当前没有已发布商品。</p>

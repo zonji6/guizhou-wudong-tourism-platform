@@ -202,6 +202,11 @@ function recommendationActionLabel(item) {
   return { PRODUCT: '查看这件商品', FOOD: '去这家店选餐', STAY: '查看这间房型', PLACE: '查看这个地点' }[item?.targetType] || ''
 }
 
+function publicRecommendationName(item) {
+  const name = String(item?.targetName || '').trim()
+  return item?.targetType === 'PRODUCT' ? name.replace(/\s*演示\s*SKU\s*$/i, '') || name : name
+}
+
 async function followAction(action) {
   if (action?.action === 'RETRY') return sendPrompt()
   if (action?.action === 'SAVE_ITINERARY') {
@@ -271,7 +276,7 @@ onBeforeUnmount(() => { leaving = true; closeSocket() })
       <ol class="v3-guide-phases"><li v-for="(label, key) in stageLabels" :key="key" :class="{ active: activeStage === key }"><i></i>{{ label }}</li></ol>
       <article v-if="card" class="v3-guide-result"><header><p class="eyebrow">{{ card.type === 'itinerary' ? '行程建议' : card.type === 'service_recommendation' ? '在地推荐' : card.type === 'knowledge_answer' ? '资料解答' : card.type === 'clarifying_question' ? '继续补充' : card.type === 'pending_booking' ? '待确认方案' : '向导说明' }}</p><h2>{{ card.title }}</h2><p>{{ card.summary }}</p></header>
         <section v-if="card.type === 'itinerary'" class="v3-guide-days"><article v-for="day in card.data?.content?.days || []" :key="day.day"><b>第 {{ day.day }} 天 · {{ day.theme || '慢游乌东' }}</b><ol><li v-for="stop in day.stops || []" :key="stop.sequence"><span>{{ stop.sequence }}</span><div><strong>{{ stop.title }}</strong><small v-if="stop.note">{{ stop.note }}</small></div></li></ol></article><p>{{ card.data?.notice }}</p></section>
-        <section v-else-if="card.type === 'service_recommendation'" class="v3-guide-recommendations"><article v-for="item in card.data?.items || []" :key="item.targetId"><div><h3>{{ item.targetName }}</h3><p>{{ item.summary }}</p><span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span><button v-if="recommendationActionLabel(item)" type="button" class="v3-recommendation-action" @click="openRecommendation(item)">{{ recommendationActionLabel(item) }}</button></div><b v-if="item.demoPrice">¥{{ item.demoPrice.amount }}<small>演示价</small></b></article><p>{{ card.data?.notice }}</p></section>
+        <section v-else-if="card.type === 'service_recommendation'" class="v3-guide-recommendations"><article v-for="item in card.data?.items || []" :key="item.targetId"><div><h3>{{ publicRecommendationName(item) }}</h3><p>{{ item.summary }}</p><span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span><button v-if="recommendationActionLabel(item)" type="button" class="v3-recommendation-action" @click="openRecommendation(item)">{{ recommendationActionLabel(item) }}</button></div><b v-if="item.demoPrice">¥{{ item.demoPrice.amount }}<small>演示价</small></b></article><p>{{ card.data?.notice }}</p></section>
         <p v-else-if="card.type === 'knowledge_answer'" class="v3-guide-answer">{{ card.data?.answer }}</p><p v-else-if="card.type === 'clarifying_question'" class="v3-guide-answer">还需要：{{ (card.data?.requiredFields || []).join('、') }}。补充后可再次生成。</p><dl v-else-if="card.type === 'pending_booking'" class="v3-guide-proposal"><dt>本轮方案</dt><dd>{{ card.data?.candidate?.candidateType === 'FOOD_DRAFT' ? '同店多菜到店方案' : '住宿入住方案' }}</dd><dt>人数</dt><dd>{{ card.data?.proposal?.peopleCount || '待补充' }}</dd><dt>说明</dt><dd>{{ card.data?.notice }}</dd></dl>
         <div v-if="actions.length" class="v3-guide-card-actions"><button v-for="action in actions" :key="`${action.action}-${action.label}`" type="button" class="ghost" :disabled="savingItinerary" @click="followAction(action)">{{ savingItinerary && action.action === 'SAVE_ITINERARY' ? '正在保存…' : actionLabel(action) }}</button></div><details v-if="references.length" class="v3-guide-references"><summary>参考了 {{ references.length }} 条乌东资料</summary><ul><li v-for="reference in references" :key="reference.detailPath">{{ reference.sourceTitle }}</li></ul></details>
       </article>

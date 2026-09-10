@@ -8,6 +8,17 @@ const KINDS = {
   community: { path: '/api/posts', label: '文化手账' }
 }
 
+const metadataTags = new Set(['商品', '餐食', '餐食主体', '住宿', '乌东', '演示数据', '资料待核验', '资料参考', '待核验', '资料菜单项', '资料候选', '共享示意图'])
+
+function displayTags(item) {
+  return (item?.tags || []).filter(tag => !metadataTags.has(tag))
+}
+
+function publicName(name) {
+  const value = String(name || '').trim()
+  return value.replace(/\s*演示\s*SKU\s*$/i, '') || value
+}
+
 function priceView(item) {
   if (item?.demoPrice) return { amount: item.demoPrice.amount, note: item.demoPrice.simulationNote, kind: '演示价' }
   if (item?.referencePrice) return { amount: item.referencePrice.amount, note: `参考来源：${item.referencePrice.sourceTitle}`, kind: '参考价' }
@@ -31,14 +42,15 @@ function detailView(item, kind) {
     return {
       ...item,
       ...imageView(item.imageUrl, 'stay'),
+      displayTags: displayTags(item),
       roomTypes: (item.roomTypes || []).map(room => ({ ...room, ...imageView(room.imageUrl, 'stay'), priceView: priceView(room) }))
     }
   }
   if (kind === 'travel') {
     const displayImageUrl = placeMediaUrl(item.id)
-    return { ...item, displayImageUrl, imageNote: displayImageUrl ? '原始资料参考图，公开使用范围待确认' : '', displayName: item.name }
+    return { ...item, displayImageUrl, imageNote: displayImageUrl ? '原始资料参考图，公开使用范围待确认' : '', displayName: item.name, displayTags: displayTags(item) }
   }
-  return { ...item, ...imageView(item.imageUrl, 'product'), priceView: priceView(item), displayName: item.name }
+  return { ...item, ...imageView(item.imageUrl, 'product'), priceView: priceView(item), displayName: publicName(item.name), displayTags: displayTags(item) }
 }
 
 Page({
@@ -58,7 +70,7 @@ Page({
   checkoutProduct() {
     const resource = this.data.item
     if (!resource?.orderable) return
-    getApp().globalData.checkoutSelection = { kind: 'product', title: resource.name, resource }
+    getApp().globalData.checkoutSelection = { kind: 'product', title: resource.displayName || resource.name, resource }
     wx.navigateTo({ url: '/pages/booking/booking' })
   },
   checkoutStay(event) {

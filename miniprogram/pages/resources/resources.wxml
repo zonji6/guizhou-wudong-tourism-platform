@@ -20,7 +20,7 @@
       <view wx:else class="card-image image-empty">图片暂缺</view>
       <view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view>
       <view class="eyebrow">{{item.merchantName}}</view>
-      <view class="card-title">{{item.name}}</view>
+      <view class="card-title">{{item.displayName}}</view>
       <view wx:if="{{item.displayTags.length}}" class="tag-row"><text wx:for="{{item.displayTags}}" wx:key="*this">{{item}}</text></view>
       <view class="muted">{{item.description}}</view>
       <view wx:if="{{item.priceView}}" class="price">¥{{item.priceView.amount}} <text>{{item.priceView.kind}} · {{item.priceView.note}}</text></view>
