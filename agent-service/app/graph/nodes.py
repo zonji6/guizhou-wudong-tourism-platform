@@ -78,7 +78,7 @@ def select_agent(state: WorkflowState, runtime: Any) -> dict[str, object]:
     text = request.user_text.lower()
     if any(word in text for word in ("行程", "几天", "两天", "一夜", "一日", "路线安排", "安排", "怎么玩", "慢游")):
         return {"agent_type": "ITINERARY_PLANNER"}
-    if any(word in text for word in ("商品", "特产", "餐", "美食", "住", "民宿", "地点", "景点", "攻略")):
+    if any(word in text for word in ("商品", "特产", "苗绣", "蜡染", "银饰", "餐", "美食", "住", "民宿", "地点", "景点", "攻略")):
         return {"agent_type": "SERVICE_RECOMMENDER"}
     return {"agent_type": "KNOWLEDGE_GUIDE"}
 
@@ -163,7 +163,7 @@ def _target_type(context: RunContext) -> str:
         return "FOOD"
     if any(word in text for word in ("住", "民宿", "房")):
         return "STAY"
-    if any(word in text for word in ("商品", "特产", "买")):
+    if any(word in text for word in ("商品", "特产", "买", "苗绣", "蜡染", "银饰")):
         return "PRODUCT"
     if "攻略" in text:
         return "ROUTE_GUIDE"
