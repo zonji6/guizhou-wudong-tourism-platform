@@ -20,17 +20,35 @@ function routePlaceViews(places, selectedIds) {
   return (places || []).map(place => ({ ...place, routeOrder: selectedIds.indexOf(place.id) + 1 }))
 }
 
+function postFilters(posts, type, tag) {
+  return (posts || []).filter(post => {
+    const typeMatches = !type || post.postType === type
+    const tagMatches = !tag || (post.tags || []).includes(tag)
+    return typeMatches && tagMatches
+  })
+}
+
 Page({
-  data: { posts: [], places: [], routePlaces: [], routePlaceIds: [], postTypes: ['日常记录', '示意路线攻略'], loggedIn: false, formOpen: false, postType: 'MOMENT', title: '', content: '', tags: '', routeSummary: '', loading: false, error: '', message: '' },
+  data: { posts: [], visiblePosts: [], postFilter: '', postTag: '', postTags: [], places: [], routePlaces: [], routePlaceIds: [], postTypes: ['日常记录', '示意路线攻略'], loggedIn: false, formOpen: false, postType: 'MOMENT', title: '', content: '', tags: '', routeSummary: '', loading: false, error: '', message: '' },
   onShow() { this.getTabBar()?.setData({ selected: 3 }); this.setData({ loggedIn: Boolean(authState().account) }); this.load() },
   load() {
     this.setData({ loading: true, error: '' })
     Promise.all([request('/api/posts'), request('/api/places')]).then(([posts, map]) => {
       const places = map.places || []
-      this.setData({ posts: posts.map(postView), places, routePlaces: routePlaceViews(places, this.data.routePlaceIds) })
+      const postViews = posts.map(postView)
+      const postTags = [...new Set(postViews.reduce((all, post) => all.concat(post.tags || []), []))]
+      this.setData({ posts: postViews, visiblePosts: postFilters(postViews, this.data.postFilter, this.data.postTag), postTags, places, routePlaces: routePlaceViews(places, this.data.routePlaceIds) })
     }).catch(reason => this.setData({ error: reason?.message || '寨里内容暂时无法读取。' })).finally(() => this.setData({ loading: false }))
   },
   toggleForm() { this.setData({ formOpen: !this.data.formOpen, message: '' }) },
+  selectPostFilter(event) {
+    const postFilter = event.currentTarget.dataset.type || ''
+    this.setData({ postFilter, visiblePosts: postFilters(this.data.posts, postFilter, this.data.postTag) })
+  },
+  selectPostTag(event) {
+    const postTag = event.currentTarget.dataset.tag || ''
+    this.setData({ postTag, visiblePosts: postFilters(this.data.posts, this.data.postFilter, postTag) })
+  },
   setType(event) { this.setData({ postType: event.detail.value === '1' ? 'ROUTE_GUIDE' : 'MOMENT' }) },
   input(event) { this.setData({ [event.currentTarget.dataset.field]: event.detail.value }) },
   toggleRoutePlace(event) {
