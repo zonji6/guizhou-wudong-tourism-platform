@@ -58,7 +58,7 @@ onUnmounted(() => removeEventListener('hashchange', syncRoute))
     </header>
 
     <HomePage v-if="route.name === 'home'" @gate-change="homeOpened = $event" @navigate="navigateIntent">
-      <template #assistant><div class="v3-home-guide"><p>AI 会先核验账号身份；卡片协议未冻结前不会猜测保存动作。</p><button class="primary" @click="go('/guide')">进入乌东向导</button></div></template>
+      <template #assistant><div class="v3-home-guide"><p>可以免登录先体验向导；需要保存个人成果时，再登录并由你确认。</p><button class="primary" @click="go('/guide')">进入乌东向导</button></div></template>
     </HomePage>
     <ExplorePage v-else-if="route.name === 'explore'" :section="route.section" @navigate="go" @checkout="beginCheckout" />
     <GuidePage v-else-if="route.name === 'guide'" />

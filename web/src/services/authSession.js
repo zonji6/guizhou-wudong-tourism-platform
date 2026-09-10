@@ -32,7 +32,7 @@ function clearAccess(channel) {
 function acceptSession(purpose, requestId, session) {
   const channel = channelFor(purpose)
   if (channel.pendingRequestId !== requestId || session?.authRequestId !== requestId) return false
-  if (session?.purpose !== PURPOSE[purpose].role || session?.account?.role !== PURPOSE[purpose].role) throw new Error('服务端返回了错误用途的账号会话。')
+  if (session?.purpose !== PURPOSE[purpose].role || session?.account?.role !== PURPOSE[purpose].role) throw new Error('当前登录状态与这个入口不匹配，请重新登录。')
   channel.authGeneration = session.authGeneration
   channel.accessToken = session.accessToken
   channel.account = session.account

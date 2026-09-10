@@ -117,7 +117,7 @@ function persistSession(data) {
 function acceptSession(requestId, data) {
   const state = authState()
   if (state.pendingRequestId !== requestId || data?.authRequestId !== requestId) return false
-  if (data?.purpose !== 'USER' || data?.account?.role !== 'USER') throw new Error('服务端返回了错误用途的账号会话。')
+  if (data?.purpose !== 'USER' || data?.account?.role !== 'USER') throw new Error('账号登录状态不正确，请重新登录。')
   state.pendingRequestId = ''
   persistSession(data)
   return true

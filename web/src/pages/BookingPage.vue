@@ -8,6 +8,11 @@ const emit = defineEmits(['back', 'go-my'])
 const form = reactive({ quantity: 1, visitAt: '', checkInDate: '', checkOutDate: '', roomCount: 1, peopleCount: 1, contactName: '', contactPhone: '', note: '' })
 const quote = ref(null)
 const previousTotal = ref('')
+const orderStatusLabels = { PENDING_PICKUP: '待自提', PICKED_UP: '已自提', PENDING_VISIT: '待到店', PENDING_CONFIRMATION: '待确认', CONFIRMED: '已确认', CHECKED_IN: '已入住', COMPLETED: '已完成', CANCELLED: '已取消' }
+
+function orderStatusLabel(status) {
+  return orderStatusLabels[status] || '处理中'
+}
 const loading = ref(false)
 const submitting = ref(false)
 const error = ref('')
@@ -107,7 +112,7 @@ async function submit() {
       attempt.value = null
       error.value = '报价已变化，请核对新金额后再次确认。'
     } else {
-      error.value = reason?.message || '订单提交失败；再次点击会沿用本次请求键安全重试。'
+      error.value = reason?.message || '订单提交失败；再次点击会继续核对同一次操作。'
     }
   } finally {
     submitting.value = false
@@ -124,9 +129,9 @@ watch(() => props.selection, resetResult)
 
 <template>
   <main class="page v3-checkout">
-    <header class="page-intro"><p class="eyebrow">先核价，再提交</p><h1>{{ selection?.title || '订单确认' }}</h1><p>核价只计算本机演示金额，不锁定库存、餐位或房态；正式提交后才会生成订单。</p></header>
+    <header class="page-intro"><p class="eyebrow">先核价，再提交</p><h1>{{ selection?.title || '订单确认' }}</h1><p>核价只计算演示金额，不锁定库存、餐位或房态；正式提交后才会生成订单。</p></header>
     <section v-if="!selection" class="v3-state"><h2>当前没有待确认内容</h2><p>刷新页面不会重放上次提交，请返回五模块目录重新选择。</p><button class="primary" @click="emit('back')">返回逛乌东</button></section>
-    <section v-else-if="receipt" class="v3-receipt"><p class="eyebrow">服务端已受理</p><h2>{{ receipt.resource?.productName || receipt.resource?.merchantName || receipt.resource?.roomTypeName || '乌东订单' }}</h2><p>订单编号：{{ receipt.resource?.id }}</p><p>状态：{{ receipt.resource?.status }}</p><p>金额：¥{{ receipt.resource?.totalAmount }} {{ receipt.resource?.currency }}</p><small>{{ receipt.replayed ? '本次显示为同一请求的安全重放结果。' : '订单与操作回执已一同提交。' }}</small><button class="primary" @click="emit('go-my')">到“我的”查看</button></section>
+    <section v-else-if="receipt" class="v3-receipt"><p class="eyebrow">订单已受理</p><h2>{{ receipt.resource?.productName || receipt.resource?.merchantName || receipt.resource?.roomTypeName || '乌东订单' }}</h2><p>订单编号：{{ receipt.resource?.id }}</p><p>状态：{{ orderStatusLabel(receipt.resource?.status) }}</p><p>金额：¥{{ receipt.resource?.totalAmount }} {{ receipt.resource?.currency }}</p><small>{{ receipt.replayed ? '这是同一次提交的已确认结果。' : '订单已经成功提交。' }}</small><button class="primary" @click="emit('go-my')">到“我的”查看</button></section>
     <section v-else class="v3-checkout-layout">
       <form class="v3-order-form" @submit.prevent="getQuote" @input="resetResult">
         <fieldset :disabled="submitting || Boolean(attempt)">
@@ -134,13 +139,13 @@ watch(() => props.selection, resetResult)
         <label v-if="kind === 'product'">商品数量<input v-model.number="form.quantity" type="number" min="1" step="1" required></label>
         <template v-else-if="kind === 'food'"><div class="v3-selection-lines"><p v-for="item in selection.items" :key="item.foodItemId"><b>{{ item.resource.name }}</b><span>{{ item.quantity }} 份</span></p></div><label>到店时间<input v-model="form.visitAt" type="datetime-local" required></label><label>到店人数<input v-model.number="form.peopleCount" type="number" min="1" step="1" required></label></template>
         <template v-else><p>房型：{{ selection.resource.name }} · 每间演示容量 {{ selection.resource.maxGuestsPerRoom }} 人</p><label>入住日期<input v-model="form.checkInDate" type="date" :min="today" required></label><label>离店日期<input v-model="form.checkOutDate" type="date" :min="form.checkInDate || today" required></label><label>房间数<input v-model.number="form.roomCount" type="number" min="1" step="1" required></label><label>入住人数<input v-model.number="form.peopleCount" type="number" min="1" step="1" required></label></template>
-        <button class="primary" :disabled="loading">{{ loading ? '核价中…' : '获取本机模拟核价' }}</button>
+        <button class="primary" :disabled="loading">{{ loading ? '核价中…' : '获取模拟核价' }}</button>
         </fieldset>
       </form>
 
       <section class="v3-quote-card">
         <h2>2. 核对与提交</h2>
-        <template v-if="quote"><p class="v3-price v3-price--large">¥{{ quote.totalAmount }} <small>{{ quote.currency }}</small></p><p v-if="needsReconfirm && previousTotal">此前显示：¥{{ previousTotal }}</p><ul><li v-for="line in quote.lines" :key="line.sequence">{{ line.resourceName }} × {{ line.quantity }}：¥{{ line.lineAmount }}</li></ul><p class="v3-notice">{{ quote.notice }}</p><button v-if="needsReconfirm" class="primary" @click="acceptChangedQuote">我已核对新报价</button><form v-else class="v3-contact-form" @submit.prevent="submit"><fieldset :disabled="submitting || Boolean(attempt)"><label>联系人<input v-model="form.contactName" maxlength="80" required></label><label>联系电话<input v-model="form.contactPhone" maxlength="32" required></label><label>备注<textarea v-model="form.note" maxlength="500"></textarea></label></fieldset><button class="primary" :disabled="submitting">{{ submitting ? '提交中…' : attempt ? '用同一请求键重试提交' : '确认并提交订单' }}</button></form></template>
+        <template v-if="quote"><p class="v3-price v3-price--large">¥{{ quote.totalAmount }} <small>{{ quote.currency }}</small></p><p v-if="needsReconfirm && previousTotal">此前显示：¥{{ previousTotal }}</p><ul><li v-for="line in quote.lines" :key="line.sequence">{{ line.resourceName }} × {{ line.quantity }}：¥{{ line.lineAmount }}</li></ul><p class="v3-notice">{{ quote.notice }}</p><button v-if="needsReconfirm" class="primary" @click="acceptChangedQuote">我已核对新报价</button><form v-else class="v3-contact-form" @submit.prevent="submit"><fieldset :disabled="submitting || Boolean(attempt)"><label>联系人<input v-model="form.contactName" maxlength="80" required></label><label>联系电话<input v-model="form.contactPhone" maxlength="32" required></label><label>备注<textarea v-model="form.note" maxlength="500"></textarea></label></fieldset><button class="primary" :disabled="submitting">{{ submitting ? '提交中…' : attempt ? '继续核对这次提交' : '确认并提交订单' }}</button></form></template>
         <p v-else class="v3-muted">先填写左侧条件并获取报价。</p>
         <p v-if="error" class="v3-error" role="alert">{{ error }}</p>
       </section>

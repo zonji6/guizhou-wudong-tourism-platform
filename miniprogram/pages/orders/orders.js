@@ -1,6 +1,10 @@
 const { request } = require('../../utils/api')
 const { authState, randomUuid, userOptions } = require('../../utils/auth')
 
+const orderTypeLabels = { PRODUCT: '商品订单', FOOD: '餐食订单', STAY: '住宿订单' }
+const orderStatusLabels = { PENDING_PICKUP: '待自提', PICKED_UP: '已自提', PENDING_VISIT: '待到店', PENDING_CONFIRMATION: '待确认', CONFIRMED: '已确认', CHECKED_IN: '已入住', COMPLETED: '已完成', CANCELLED: '已取消' }
+const draftTypeLabels = { FOOD: '餐食', STAY: '住宿' }
+
 function title(order) { return order.productName || order.merchantName || `${order.stayPropertyName || ''} ${order.roomTypeName || ''}`.trim() || '乌东订单' }
 function summary(order) {
   if (order.orderType === 'PRODUCT') return `${order.quantity} 份 · ${order.pickupPoint}`
@@ -36,8 +40,8 @@ Page({
     try {
       const [products, foods, stays, foodDrafts, stayDrafts, itineraries, legacy] = await Promise.all(paths.map(path => request(path, userOptions())))
       this.setData({
-        orders: [...products, ...foods, ...stays].map(order => ({ ...order, title: title(order), summary: summary(order) })),
-        drafts: [...foodDrafts, ...stayDrafts], itineraries, legacy
+        orders: [...products, ...foods, ...stays].map(order => ({ ...order, title: title(order), summary: summary(order), typeLabel: orderTypeLabels[order.orderType] || '乌东订单', statusLabel: orderStatusLabels[order.status] || '处理中' })),
+        drafts: [...foodDrafts, ...stayDrafts].map(draft => ({ ...draft, draftTypeLabel: draftTypeLabels[draft.draftType] || '食宿', stateLabel: draft.state === 'SUBMITTED' ? '已提交' : '编辑中' })), itineraries, legacy
       })
     } catch (reason) {
       this.setData({ error: reason?.message || '同账号数据暂时无法读取。' })
@@ -59,7 +63,7 @@ Page({
     this._saveErrorCode = ''
     this._submitAttempt = null
     this.setData({
-      draftEditor: { id: draft.id, draftType: draft.draftType, version: draft.version, content: clone(draft.content) },
+      draftEditor: { id: draft.id, draftType: draft.draftType, draftTypeLabel: draft.draftTypeLabel, version: draft.version, content: clone(draft.content) },
       saveStatus: '尚未修改', savePaused: false, saveUnknown: false, saving: false,
       quote: null, oldQuote: null, submitStatus: '', submitting: false, submitLocked: false, error: ''
     })
@@ -160,7 +164,7 @@ Page({
         this._saveTimer = null
         this._saveQueued = false
         this._saveErrorCode = 'VERSION_CONFLICT'
-        this.setData({ 'draftEditor.version': Number.isInteger(version) ? version : editor.version, savePaused: true, saveUnknown: false, saveStatus: '本次保存已提交，但服务端已有更高版本；已暂停，不能用旧页面内容覆盖跨端修改。' })
+        this.setData({ 'draftEditor.version': Number.isInteger(version) ? version : editor.version, savePaused: true, saveUnknown: false, saveStatus: '本次保存已提交，但另一端已有更新；已暂停，不能用旧页面内容覆盖新修改。' })
         return
       }
       this.setData({ 'draftEditor.version': version, saveStatus: revision === this._editRevision ? `已保存版本 ${version}` : '还有新修改等待保存…' })
@@ -182,10 +186,10 @@ Page({
     this._saveQueued = false
     if (!this.data.saveUnknown) {
       if (['VERSION_CONFLICT', 'DRAFT_ALREADY_SUBMITTED'].includes(this._saveErrorCode)) {
-        this.setData({ saveStatus: '服务端版本或状态已变化，不能盲目重试；请保留内容并关闭后手动读取最新版。' })
+        this.setData({ saveStatus: '草稿版本或状态已变化，不能直接重试；请保留内容并关闭后手动读取最新版。' })
         return
       }
-      this.setData({ savePaused: false, saveStatus: '正在用新请求键重试当前内容…' })
+      this.setData({ savePaused: false, saveStatus: '正在重新保存当前内容…' })
       this._saveTimer = setTimeout(() => this.saveNow(), 0)
       return
     }
@@ -203,10 +207,10 @@ Page({
         if (this._editRevision !== pending.revision) this._saveTimer = setTimeout(() => this.saveNow(), 0)
       } else if (result.outcome === 'NOT_APPLIED' && result.current?.version === pending.original.expectedVersion && result.current?.editable === true) {
         this._pendingSave = null
-        this.setData({ savePaused: false, saveUnknown: false, saveStatus: '原保存已确认未执行，正在用新请求键继续。' })
+        this.setData({ savePaused: false, saveUnknown: false, saveStatus: '原保存已确认未执行，正在继续保存。' })
         this._saveTimer = setTimeout(() => this.saveNow(), 0)
       } else {
-        this.setData({ saveStatus: result.outcome === 'SUCCEEDED' ? '原保存已成功，但服务端已有更高版本；请保留内容并手动核对。' : '仍不能安全继续，请保留页面内容并手动刷新核对。' })
+        this.setData({ saveStatus: result.outcome === 'SUCCEEDED' ? '原保存已成功，但另一端已有更新；请保留内容并手动核对。' : '仍不能安全继续，请保留页面内容并手动刷新核对。' })
       }
     } catch (reason) {
       this.setData({ saveStatus: reason?.message || '核对结果仍未知，继续保持暂停。' })
@@ -220,11 +224,11 @@ Page({
   async quoteDraft() {
     if (!this.data.draftEditor) return
     if (this._submitAttempt) {
-      this.setData({ submitStatus: '提交结果尚待核对；请先用同一请求键重试，不能重新核价。' })
+      this.setData({ submitStatus: '提交结果尚待核对；请先安全重试，不能重新核价。' })
       return
     }
     if (this.data.saving || this._saveQueued || this.data.savePaused || this._savedRevision !== this._editRevision) {
-      this.setData({ submitStatus: '只有当前页面最新改动已由服务端确认保存后，才能核价并提交。' })
+      this.setData({ submitStatus: '只有当前页面最新改动确认保存后，才能核价并提交。' })
       return
     }
     if (this._submitting) return
@@ -265,13 +269,13 @@ Page({
       const orderId = receipt.resource?.id || receipt.resourceId
       this.finishCloseDraft()
       await this.load()
-      wx.showModal({ title: '草稿提交成功', content: orderId ? `正式订单 ${orderId}` : '服务端已返回成功回执。', showCancel: false })
+      wx.showModal({ title: '草稿提交成功', content: orderId ? `正式订单 ${orderId}` : '订单已保存。', showCancel: false })
     } catch (reason) {
       if (reason?.code === 'QUOTE_CHANGED' && reason.details?.currentQuote) {
         this._submitAttempt = null
-        this.setData({ oldQuote: this.data.quote, quote: reason.details.currentQuote, submitLocked: false, submitStatus: '报价已变化：旧请求键已终结。请比较新旧金额，再明确确认用新请求键提交。' })
+        this.setData({ oldQuote: this.data.quote, quote: reason.details.currentQuote, submitLocked: false, submitStatus: '报价已变化。请比较新旧金额，再明确确认提交。' })
       } else {
-        this.setData({ submitStatus: `${reason?.message || '提交结果暂未确认。'} 重试将沿用同一请求键与原请求内容。` })
+        this.setData({ submitStatus: `${reason?.message || '提交结果暂未确认。'} 再次提交会沿用原内容安全重试。` })
       }
     } finally { this._submitting = false; this.setData({ submitting: false }) }
   },

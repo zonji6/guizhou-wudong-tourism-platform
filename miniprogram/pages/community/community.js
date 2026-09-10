@@ -1,12 +1,27 @@
 const { request } = require('../../utils/api')
 const { authState, userOptions } = require('../../utils/auth')
+const { postMediaUrl } = require('../../utils/contentMedia')
+function postView(post) {
+  const content = String(post.content || '')
+  const characters = Array.from(content)
+  const displayCoverUrl = postMediaUrl(post.id)
+  return {
+    ...post,
+    kindLabel: post.postType === 'ROUTE_GUIDE' ? '示意路线攻略' : post.legacyData === true ? '文化文章' : '寨里动态',
+    tagText: (post.tags || []).join(' · '),
+    excerpt: `${characters.slice(0, 90).join('')}${characters.length > 90 ? '…' : ''}`,
+    displayCoverUrl,
+    imageNote: displayCoverUrl ? '原始资料参考图，公开使用范围待确认' : '',
+    routeNodes: (post.routeNodes || []).map((node, index) => ({ ...node, viewKey: `${node.sequence}-${index}` }))
+  }
+}
 
 Page({
   data: { posts: [], places: [], postTypes: ['日常记录', '示意路线攻略'], loggedIn: false, formOpen: false, postType: 'MOMENT', title: '', content: '', tags: '', routeSummary: '', placeId: '', loading: false, error: '', message: '' },
   onShow() { this.getTabBar()?.setData({ selected: 3 }); this.setData({ loggedIn: Boolean(authState().account) }); this.load() },
   load() {
     this.setData({ loading: true, error: '' })
-    Promise.all([request('/api/posts'), request('/api/places')]).then(([posts, map]) => this.setData({ posts: posts.map(post => ({ ...post, tagText: (post.tags || []).join(' · ') })), places: map.places || [] })).catch(reason => this.setData({ error: reason?.message || '寨里内容暂时无法读取。' })).finally(() => this.setData({ loading: false }))
+    Promise.all([request('/api/posts'), request('/api/places')]).then(([posts, map]) => this.setData({ posts: posts.map(postView), places: map.places || [] })).catch(reason => this.setData({ error: reason?.message || '寨里内容暂时无法读取。' })).finally(() => this.setData({ loading: false }))
   },
   toggleForm() { this.setData({ formOpen: !this.data.formOpen, message: '' }) },
   setType(event) { this.setData({ postType: event.detail.value === '1' ? 'ROUTE_GUIDE' : 'MOMENT' }) },
@@ -21,5 +36,6 @@ Page({
     this.setData({ loading: true, message: '' })
     request('/api/posts', userOptions({ method: 'POST', data })).then(() => { this.setData({ formOpen: false, title: '', content: '', tags: '', routeSummary: '', placeId: '', message: '已发布到寨里。' }); this.load() }).catch(reason => this.setData({ message: reason?.message || '发布失败。', loading: false }))
   },
+  openPost(event) { wx.navigateTo({ url: `/pages/detail/detail?kind=community&id=${encodeURIComponent(event.currentTarget.dataset.id)}` }) },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) }
 })

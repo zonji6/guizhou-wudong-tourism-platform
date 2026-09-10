@@ -18,7 +18,7 @@ Page({
       ? register({ username: this.data.username, password: this.data.password, nickname: this.data.nickname })
       : login({ username: this.data.username, password: this.data.password })
     action.then(() => {
-      if (this.data.mode === 'register') this.setData({ mode: 'login', password: '', message: '账号已创建，请用同一账号登录 Web 或小程序。' })
+      if (this.data.mode === 'register') this.setData({ mode: 'login', password: '', message: '账号已创建，请用同一账号登录网页端或小程序。' })
       else { this.setData({ password: '' }); this.syncAuth(); this.loadWorkspace() }
     }).catch(reason => this.setData({ message: reason?.message || '账号操作失败。' })).finally(() => this.setData({ busy: false }))
   },
@@ -28,7 +28,7 @@ Page({
   },
   signOut() {
     this.setData({ busy: true, message: '' })
-    logout().then(() => { this.syncAuth(); this.setData({ summary: null, message: '服务端已确认退出当前安装实例。' }) }).catch(reason => this.setData({ message: `${reason?.message || '退出结果未知。'} 未冒充服务端已撤销。` })).finally(() => this.setData({ busy: false }))
+    logout().then(() => { this.syncAuth(); this.setData({ summary: null, message: '已退出当前登录。' }) }).catch(reason => this.setData({ message: `${reason?.message || '退出结果未知。'} 请确认后再试。` })).finally(() => this.setData({ busy: false }))
   },
   loadWorkspace() {
     if (!authState().account) return

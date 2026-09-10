@@ -20,7 +20,7 @@ function hasStrictEnvelope(value) {
 
 export async function request(path, options = {}) {
   if (typeof path !== 'string' || !path.startsWith('/api/')) {
-    throw new ApiError('客户端拒绝了非 v3 API 地址。', 0, 'INVALID_API_PATH')
+    throw new ApiError('这个页面请求了无效地址，已停止继续处理。', 0, 'INVALID_API_PATH')
   }
   const { accessToken, csrfToken, idempotencyKey, headers: extraHeaders, ...fetchOptions } = options
   const headers = {
@@ -38,10 +38,10 @@ export async function request(path, options = {}) {
     throw new ApiError('服务暂时无法连接，请稍后重试。')
   }
   if (response.headers.get('X-Wudong-Contract') !== CONTRACT_VERSION) {
-    throw new ApiError('服务端契约版本不一致，已停止继续处理。', response.status, 'CONTRACT_INCOMPATIBLE')
+    throw new ApiError('平台版本已经更新，请刷新页面后重试。', response.status, 'CONTRACT_INCOMPATIBLE')
   }
   if (!UUID_PATTERN.test(response.headers.get('X-Request-Id') || '') || !/\bno-store\b/i.test(response.headers.get('Cache-Control') || '')) {
-    throw new ApiError('服务端缺少 v3 响应追踪或禁缓存边界。', response.status, 'INVALID_RESPONSE')
+    throw new ApiError('平台返回的信息不完整，请稍后重试。', response.status, 'INVALID_RESPONSE')
   }
   let payload
   try {
@@ -50,13 +50,13 @@ export async function request(path, options = {}) {
     throw new ApiError('服务返回了无法识别的结果。', response.status, 'INVALID_RESPONSE')
   }
   if (!hasStrictEnvelope(payload)) {
-    throw new ApiError('服务返回了不完整的 v3 信封。', response.status, 'INVALID_RESPONSE')
+    throw new ApiError('平台返回的信息不完整，请稍后重试。', response.status, 'INVALID_RESPONSE')
   }
   if (!response.ok || payload.success !== true) {
     throw new ApiError(payload.message || '服务暂不可用', response.status, payload.code || 'REQUEST_FAILED', payload.details)
   }
   if (payload.message !== null || payload.code !== null || payload.details !== null) {
-    throw new ApiError('服务成功信封含有意外字段。', response.status, 'INVALID_RESPONSE')
+    throw new ApiError('平台返回的信息无法确认，请稍后重试。', response.status, 'INVALID_RESPONSE')
   }
   return payload.data
 }

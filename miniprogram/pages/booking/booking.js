@@ -2,6 +2,12 @@ const { request } = require('../../utils/api')
 const { authState, randomUuid, userOptions } = require('../../utils/auth')
 
 const ORDER_PATHS = { product: '/api/product-orders', food: '/api/food-orders', stay: '/api/stay-bookings' }
+const ORDER_STATUS_LABELS = { PENDING_PICKUP: '待自提', PICKED_UP: '已自提', PENDING_VISIT: '待到店', PENDING_CONFIRMATION: '待确认', CONFIRMED: '已确认', CHECKED_IN: '已入住', COMPLETED: '已完成', CANCELLED: '已取消' }
+
+function receiptView(receipt) {
+  const resource = receipt?.resource || {}
+  return { ...receipt, resource: { ...resource, statusLabel: ORDER_STATUS_LABELS[resource.status] || '处理中' } }
+}
 
 Page({
   data: { selection: null, loggedIn: false, quantity: 1, visitDate: '', visitTime: '', checkInDate: '', checkOutDate: '', roomCount: 1, peopleCount: 1, contactName: '', contactPhone: '', note: '', quote: null, oldTotal: '', needsReconfirm: false, loading: false, submitting: false, attemptLocked: false, error: '', receipt: null },
@@ -67,12 +73,12 @@ Page({
     }
     const attempt = this._attempt
     request(ORDER_PATHS[attempt.kind], userOptions({ method: 'POST', idempotencyKey: attempt.requestKey, data: attempt.data }))
-      .then(receipt => this.setData({ receipt }))
+      .then(receipt => this.setData({ receipt: receiptView(receipt) }))
       .catch(reason => {
         if (reason?.code === 'QUOTE_CHANGED' && reason.details?.currentQuote) {
           this._attempt = null
           this.setData({ oldTotal: this.data.quote?.totalAmount || '', quote: reason.details.currentQuote, needsReconfirm: true, attemptLocked: false, error: '报价已变化，请核对新金额后再次确认。' })
-        } else this.setData({ error: reason?.message || '提交失败；再次点击会沿用同一请求键安全重试。' })
+        } else this.setData({ error: reason?.message || '提交失败；再次点击会沿用原内容安全重试。' })
       }).finally(() => { this._submitting = false; this.setData({ submitting: false }) })
   },
   acceptChangedQuote() { this.setData({ needsReconfirm: false, error: '' }) },

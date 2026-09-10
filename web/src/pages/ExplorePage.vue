@@ -1,8 +1,9 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import SafeImage from '../components/common/SafeImage.vue'
 import { authState } from '../services/authSession'
 import { createPost, listFoodMerchants, listFoods, listPlaces, listPosts, listProducts, listStays } from '../services/tourismApi'
+import { contentMediaUrl, placeMediaUrl, postMediaUrl } from '../utils/contentMedia'
 
 const props = defineProps({ section: { type: String, default: 'product' } })
 const emit = defineEmits(['navigate', 'checkout'])
@@ -13,33 +14,101 @@ const tabs = [
   { id: 'travel', label: '行' },
   { id: 'community', label: '社区' }
 ]
+const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
 const state = reactive({ product: [], merchants: [], stay: [], posts: [], map: null })
 const loading = ref(false)
 const error = ref('')
+const productKeyword = ref('')
+const productTag = ref('')
+const selectedProduct = ref(null)
+const productDetailRef = ref(null)
 const selectedMerchant = ref(null)
+const selectedFood = ref(null)
+const foodDetailRef = ref(null)
+const foodMenuRef = ref(null)
+const foodType = ref('')
 const foods = ref([])
 const basket = reactive({})
+const selectedStayId = ref('')
+const selectedRouteIds = ref([])
+const routeMessage = ref('')
+const selectedPostId = ref('')
 const postType = ref('MOMENT')
 const postForm = reactive({ title: '', content: '', tags: '', routeSummary: '', placeId: '' })
 const posting = ref(false)
 const postMessage = ref('')
 let sequence = 0
+let foodRequestSequence = 0
 
 const activeTab = computed(() => tabs.find(tab => tab.id === props.section) || tabs[0])
+const productTags = computed(() => [...new Set(state.product.flatMap(item => Array.isArray(item.tags) ? item.tags : []))])
+const visibleProducts = computed(() => {
+  const keyword = productKeyword.value.trim().toLocaleLowerCase('zh-CN')
+  return state.product.filter(item => {
+    const tags = Array.isArray(item.tags) ? item.tags : []
+    const matchesTag = !productTag.value || tags.includes(productTag.value)
+    const searchable = [item.name, item.description, item.merchantName, item.pickupPoint, ...tags]
+      .filter(value => typeof value === 'string')
+      .join(' ')
+      .toLocaleLowerCase('zh-CN')
+    return matchesTag && (!keyword || searchable.includes(keyword))
+  })
+})
+const foodTypes = computed(() => [...new Set(foods.value.map(item => item.itemType).filter(type => foodTypeLabels[type]))])
+const visibleFoods = computed(() => foods.value.filter(item => !foodType.value || item.itemType === foodType.value))
 const basketItems = computed(() => foods.value
   .filter(item => Number(basket[item.id]) > 0)
   .map(item => ({ foodItemId: item.id, quantity: Number(basket[item.id]), resource: item })))
+const basketPortions = computed(() => basketItems.value.reduce((total, item) => total + item.quantity, 0))
+const roomTotal = computed(() => state.stay.reduce((total, property) => total + (property.roomTypes?.length || 0), 0))
 const drawablePlaces = computed(() => (state.map?.places || []).filter(place => place.schematicPosition))
+const selectedRoutePlaces = computed(() => selectedRouteIds.value
+  .map(id => (state.map?.places || []).find(place => place.id === id))
+  .filter(Boolean))
+const drawableRoutePlaces = computed(() => selectedRoutePlaces.value.filter(place => place.schematicPosition))
+const routePolyline = computed(() => drawableRoutePlaces.value
+  .map(place => `${Number(place.schematicPosition.x) * 100},${Number(place.schematicPosition.y) * 100}`)
+  .join(' '))
 
 function price(item) {
-  if (item?.demoPrice) return { amount: item.demoPrice.amount, label: item.demoPrice.simulationNote }
-  if (item?.referencePrice) return { amount: item.referencePrice.amount, label: `参考来源：${item.referencePrice.sourceTitle}` }
+  if (item?.demoPrice) return { amount: item.demoPrice.amount, label: item.demoPrice.simulationNote, kind: '演示价' }
+  if (item?.referencePrice) return { amount: item.referencePrice.amount, label: `资料参考：${item.referencePrice.sourceTitle}`, kind: '参考价' }
   return null
+}
+
+function catalogNote(item) {
+  const notes = []
+  if (item?.demoData) notes.push('演示目录')
+  notes.push(item?.verificationStatus === 'VERIFIED' ? '资料已核验' : '资料参考 · 待核验')
+  return notes.join(' · ')
+}
+
+function imageOf(item, kind) {
+  return contentMediaUrl(item?.imageUrl, kind)
+}
+
+function postLabel(post) {
+  if (post?.postType === 'ROUTE_GUIDE') return '示意路线攻略'
+  return post?.legacyData ? '文化文章' : '寨里动态'
+}
+
+function isTeaIllustration(item) {
+  return /\/image(?:36|38)\.jpg$/.test(imageOf(item, 'product'))
+}
+
+function postExcerpt(post) {
+  const content = String(post?.content || '')
+  return content.length > 120 ? `${content.slice(0, 120)}…` : content
 }
 
 function mapStyle(place) {
   const position = place?.schematicPosition
   return position ? { left: `${Number(position.x) * 100}%`, top: `${Number(position.y) * 100}%` } : {}
+}
+
+function routeOrder(placeId) {
+  const index = selectedRouteIds.value.indexOf(placeId)
+  return index < 0 ? '' : index + 1
 }
 
 function routePlaces(post) {
@@ -51,8 +120,28 @@ function routePlaces(post) {
     .filter(entry => entry.node.drawable && entry.place?.schematicPosition)
 }
 
-function routePolyline(post) {
+function postRoutePolyline(post) {
   return routePlaces(post).map(({ place }) => `${Number(place.schematicPosition.x) * 100},${Number(place.schematicPosition.y) * 100}`).join(' ')
+}
+
+function resetSectionState() {
+  foodRequestSequence += 1
+  selectedProduct.value = null
+  selectedFood.value = null
+  selectedPostId.value = ''
+  routeMessage.value = ''
+}
+
+async function showProductDetail(item) {
+  selectedProduct.value = item
+  await nextTick()
+  productDetailRef.value?.scrollIntoView({ block: 'start' })
+}
+
+async function showFoodDetail(item) {
+  selectedFood.value = item
+  await nextTick()
+  foodDetailRef.value?.scrollIntoView({ block: 'start' })
 }
 
 async function loadSection() {
@@ -76,18 +165,60 @@ async function loadSection() {
 }
 
 async function chooseMerchant(merchant) {
+  const merchantChanged = selectedMerchant.value?.id !== merchant.id
+  if (!merchantChanged && (foods.value.length || loading.value)) return
+  const current = ++foodRequestSequence
   selectedMerchant.value = merchant
-  foods.value = []
-  Object.keys(basket).forEach(key => delete basket[key])
+  selectedFood.value = null
+  foodType.value = ''
+  if (merchantChanged) {
+    foods.value = []
+    Object.keys(basket).forEach(key => delete basket[key])
+  }
   loading.value = true
   error.value = ''
+  let menuReady = false
   try {
-    foods.value = await listFoods(merchant.id)
+    const items = await listFoods(merchant.id)
+    if (current === foodRequestSequence && selectedMerchant.value?.id === merchant.id) {
+      foods.value = items
+      menuReady = true
+    }
   } catch (reason) {
-    error.value = reason?.message || '菜单暂时无法读取。'
+    if (current === foodRequestSequence) error.value = reason?.message || '菜单暂时无法读取。'
   } finally {
-    loading.value = false
+    if (current === foodRequestSequence) {
+      loading.value = false
+      await nextTick()
+      if (menuReady && window.matchMedia('(max-width: 760px)').matches) foodMenuRef.value?.scrollIntoView({ block: 'start' })
+    }
   }
+}
+
+function normalizeQuantity(itemId) {
+  const quantity = Number(basket[itemId])
+  basket[itemId] = Number.isInteger(quantity) && quantity > 0 ? Math.min(quantity, 99) : 0
+}
+
+function toggleRoute(place) {
+  const ids = selectedRouteIds.value.slice()
+  const existing = ids.indexOf(place.id)
+  routeMessage.value = ''
+  if (existing >= 0) ids.splice(existing, 1)
+  else if (ids.length < 12) ids.push(place.id)
+  else routeMessage.value = '一条示意路线最多保留 12 个公开地点。'
+  selectedRouteIds.value = ids
+}
+
+function usePostRoute(post) {
+  const publishedIds = new Set((state.map?.places || []).map(place => place.id))
+  selectedRouteIds.value = [...new Set((post?.routeNodes || [])
+    .slice()
+    .sort((left, right) => left.sequence - right.sequence)
+    .map(node => node.placeId)
+    .filter(id => id && publishedIds.has(id)))]
+  routeMessage.value = selectedRouteIds.value.length ? '已把攻略中的公开地点放到示意图。' : '这篇攻略没有可放到当前示意图的公开地点。'
+  emit('navigate', '/explore/travel')
 }
 
 function checkoutProduct(item) {
@@ -136,52 +267,78 @@ async function submitPost() {
   }
 }
 
-watch(() => props.section, loadSection, { immediate: true })
+watch(() => props.section, () => {
+  resetSectionState()
+  loadSection()
+}, { immediate: true })
 </script>
 
 <template>
   <main class="page v3-explore">
-    <header class="page-intro">
+    <header class="page-intro v3-content-intro">
       <p class="eyebrow">逛乌东 · {{ activeTab.label }}</p>
       <h1>沿着山路，慢慢遇见乌东</h1>
-      <p>商品、餐食、住宿、地点与寨里分享均来自本机 v3 服务；没有数据时不会用假资源补位。</p>
+      <p>这里呈现平台已经发布的乌东内容；资料待核验、演示价格与示意信息都会如实标明。</p>
     </header>
 
     <nav class="v3-module-tabs" aria-label="五个体验模块">
-      <button v-for="tab in tabs" :key="tab.id" :class="{ active: section === tab.id }" @click="emit('navigate', tab.id === 'community' ? '/community' : `/explore/${tab.id}`)">{{ tab.label }}</button>
+      <button v-for="tab in tabs" :key="tab.id" type="button" :class="{ active: section === tab.id }" @click="emit('navigate', tab.id === 'community' ? '/community' : `/explore/${tab.id}`)">{{ tab.label }}</button>
     </nav>
 
     <section v-if="loading" class="v3-state">正在读取{{ activeTab.label }}内容…</section>
-    <section v-else-if="error" class="v3-state v3-state--error" role="alert"><b>暂时无法读取</b><p>{{ error }}</p><button class="ghost" @click="loadSection">重试</button></section>
+    <section v-else-if="error" class="v3-state v3-state--error" role="alert"><b>暂时无法读取</b><p>{{ error }}</p><button class="ghost" type="button" @click="loadSection">重试</button></section>
 
-    <section v-else-if="section === 'product'" class="v3-card-grid">
-      <article v-for="item in state.product" :key="item.id" class="v3-resource-card">
-        <SafeImage :src="item.imageUrl" :alt="`${item.name}公开图片`" :label="item.name" />
-        <div><p class="eyebrow">{{ item.merchantName }}</p><h2>{{ item.name }}</h2><p>{{ item.description }}</p><p v-if="price(item)" class="v3-price">¥{{ price(item).amount }} <small>{{ price(item).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="primary" :disabled="!item.orderable" @click="checkoutProduct(item)">{{ item.orderable ? '选择数量并核价' : '暂不可提交' }}</button></div>
+    <template v-else-if="section === 'product'">
+      <section v-if="state.product.length" class="v3-catalog-tools" aria-label="筛选商品">
+        <label><span>寻找乌东好物</span><input v-model="productKeyword" type="search" placeholder="输入名称、商家或标签"></label>
+        <div class="v3-filter-chips"><button type="button" :class="{ active: !productTag }" @click="productTag = ''">全部</button><button v-for="tag in productTags" :key="tag" type="button" :class="{ active: productTag === tag }" @click="productTag = productTag === tag ? '' : tag">{{ tag }}</button></div>
+        <p>当前公开目录 {{ state.product.length }} 项 · 筛选后 {{ visibleProducts.length }} 项</p>
+      </section>
+
+      <article v-if="selectedProduct" ref="productDetailRef" class="v3-detail-sheet">
+        <SafeImage :src="imageOf(selectedProduct, 'product')" :alt="`${selectedProduct.name}资料图片`" :label="selectedProduct.name" />
+        <div><button class="v3-detail-close" type="button" aria-label="关闭商品详情" @click="selectedProduct = null">×</button><p class="eyebrow">商品详情 · {{ selectedProduct.merchantName }}</p><h2>{{ selectedProduct.name }}</h2><p>{{ selectedProduct.description }}</p><div class="v3-tag-row"><span v-for="tag in selectedProduct.tags || []" :key="tag">{{ tag }}</span></div><p v-if="isTeaIllustration(selectedProduct)" class="v3-notice">茶品资料示意，不代表当前商品实物。</p><dl><dt>取货地点</dt><dd>{{ selectedProduct.pickupPoint }}</dd><dt>资料状态</dt><dd>{{ catalogNote(selectedProduct) }}</dd></dl><p v-if="price(selectedProduct)" class="v3-price">¥{{ price(selectedProduct).amount }} <small>{{ price(selectedProduct).kind }} · {{ price(selectedProduct).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="primary" type="button" :disabled="!selectedProduct.orderable" @click="checkoutProduct(selectedProduct)">{{ selectedProduct.orderable ? '选择数量并核价' : '当前仅供查看' }}</button></div>
       </article>
-      <p v-if="!state.product.length" class="v3-state">当前没有已发布商品。</p>
-    </section>
+
+      <section class="v3-card-grid">
+        <article v-for="item in visibleProducts" :key="item.id" class="v3-resource-card">
+          <SafeImage :src="imageOf(item, 'product')" :alt="`${item.name}资料图片`" :label="item.name" loading="lazy" />
+          <div><p class="eyebrow">{{ item.merchantName }}</p><h2>{{ item.name }}</h2><p>{{ item.description }}</p><div class="v3-tag-row"><span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span></div><p v-if="isTeaIllustration(item)" class="v3-source-note">茶品资料示意，不代表当前商品实物</p><p class="v3-source-note">{{ catalogNote(item) }}</p><p v-if="price(item)" class="v3-price">¥{{ price(item).amount }} <small>{{ price(item).kind }} · {{ price(item).label }}</small></p><p v-else class="v3-muted">暂无可展示价格</p><button class="ghost" type="button" @click="showProductDetail(item)">查看详情</button></div>
+        </article>
+        <p v-if="state.product.length && !visibleProducts.length" class="v3-state">没有匹配的商品，试试清空关键词或标签。</p>
+        <p v-if="!state.product.length" class="v3-state">当前没有已发布商品。</p>
+      </section>
+    </template>
 
     <section v-else-if="section === 'food'" class="v3-food-layout">
-      <aside class="v3-merchant-list"><h2>先选一家店</h2><button v-for="merchant in state.merchants" :key="merchant.id" :class="{ active: selectedMerchant?.id === merchant.id }" @click="chooseMerchant(merchant)"><b>{{ merchant.name }}</b><span>{{ merchant.description }}</span></button><p v-if="!state.merchants.length">当前没有已发布餐食店铺。</p></aside>
-      <div class="v3-menu"><header><div><p class="eyebrow">同店多菜</p><h2>{{ selectedMerchant?.name || '选择店铺后查看菜单' }}</h2></div><button v-if="basketItems.length" class="primary" @click="checkoutFood">{{ basketItems.length }} 种餐食 · 去填写到店信息</button></header><article v-for="item in foods" :key="item.id" class="v3-menu-row"><div><h3>{{ item.name }}</h3><p>{{ item.description }}</p><p v-if="price(item)" class="v3-price">¥{{ price(item).amount }} / 份 <small>{{ price(item).label }}</small></p></div><label><span>{{ item.orderable ? '份数' : '暂不可提交' }}</span><input v-model.number="basket[item.id]" type="number" min="0" max="99" step="1" :disabled="!item.orderable"></label></article></div>
+      <aside class="v3-merchant-list"><p class="eyebrow">按店选餐</p><h2>先选一家店</h2><button v-for="merchant in state.merchants" :key="merchant.id" type="button" :class="{ active: selectedMerchant?.id === merchant.id }" @click="chooseMerchant(merchant)"><SafeImage :src="imageOf(merchant, 'food')" :alt="`${merchant.name}资料图片`" :label="merchant.name" loading="lazy" /><span><b>{{ merchant.name }}</b><small>{{ merchant.description }}</small></span></button><p v-if="!state.merchants.length">当前没有已发布餐食店铺。</p></aside>
+      <div ref="foodMenuRef" class="v3-menu">
+        <header><div><p class="eyebrow">同店多菜</p><h2>{{ selectedMerchant?.name || '选择店铺后查看菜单' }}</h2><p v-if="selectedMerchant" class="v3-source-note">{{ catalogNote(selectedMerchant) }}</p></div><button v-if="basketItems.length" class="primary" type="button" @click="checkoutFood">{{ basketItems.length }} 种 · {{ basketPortions }} 份 · 去填写到店信息</button></header>
+        <div v-if="foodTypes.length" class="v3-filter-chips"><button type="button" :class="{ active: !foodType }" @click="foodType = ''">全部</button><button v-for="type in foodTypes" :key="type" type="button" :class="{ active: foodType === type }" @click="foodType = type">{{ foodTypeLabels[type] }}</button></div>
+        <article v-if="selectedFood" ref="foodDetailRef" class="v3-inline-detail"><SafeImage :src="imageOf(selectedFood, 'food')" :alt="`${selectedFood.name}资料图片`" :label="selectedFood.name" /><div><button class="v3-detail-close" type="button" aria-label="关闭餐食详情" @click="selectedFood = null">×</button><p class="eyebrow">{{ foodTypeLabels[selectedFood.itemType] || '餐食' }}详情</p><h3>{{ selectedFood.name }}</h3><p>{{ selectedFood.description }}</p><div class="v3-tag-row"><span v-for="tag in selectedFood.tags || []" :key="tag">{{ tag }}</span></div><p v-if="selectedFood.visitTimeText">接待说明：{{ selectedFood.visitTimeText }}</p><p v-if="price(selectedFood)" class="v3-price">¥{{ price(selectedFood).amount }} / 份 <small>{{ price(selectedFood).kind }} · {{ price(selectedFood).label }}</small></p><p class="v3-source-note">{{ catalogNote(selectedFood) }}</p></div></article>
+        <article v-for="item in visibleFoods" :key="item.id" class="v3-menu-row"><SafeImage :src="imageOf(item, 'food')" :alt="`${item.name}资料图片`" :label="item.name" loading="lazy" /><div><p class="eyebrow">{{ foodTypeLabels[item.itemType] || '餐食' }}</p><h3>{{ item.name }}</h3><p>{{ item.description }}</p><div class="v3-tag-row"><span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span></div><p v-if="price(item)" class="v3-price">¥{{ price(item).amount }} / 份 <small>{{ price(item).kind }} · {{ price(item).label }}</small></p><button class="v3-text-button" type="button" @click="showFoodDetail(item)">查看详情</button></div><label><span>{{ item.orderable ? '份数' : '仅供查看' }}</span><input v-model.number="basket[item.id]" type="number" min="0" max="99" step="1" :disabled="!item.orderable" @change="normalizeQuantity(item.id)"></label></article>
+        <p v-if="selectedMerchant && !visibleFoods.length" class="v3-state">这个分类暂时没有餐食。</p>
+      </div>
     </section>
 
-    <section v-else-if="section === 'stay'" class="v3-card-grid">
-      <article v-for="property in state.stay" :key="property.id" class="v3-resource-card v3-resource-card--wide"><SafeImage :src="property.imageUrl" :alt="`${property.name}公开图片`" :label="property.name" /><div><p class="eyebrow">{{ property.locationText || property.merchantName }}</p><h2>{{ property.name }}</h2><p>{{ property.description }}</p><div class="v3-room-list"><button v-for="room in property.roomTypes" :key="room.id" :disabled="!room.orderable" @click="checkoutStay(property, room)"><span><b>{{ room.name }}</b><small>每间演示容量 {{ room.maxGuestsPerRoom }} 人</small></span><span v-if="price(room)">¥{{ price(room).amount }} / 间夜</span><span v-else>暂无演示价</span></button></div></div></article>
+    <section v-else-if="section === 'stay'" class="v3-stay-list">
+      <header class="v3-count-strip"><p class="eyebrow">山居目录</p><strong>{{ state.stay.length }} 家住宿 · {{ roomTotal }} 种房型</strong><span>数量来自当前已发布目录；房价与容量均按演示信息展示，不代表实时房态。</span></header>
+      <article v-for="property in state.stay" :key="property.id" class="v3-resource-card v3-stay-card"><SafeImage :src="imageOf(property, 'stay')" :alt="`${property.name}资料图片`" :label="property.name" loading="lazy" /><div><p class="eyebrow">{{ property.locationText || property.merchantName }}</p><h2>{{ property.name }}</h2><p>{{ property.description }}</p><div class="v3-tag-row"><span v-for="tag in property.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(property) }}</p><button class="ghost" type="button" @click="selectedStayId = selectedStayId === property.id ? '' : property.id">{{ selectedStayId === property.id ? '收起房型' : `查看 ${property.roomTypes?.length || 0} 种房型` }}</button></div><section v-if="selectedStayId === property.id" class="v3-room-grid"><article v-for="room in property.roomTypes || []" :key="room.id"><SafeImage v-if="imageOf(room, 'stay')" :src="imageOf(room, 'stay')" :alt="`${room.name}房型资料图片`" :label="room.name" loading="lazy" /><div><p v-if="!imageOf(room, 'stay')" class="v3-room-image-note">住宿配图见上方，房型以文字资料为准。</p><h3>{{ room.name }}</h3><p>{{ room.description }}</p><p><b>每间演示容量 {{ room.maxGuestsPerRoom }} 人</b></p><p class="v3-source-note">{{ catalogNote(room) }}</p><p v-if="price(room)" class="v3-price">¥{{ price(room).amount }} / 间夜<small>{{ price(room).kind }} · {{ price(room).label }}</small></p><p v-else class="v3-muted">暂无演示价</p><button class="primary" type="button" :disabled="!room.orderable" @click="checkoutStay(property, room)">{{ room.orderable ? '选择此房型' : '当前仅供查看' }}</button></div></article></section></article>
       <p v-if="!state.stay.length" class="v3-state">当前没有已发布住宿。</p>
     </section>
 
     <section v-else-if="section === 'travel'" class="v3-map-panel">
-      <header><p class="eyebrow">{{ state.map?.mapMode }}</p><h2>乌东水彩示意图</h2><p>{{ state.map?.notice }}</p></header>
-      <div class="v3-map-canvas" role="img" aria-label="乌东地点相对位置示意图"><span v-for="place in drawablePlaces" :key="place.id" class="v3-map-pin" :style="mapStyle(place)"><i></i>{{ place.name }}</span></div>
-      <div class="v3-place-list"><article v-for="place in state.map?.places || []" :key="place.id"><b>{{ place.name }}</b><span>{{ place.category }}</span><p>{{ place.description }}</p><small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small></article></div>
+      <header><p class="eyebrow">水彩示意地图</p><h2>按自己的顺序，串起乌东地点</h2><p>{{ state.map?.notice }}</p><p class="v3-notice">非等比例、非实时导航；不据此计算道路、距离、时长或安全承诺。</p></header>
+      <div class="v3-route-toolbar"><div><b>我的示意路线</b><span>{{ selectedRoutePlaces.length ? `${selectedRoutePlaces.length} 个公开地点` : '点击地图或地点卡片开始选择' }}</span></div><button v-if="selectedRoutePlaces.length" class="ghost" type="button" @click="selectedRouteIds = []; routeMessage = ''">清空</button></div>
+      <div class="v3-map-canvas" role="group" aria-label="乌东地点相对位置与自选示意路线"><svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline v-if="drawableRoutePlaces.length > 1" :points="routePolyline" /></svg><button v-for="place in drawablePlaces" :key="place.id" type="button" class="v3-map-pin" :class="{ selected: routeOrder(place.id) }" :style="mapStyle(place)" @click="toggleRoute(place)"><i>{{ routeOrder(place.id) }}</i>{{ place.name }}</button></div>
+      <ol v-if="selectedRoutePlaces.length" class="v3-route-sequence"><li v-for="(place, index) in selectedRoutePlaces" :key="place.id"><b>{{ index + 1 }}</b><span>{{ place.name }}<small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small></span><button type="button" @click="toggleRoute(place)">移除</button></li></ol><p v-if="routeMessage" class="v3-notice">{{ routeMessage }}</p>
+      <div class="v3-place-list"><article v-for="place in state.map?.places || []" :key="place.id" :class="{ selected: routeOrder(place.id) }"><SafeImage :src="placeMediaUrl(place.id)" :alt="`${place.name}资料图片`" :label="place.name" loading="lazy" /><div><p class="eyebrow">{{ place.category }}</p><h3>{{ place.name }}</h3><p>{{ place.description }}</p><div class="v3-tag-row"><span v-for="tag in place.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(place) }}</p><small v-if="!place.schematicPosition">仅文字节点，未绘制位置</small><button class="ghost" type="button" @click="toggleRoute(place)">{{ routeOrder(place.id) ? `路线第 ${routeOrder(place.id)} 站` : '加入示意路线' }}</button></div></article></div>
     </section>
 
     <template v-else>
       <section class="v3-community-layout">
-        <div><article v-for="post in state.posts" :key="post.id" class="v3-post"><p class="eyebrow">{{ post.postType === 'ROUTE_GUIDE' ? '示意路线攻略' : '寨里动态' }} · {{ post.authorName }}</p><h2>{{ post.title || '山里片刻' }}</h2><p>{{ post.content }}</p><template v-if="post.postType === 'ROUTE_GUIDE'"><div v-if="routePlaces(post).length" class="v3-route-sketch" role="img" :aria-label="`${post.title}水彩示意节点顺序`"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline :points="routePolyline(post)" /></svg><span v-for="entry in routePlaces(post)" :key="entry.node.sequence" :style="mapStyle(entry.place)"><i>{{ entry.node.sequence }}</i>{{ entry.place.name }}</span></div><p class="v3-notice">{{ post.routeSummary }}。仅为水彩示意顺序，不提供真实导航。</p><ol><li v-for="node in post.routeNodes" :key="`${post.id}-${node.sequence}`">{{ node.placeName }}<small v-if="!node.drawable">（仅文字，不绘制）</small></li></ol></template><footer>{{ post.tags?.join(' · ') }}</footer></article><p v-if="!state.posts.length" class="v3-state">寨里暂时没有公开分享。</p></div>
-        <form class="v3-post-form" @submit.prevent="submitPost"><p class="eyebrow">登录后分享</p><h2>写一页寨里手账</h2><p v-if="!authState.user.account">请先到“我的”登录平台账号。</p><template v-else><label>类型<select v-model="postType"><option value="MOMENT">日常记录</option><option value="ROUTE_GUIDE">示意路线攻略</option></select></label><label v-if="postType === 'ROUTE_GUIDE'">标题<input v-model="postForm.title" maxlength="80" required></label><label>正文<textarea v-model="postForm.content" maxlength="2000" required></textarea></label><label>标签（逗号分隔）<input v-model="postForm.tags" placeholder="村寨生活"></label><template v-if="postType === 'ROUTE_GUIDE'"><label>路线说明<input v-model="postForm.routeSummary" maxlength="300" required></label><label>公开地点<select v-model="postForm.placeId" required><option value="">请选择真实平台地点</option><option v-for="place in state.map?.places || []" :key="place.id" :value="place.id">{{ place.name }}</option></select></label><small>本期只提交一个真实地点节点；路线仍是水彩示意，不提供导航。</small></template><button class="primary" :disabled="posting">{{ posting ? '发布中…' : '发布' }}</button><p v-if="postMessage">{{ postMessage }}</p></template></form>
+        <div><header class="v3-reading-head"><p class="eyebrow">文化阅读与寨里分享</p><h2>从一篇文章，走近一段山里日常</h2><p>文化资料与个人分享并列呈现；路线内容始终只作示意。</p></header><article v-for="post in state.posts" :key="post.id" class="v3-post" :class="{ 'is-reading': selectedPostId === post.id }"><SafeImage v-if="postMediaUrl(post.id)" :src="postMediaUrl(post.id)" :alt="`${post.title}资料参考图`" :label="post.title || '乌东文化文章'" loading="lazy" /><div><p class="eyebrow">{{ postLabel(post) }} · {{ post.authorName }}</p><h2>{{ post.title || '山里片刻' }}</h2><p v-if="postMediaUrl(post.id)" class="v3-source-note">原始资料参考图，公开使用范围待确认</p><p class="v3-source-note">{{ post.legacyData ? '资料参考内容' : post.demoData ? '演示分享' : '公开分享' }}</p><p class="v3-post-copy">{{ selectedPostId === post.id ? post.content : postExcerpt(post) }}</p><button v-if="String(post.content || '').length > 120" class="v3-text-button" type="button" @click="selectedPostId = selectedPostId === post.id ? '' : post.id">{{ selectedPostId === post.id ? '收起全文' : '阅读全文' }}</button><template v-if="post.postType === 'ROUTE_GUIDE'"><div v-if="routePlaces(post).length" class="v3-route-sketch" role="img" :aria-label="`${post.title}水彩示意节点顺序`"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline :points="postRoutePolyline(post)" /></svg><span v-for="(entry, index) in routePlaces(post)" :key="`${post.id}-${entry.node.sequence}-${index}`" :style="mapStyle(entry.place)"><i>{{ entry.node.sequence }}</i>{{ entry.place.name }}</span></div><p class="v3-notice">{{ post.routeSummary }}。仅为水彩示意顺序，不提供真实导航。</p><ol><li v-for="(node, index) in post.routeNodes" :key="`${post.id}-${node.sequence}-${index}`">{{ node.placeName }}<small v-if="!node.drawable">（仅文字，不绘制）</small></li></ol><button class="ghost" type="button" @click="usePostRoute(post)">在示意图查看这条路线</button></template><footer>{{ post.tags?.join(' · ') }}</footer></div></article><p v-if="!state.posts.length" class="v3-state">寨里暂时没有公开分享。</p></div>
+        <form class="v3-post-form" @submit.prevent="submitPost"><p class="eyebrow">登录后分享</p><h2>写一页寨里手账</h2><p v-if="!authState.user.account">请先到“我的”登录平台账号。</p><template v-else><label>类型<select v-model="postType"><option value="MOMENT">日常记录</option><option value="ROUTE_GUIDE">示意路线攻略</option></select></label><label v-if="postType === 'ROUTE_GUIDE'">标题<input v-model="postForm.title" maxlength="80" required></label><label>正文<textarea v-model="postForm.content" maxlength="2000" required></textarea></label><label>标签（逗号分隔）<input v-model="postForm.tags" placeholder="村寨生活"></label><template v-if="postType === 'ROUTE_GUIDE'"><label>路线说明<input v-model="postForm.routeSummary" maxlength="300" required></label><label>公开地点<select v-model="postForm.placeId" required><option value="">请选择公开地点</option><option v-for="place in state.map?.places || []" :key="place.id" :value="place.id">{{ place.name }}</option></select></label><small>本期新攻略先提交一个公开地点节点；路线仍是水彩示意，不提供导航。</small></template><button class="primary" :disabled="posting">{{ posting ? '发布中…' : '发布' }}</button><p v-if="postMessage">{{ postMessage }}</p></template></form>
       </section>
     </template>
   </main>

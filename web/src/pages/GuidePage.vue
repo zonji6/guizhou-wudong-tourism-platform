@@ -42,7 +42,7 @@ async function connect() {
   const userMode = Boolean(authState.user.account)
   if (userMode && !authState.user.accessToken) {
     status.value = 'error'
-    message.value = '账号访问令牌已失效，请先到“我的”恢复登录；不会降级为匿名会话。'
+    message.value = '登录状态已失效，请先到“我的”恢复登录；不会改用免登录预览。'
     return
   }
   const previousSocket = socket
@@ -50,7 +50,7 @@ async function connect() {
   previousSocket?.close(1000, 'new_connection')
   terminalFrame = false
   status.value = 'connecting'
-  message.value = userMode ? '正在建立 USER 向导安全通道…' : '正在恢复或创建匿名预览会话…'
+  message.value = userMode ? '正在连接账号向导…' : '正在准备免登录预览…'
   try {
     if (!userMode) await ensureAnonymousWebSession()
   } catch (reason) {
@@ -73,7 +73,7 @@ async function connect() {
     try { frame = JSON.parse(event.data) } catch (_) { frame = null }
     if (validAuthOk(frame, expectedMode)) {
       status.value = 'ready'
-      message.value = userMode ? 'USER 向导身份通道已就绪。' : '匿名向导预览通道已就绪。'
+      message.value = userMode ? '账号向导已就绪。' : '免登录向导已就绪。'
       return
     }
     if (validAuthFailed(frame)) {
@@ -84,20 +84,20 @@ async function connect() {
     }
     terminalFrame = true
     status.value = 'blocked'
-    message.value = '收到未冻结的向导消息，已停止展示。'
+    message.value = '收到无法识别的向导消息，已停止展示。'
     connection.close(4403, 'CONTRACT_INCOMPATIBLE')
   })
   connection.addEventListener('error', () => {
     if (connection !== socket || leaving || terminalFrame) return
     status.value = 'error'
-    message.value = '本机 AI 服务暂未准备好。'
+    message.value = '乌东向导暂未准备好。'
   })
   connection.addEventListener('close', event => {
     if (connection !== socket) return
     socket = null
     if (leaving || terminalFrame) return
     status.value = 'error'
-    message.value = `向导连接已关闭（${event.code}）；如已重新登录或服务恢复，可手动重新连接。`
+    message.value = '向导连接已关闭；如已重新登录或向导恢复，可手动重新连接。'
   })
 }
 
@@ -110,8 +110,8 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="page v3-guide-page">
-    <header class="page-intro"><p class="eyebrow">乌东向导 · AI 入口</p><h1>先确认身份，再把心愿交给山茶</h1><p>本页只启用已经冻结的 WebSocket 身份首帧；在独立的 assistant-card-v3 契约交付前，不猜测卡片、候选或保存事件。</p></header>
-    <section class="v3-guide-card"><span class="v3-guide-leaf">叶</span><div><h2>{{ authState.user.account ? `${authState.user.account.nickname}，准备连接账号向导` : '免登录体验匿名向导' }}</h2><p>{{ message || (authState.user.account ? '点击后连接同源 /ai/ws/user；USER 身份失效时不会降级匿名。' : '匿名预览不能读取账号资料；需要保存成果时再登录并再次确认。') }}</p><button class="primary" :disabled="status === 'connecting' || status === 'ready'" @click="connect">{{ status === 'ready' ? '身份通道已就绪' : status === 'connecting' ? '连接中…' : authState.user.account ? '连接账号向导' : '开始匿名预览' }}</button><a v-if="!authState.user.account" class="v3-text-link" href="#/my">已有账号？去“我的”登录</a></div></section>
-    <section class="v3-guide-links"><a href="#/explore/product"><span>01</span><b>先看看商品</b><small>公开目录无需登录</small></a><a href="#/explore/food"><span>02</span><b>同店选餐</b><small>核价前需要 USER</small></a><a href="#/explore/travel"><span>03</span><b>查看示意路线</b><small>不冒充真实导航</small></a></section>
+    <header class="page-intro"><p class="eyebrow">乌东向导</p><h1>先确认身份，再把心愿交给山茶</h1><p>可以免登录先看看规划建议；需要保存个人成果时，再登录并由你再次确认。</p></header>
+    <section class="v3-guide-card"><span class="v3-guide-leaf">叶</span><div><h2>{{ authState.user.account ? `${authState.user.account.nickname}，准备连接账号向导` : '免登录体验乌东向导' }}</h2><p>{{ message || (authState.user.account ? '当前将连接你的账号体验；登录失效时不会改用免登录预览。' : '免登录预览不能读取账号资料；需要保存成果时再登录并再次确认。') }}</p><button class="primary" :disabled="status === 'connecting' || status === 'ready'" @click="connect">{{ status === 'ready' ? '向导已就绪' : status === 'connecting' ? '连接中…' : authState.user.account ? '连接账号向导' : '开始免登录预览' }}</button><a v-if="!authState.user.account" class="v3-text-link" href="#/my">已有账号？去“我的”登录</a></div></section>
+    <section class="v3-guide-links"><a href="#/explore/product"><span>01</span><b>先看看商品</b><small>公开目录无需登录</small></a><a href="#/explore/food"><span>02</span><b>同店选餐</b><small>核价前需要登录</small></a><a href="#/explore/travel"><span>03</span><b>查看示意路线</b><small>不作为真实导航</small></a></section>
   </main>
 </template>

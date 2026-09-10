@@ -4,6 +4,14 @@ const { anonymousState, authState, ensureAnonymousMiniSession } = require('../..
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const AUTH_FAILED_CODES = new Set(['AUTH_REQUIRED', 'AUTH_EXPIRED', 'SESSION_REVOKED', 'ANONYMOUS_REQUIRED', 'ANONYMOUS_EXPIRED', 'ANONYMOUS_REVOKED', 'ORIGIN_REJECTED', 'FORBIDDEN', 'AUTH_MODE_MISMATCH', 'CONTRACT_INCOMPATIBLE', 'RATE_LIMITED', 'AUTH_STATE_UNAVAILABLE'])
 
+function authFailureMessage(frame) {
+  if (frame.code === 'RATE_LIMITED') return `操作有点频繁，请在 ${frame.retryAfterSeconds} 秒后重试。`
+  if (frame.code === 'AUTH_STATE_UNAVAILABLE') return '向导暂时无法确认身份，请稍后重试。'
+  if (frame.code === 'CONTRACT_INCOMPATIBLE') return '应用版本需要更新后才能继续使用向导。'
+  if (['ORIGIN_REJECTED', 'FORBIDDEN', 'AUTH_MODE_MISMATCH'].includes(frame.code)) return '当前环境无法使用向导。'
+  return '当前身份已失效，请重新登录或重新开始匿名预览。'
+}
+
 function exactKeys(value, keys) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const actual = Object.keys(value).sort()
@@ -49,12 +57,12 @@ Page({
     const state = authState()
     const userMode = Boolean(state.account)
     if (userMode && !state.accessToken) {
-      this.setData({ status: 'error', message: '账号访问令牌已失效，请先到“我的”恢复登录；不会降级为匿名会话。' })
+      this.setData({ status: 'error', message: '当前登录已失效，请先到“我的”重新登录；不会自动切换到匿名体验。' })
       return
     }
     this._closing = false
     this._terminalFrame = false
-    this.setData({ status: 'connecting', message: userMode ? '正在建立 USER 向导安全通道…' : '正在恢复或创建匿名预览会话…' })
+    this.setData({ status: 'connecting', message: userMode ? '正在连接专属乌东向导…' : '正在准备匿名预览…' })
     let anonymous
     try {
       if (!userMode) {
@@ -79,7 +87,7 @@ Page({
       let frame
       try { frame = JSON.parse(data) } catch (_) { frame = null }
       if (validAuthOk(frame, expectedMode)) {
-        this.setData({ status: 'ready', message: userMode ? 'USER 向导身份通道已就绪。' : '匿名向导预览通道已就绪。', anonymousNeedsRenew: false })
+        this.setData({ status: 'ready', message: userMode ? '账号向导已准备好。' : '匿名向导预览已准备好。', anonymousNeedsRenew: false })
         return
       }
       if (validAuthFailed(frame)) {
@@ -88,23 +96,23 @@ Page({
         this.setData({
           status: frame.retryable ? 'error' : 'blocked',
           anonymousNeedsRenew: needsRenew,
-          message: `${frame.message}${frame.code === 'RATE_LIMITED' ? `（${frame.retryAfterSeconds} 秒后可重试）` : ''}`
+          message: authFailureMessage(frame)
         })
         return
       }
       this._terminalFrame = true
-      this.setData({ status: 'blocked', message: '收到尚未冻结的向导业务消息，已停止展示。' })
+      this.setData({ status: 'blocked', message: '向导返回了暂不可展示的内容，请稍后再试。' })
       socket.close({ code: 4403, reason: 'CONTRACT_INCOMPATIBLE' })
     })
     socket.onError(() => {
-      if (this.socket === socket && !this._closing && !this._terminalFrame) this.setData({ status: 'error', message: '本机 AI 服务暂未准备好。' })
+      if (this.socket === socket && !this._closing && !this._terminalFrame) this.setData({ status: 'error', message: '乌东向导暂未准备好。' })
     })
     socket.onClose(event => {
       if (this.socket !== socket) return
       this.socket = null
       if (this._closing || this._terminalFrame) return
       const anonymousNeedsRenew = !userMode && event.code === 4401
-      this.setData({ status: 'error', anonymousNeedsRenew, message: anonymousNeedsRenew ? '匿名会话已失效；请明确重新开始匿名预览。' : `向导连接已关闭（${event.code}）；如已重新登录或服务恢复，可手动重新连接。` })
+      this.setData({ status: 'error', anonymousNeedsRenew, message: anonymousNeedsRenew ? '匿名体验已失效；请明确重新开始。' : '向导连接已关闭；如已重新登录或服务恢复，可手动重新连接。' })
     })
   },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) },

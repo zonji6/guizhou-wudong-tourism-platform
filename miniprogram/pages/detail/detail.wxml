@@ -1,1 +1,37 @@
-<view class="page detail-content"><view wx:if="{{loading}}" class="empty-note">正在读取 v3 详情…</view><view wx:elif="{{error}}" class="empty-note">{{error}}</view><block wx:elif="{{item}}"><image wx:if="{{item.imageUrl && !imageFailed}}" class="cover" src="{{item.imageUrl}}" mode="aspectFill" aria-label="{{item.name}}公开图片" binderror="imageError"/><view wx:else class="cover image-fallback">公开图片暂缺</view><view class="eyebrow">贵州乌东 · {{kind}}</view><view class="title">{{item.name}}</view><view class="tags"><text class="tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text></view><view class="intro">{{item.description}}</view><view wx:if="{{item.demoPrice}}" class="price">¥{{item.demoPrice.amount}} <text>{{item.demoPrice.simulationNote}}</text></view><view wx:elif="{{item.referencePrice}}" class="price">¥{{item.referencePrice.amount}} <text>参考来源：{{item.referencePrice.sourceTitle}}</text></view><view wx:else class="empty-note">暂无可展示价格。</view><view class="service-note">请返回“游乌东”从当前目录选择并核价；详情页不会绕过同店、容量或报价确认边界。</view></block></view>
+<view class="page detail-content">
+  <view wx:if="{{loading}}" class="empty-note">正在读取详情…</view>
+  <view wx:elif="{{error}}" class="empty-note">{{error}}</view>
+  <block wx:elif="{{item}}">
+    <image wx:if="{{item.displayImageUrl && !imageFailed}}" class="cover" src="{{item.displayImageUrl}}" mode="aspectFill" aria-label="{{item.displayName || item.name}}资料参考图" binderror="imageError"/>
+    <view wx:elif="{{kind !== 'community'}}" class="cover image-fallback">图片暂缺</view>
+    <view wx:if="{{item.imageNote}}" class="image-note">{{item.imageNote}}</view>
+    <view class="eyebrow">贵州乌东 · {{kindLabel}}</view>
+
+    <block wx:if="{{kind === 'community'}}">
+      <view class="title">{{item.displayName}}</view>
+      <view class="byline">{{item.authorName}} · {{item.publishedAt}}</view>
+      <view class="tags"><text class="tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text></view>
+      <view class="article">{{item.content}}</view>
+      <view wx:if="{{item.postType === 'ROUTE_GUIDE'}}" class="route-card"><view class="section-title">{{item.routeSummary}}</view><view wx:for="{{item.routeNodes}}" wx:key="viewKey" class="route-node"><text>{{item.sequence}}</text><view>{{item.placeName}}<view class="muted">{{item.displayNote}}</view></view></view><view class="service-note">路线为水彩示意顺序，不提供真实导航、里程或预计时长。</view></view>
+    </block>
+
+    <block wx:elif="{{kind === 'stay'}}">
+      <view class="title">{{item.name}}</view><view class="byline">{{item.locationText || item.merchantName}}</view>
+      <view class="tags"><text class="tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text></view><view class="intro">{{item.description}}</view>
+      <view class="service-note">上方为住宿资料参考图，不代表具体房型实拍。以下容量和价格为演示信息，不代表实时房态；提交前还会重新核价。</view>
+      <view wx:for="{{item.roomTypes}}" wx:for-item="room" wx:key="id" class="room-card">
+        <image wx:if="{{room.displayImageUrl}}" class="room-image" src="{{room.displayImageUrl}}" mode="aspectFill"/><view wx:if="{{room.imageNote}}" class="image-note">{{room.imageNote}}</view>
+        <view class="card-title">{{room.name}}</view><view class="muted">{{room.description}}</view><view class="capacity">每间演示容量 {{room.maxGuestsPerRoom}} 人</view>
+        <view wx:if="{{room.priceView}}" class="price">¥{{room.priceView.amount}} <text>/ 间夜 · {{room.priceView.kind}} · {{room.priceView.note}}</text></view><view wx:else class="empty-note">暂无可展示价格。</view>
+        <button class="primary booking-button" disabled="{{!room.orderable}}" data-id="{{room.id}}" bindtap="checkoutStay">{{room.orderable ? '选择这个房型' : '暂不可提交'}}</button>
+      </view>
+      <view wx:if="{{!item.roomTypes.length}}" class="empty-note">当前没有已发布房型。</view>
+    </block>
+
+    <block wx:else>
+      <view class="title">{{item.displayName}}</view><view class="tags"><text class="tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text></view><view class="intro">{{item.description}}</view>
+      <block wx:if="{{kind === 'product'}}"><view class="facts"><view>提供方：{{item.merchantName}}</view><view>取货点：{{item.pickupPoint}}</view></view><view wx:if="{{item.priceView}}" class="price">¥{{item.priceView.amount}} <text>{{item.priceView.kind}} · {{item.priceView.note}}</text></view><view wx:else class="empty-note">暂无可展示价格。</view><button class="primary booking-button" disabled="{{!item.orderable}}" bindtap="checkoutProduct">{{item.orderable ? '选择数量并核价' : '暂不可提交'}}</button></block>
+      <block wx:else><view class="facts"><view>地点类别：{{item.category}}</view></view><view class="service-note">这里只展示水彩示意位置，不提供实时导航、精确距离或预计时长。</view></block>
+    </block>
+  </block>
+</view>

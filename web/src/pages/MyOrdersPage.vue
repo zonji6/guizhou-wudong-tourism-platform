@@ -14,6 +14,9 @@ const draftSave = reactive({ status: '', saving: false, paused: false, unknown: 
 const draftSubmit = reactive({ quote: null, oldQuote: null, status: '', submitting: false, attempt: null })
 let draftTimer
 const orders = computed(() => workspace.value ? [...workspace.value.productOrders, ...workspace.value.foodOrders, ...workspace.value.stayBookings] : [])
+const orderTypeLabels = { PRODUCT: '商品订单', FOOD: '餐食订单', STAY: '住宿订单' }
+const orderStatusLabels = { PENDING_PICKUP: '待自提', PICKED_UP: '已自提', PENDING_VISIT: '待到店', PENDING_CONFIRMATION: '待确认', CONFIRMED: '已确认', CHECKED_IN: '已入住', COMPLETED: '已完成', CANCELLED: '已取消' }
+const draftTypeLabels = { FOOD: '餐食', STAY: '住宿' }
 
 function errorText(reason, fallback) {
   return reason?.message || fallback
@@ -25,7 +28,7 @@ async function authenticate() {
   try {
     if (mode.value === 'register') {
       await registerUser(form)
-      message.value = '账号已创建，请使用同一用户名和密码登录 Web 或小程序。'
+      message.value = '账号已创建，请使用同一用户名和密码登录网页端或小程序。'
       mode.value = 'login'
       return
     }
@@ -71,9 +74,9 @@ async function signOut() {
   try {
     await logout('user')
     workspace.value = null
-    message.value = '服务端已确认退出当前浏览器登录。'
+    message.value = '当前浏览器已经安全退出。'
   } catch (reason) {
-    message.value = `${errorText(reason, '退出结果未知。')} 页面内存不会冒充服务端已撤销。`
+    message.value = `${errorText(reason, '退出结果未知。')} 请保留当前页面并稍后重试。`
   } finally {
     busy.value = false
   }
@@ -87,6 +90,18 @@ function orderSummary(order) {
   if (order.orderType === 'PRODUCT') return `${order.quantity} 份 · ${order.pickupPoint}`
   if (order.orderType === 'FOOD') return `${order.items?.map(item => `${item.resourceName || item.foodItemName}×${item.quantity}`).join('、')} · ${order.peopleCount} 人`
   return `${order.checkInDate} 至 ${order.checkOutDate} · ${order.nights} 晚 · ${order.roomCount} 间 · ${order.peopleCount} 人`
+}
+
+function orderTypeLabel(type) {
+  return orderTypeLabels[type] || '乌东订单'
+}
+
+function orderStatusLabel(status) {
+  return orderStatusLabels[status] || '处理中'
+}
+
+function draftTypeLabel(type) {
+  return draftTypeLabels[type] || '食宿'
 }
 
 function clone(value) {
@@ -115,7 +130,7 @@ function closeDraft() {
     return
   }
   if (draftSubmit.submitting || draftSubmit.attempt) {
-    draftSubmit.status = '提交结果尚待核对；请先用同一请求键重试，不能丢弃本页提交上下文。'
+    draftSubmit.status = '提交结果尚待核对；请继续核对同一次操作，不要重新发起提交。'
     return
   }
   if ((draftSave.editRevision !== draftSave.savedRevision || draftSave.paused) && !window.confirm('仍有未确认保存的内容。关闭后页面内容不会保存到本地，仍要关闭吗？')) return
@@ -191,7 +206,7 @@ async function saveDraftNow() {
       draftSave.unknown = false
       draftSave.lastErrorCode = 'VERSION_CONFLICT'
       if (Number.isInteger(committedVersion)) editor.version = committedVersion
-      draftSave.status = '本次保存已提交，但服务端已有更高版本；已暂停，不能用旧页面内容覆盖跨端修改。'
+      draftSave.status = '本次保存已提交，但平台已有更新内容；已暂停，不能用旧页面内容覆盖其他设备的修改。'
       return
     }
     editor.version = committedVersion
@@ -231,10 +246,10 @@ async function continueUnknownSave() {
       draftSave.paused = false
       draftSave.unknown = false
       draftSave.pending = null
-      draftSave.status = '原保存已确认未执行，正在用新请求键继续。'
+      draftSave.status = '原保存已确认未执行，正在重新保存当前内容。'
       draftTimer = setTimeout(saveDraftNow, 0)
     } else {
-      draftSave.status = result.outcome === 'SUCCEEDED' ? '原保存已成功，但服务端已有更高版本；请保留页面内容并手动核对跨端修改。' : '仍不能安全继续，请保留页面内容并手动刷新核对。'
+      draftSave.status = result.outcome === 'SUCCEEDED' ? '原保存已成功，但平台已有更新内容；请保留页面内容并手动核对其他设备的修改。' : '仍不能安全继续，请保留页面内容并手动刷新核对。'
     }
   } catch (reason) {
     draftSave.status = reason?.message || '核对结果仍未知，继续保持暂停。'
@@ -244,13 +259,13 @@ async function continueUnknownSave() {
 function continueDraftSave() {
   if (draftSave.unknown) { continueUnknownSave(); return }
   if (['VERSION_CONFLICT', 'DRAFT_ALREADY_SUBMITTED'].includes(draftSave.lastErrorCode)) {
-    draftSave.status = '服务端版本或状态已变化，不能盲目重试；请保留内容并关闭后手动读取最新版。'
+    draftSave.status = '平台内容或状态已变化，不能直接覆盖；请保留内容并关闭后手动读取最新版。'
     return
   }
   draftSave.paused = false
   draftSave.pending = null
   draftSave.queued = false
-  draftSave.status = '正在用新请求键重试当前内容…'
+  draftSave.status = '正在重新保存当前内容…'
   draftTimer = setTimeout(saveDraftNow, 0)
 }
 
@@ -265,11 +280,11 @@ function draftQuoteSelection() {
 async function quoteCurrentDraft() {
   if (!draftEditor.value) return
   if (draftSubmit.attempt) {
-    draftSubmit.status = '提交结果尚待核对；请先用同一请求键重试，不能重新核价。'
+    draftSubmit.status = '提交结果尚待核对；请继续核对同一次操作，暂时不能重新核价。'
     return
   }
   if (draftSave.saving || draftSave.queued || draftSave.paused || draftSave.savedRevision !== draftSave.editRevision) {
-    draftSubmit.status = '只有当前页面最新改动已由服务端确认保存后，才能核价并提交。'
+    draftSubmit.status = '只有当前页面的最新改动确认保存后，才能核价并提交。'
     return
   }
   draftSubmit.submitting = true
@@ -302,7 +317,7 @@ async function submitCurrentDraft() {
   try {
     const receipt = await submitDraft(draftEditor.value.draftType, draftEditor.value.id, attempt.expectedVersion, attempt.expectedQuoteFingerprint, attempt.requestKey)
     const orderId = receipt.resource?.id || receipt.resourceId
-    const successMessage = `草稿已由服务端确认提交${orderId ? `，正式订单 ${orderId}` : ''}。`
+    const successMessage = `草稿已确认提交${orderId ? `，正式订单 ${orderId}` : ''}。`
     finishCloseDraft()
     await reload()
     message.value = successMessage
@@ -311,9 +326,9 @@ async function submitCurrentDraft() {
       draftSubmit.oldQuote = draftSubmit.quote
       draftSubmit.quote = reason.details.currentQuote
       draftSubmit.attempt = null
-      draftSubmit.status = '报价已变化：旧请求键已终结。请比较新旧金额，再明确确认用新请求键提交。'
+      draftSubmit.status = '报价已变化：原操作已经结束。请比较新旧金额，再明确确认新的提交。'
     } else {
-      draftSubmit.status = `${reason?.message || '提交结果暂未确认。'} 重试将沿用同一请求键与原请求内容。`
+      draftSubmit.status = `${reason?.message || '提交结果暂未确认。'} 再次点击会继续核对原提交内容。`
     }
   } finally { draftSubmit.submitting = false }
 }
@@ -324,32 +339,32 @@ onBeforeUnmount(() => clearTimeout(draftTimer))
 
 <template>
   <main class="page v3-my-page">
-    <header class="page-intro"><p class="eyebrow">平台账号 · 跨端同一归属</p><h1>我的</h1><p>Web 与原生小程序使用同一个平台账号读取已保存行程、草稿与三类订单；联系人不会出现在本人订单投影中。</p></header>
+    <header class="page-intro"><p class="eyebrow">平台账号 · 双端相通</p><h1>我的</h1><p>网页端与小程序使用同一个平台账号读取已保存行程、草稿与三类订单；列表中不展示联系人信息。</p></header>
 
     <section v-if="!authState.user.account" class="v3-auth-layout">
-      <form class="v3-auth-card" @submit.prevent="authenticate"><div class="v3-auth-switch"><button type="button" :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button><button type="button" :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button></div><label>用户名<input v-model="form.username" pattern="[A-Za-z0-9_]{3,32}" autocomplete="username" required></label><label v-if="mode === 'register'">昵称（可选）<input v-model="form.nickname" maxlength="40"></label><label>密码<input v-model="form.password" type="password" minlength="8" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" required></label><button class="primary" :disabled="busy || !authState.user.ready">{{ !authState.user.ready ? '正在准备安全通道…' : busy ? '处理中…' : mode === 'login' ? '登录我的乌东' : '创建 USER 账号' }}</button><p>访问令牌只保存在当前页面内存；密码不会保存到浏览器。</p></form>
-      <aside class="v3-auth-note"><h2>已经登录过这个浏览器？</h2><p>刷新令牌只存在 HttpOnly Cookie 中，可以尝试安全恢复当前会话。</p><button class="ghost" :disabled="busy || !authState.user.ready" @click="restoreSession">恢复登录</button><p>后台账号在独立入口登录，不与游客账号互相兜底。</p></aside>
+      <form class="v3-auth-card" @submit.prevent="authenticate"><div class="v3-auth-switch"><button type="button" :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button><button type="button" :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button></div><label>用户名<input v-model="form.username" pattern="[A-Za-z0-9_]{3,32}" autocomplete="username" required></label><label v-if="mode === 'register'">昵称（可选）<input v-model="form.nickname" maxlength="40"></label><label>密码<input v-model="form.password" type="password" minlength="8" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" required></label><button class="primary" :disabled="busy || !authState.user.ready">{{ !authState.user.ready ? '正在准备登录…' : busy ? '处理中…' : mode === 'login' ? '登录我的乌东' : '创建平台账号' }}</button><p>密码不会保存到浏览器；登录状态只用于读取你的行程、草稿与订单。</p></form>
+      <aside class="v3-auth-note"><h2>已经登录过这个浏览器？</h2><p>可以尝试恢复上一次仍然有效的登录状态。</p><button class="ghost" :disabled="busy || !authState.user.ready" @click="restoreSession">恢复登录</button><p>后台账号使用独立入口，不与游客账号混用。</p></aside>
     </section>
 
     <template v-else>
-      <section class="v3-account-bar"><div><p class="eyebrow">已登录</p><h2>{{ authState.user.account.nickname }}</h2><small>@{{ authState.user.account.username }} · USER</small></div><div><button class="ghost" :disabled="busy" @click="restoreSession">更新登录</button><button class="ghost" :disabled="busy" @click="reload">刷新内容</button><button class="ghost" :disabled="busy" @click="signOut">退出</button></div></section>
+      <section class="v3-account-bar"><div><p class="eyebrow">已登录</p><h2>{{ authState.user.account.nickname }}</h2><small>@{{ authState.user.account.username }} · 平台账号</small></div><div><button class="ghost" :disabled="busy" @click="restoreSession">更新登录</button><button class="ghost" :disabled="busy" @click="reload">刷新内容</button><button class="ghost" :disabled="busy" @click="signOut">退出</button></div></section>
       <nav class="v3-module-tabs"><button :class="{ active: active === 'orders' }" @click="active = 'orders'">三类订单</button><button :class="{ active: active === 'drafts' }" @click="active = 'drafts'">食宿草稿</button><button :class="{ active: active === 'itineraries' }" @click="active = 'itineraries'">已保存行程</button><button :class="{ active: active === 'legacy' }" @click="active = 'legacy'">旧记录</button></nav>
       <section v-if="!workspace" class="v3-state"><p>{{ busy ? '正在读取同账号数据…' : '尚未读取数据。' }}</p><button v-if="!busy" class="primary" @click="reload">读取我的内容</button></section>
-      <section v-else-if="active === 'orders'" class="v3-list"><article v-for="order in orders" :key="order.id"><header><span>{{ order.orderType }}</span><b>{{ order.status }}</b></header><h2>{{ orderTitle(order) }}</h2><p>{{ orderSummary(order) }}</p><footer>¥{{ order.totalAmount }} {{ order.currency }} · {{ order.createdAt }}</footer></article><p v-if="!orders.length" class="v3-state">还没有正式订单。</p></section>
+      <section v-else-if="active === 'orders'" class="v3-list"><article v-for="order in orders" :key="order.id"><header><span>{{ orderTypeLabel(order.orderType) }}</span><b>{{ orderStatusLabel(order.status) }}</b></header><h2>{{ orderTitle(order) }}</h2><p>{{ orderSummary(order) }}</p><footer>¥{{ order.totalAmount }} {{ order.currency }} · {{ order.createdAt }}</footer></article><p v-if="!orders.length" class="v3-state">还没有正式订单。</p></section>
       <section v-else-if="active === 'drafts'" class="v3-list">
-        <article v-for="draft in [...workspace.foodDrafts, ...workspace.stayDrafts]" :key="draft.id"><header><span>{{ draft.draftType }} 草稿</span><b>{{ draft.state }}</b></header><h2>版本 {{ draft.version }}</h2><p v-if="draft.draftType === 'FOOD'">{{ draft.content?.items?.length || 0 }} 种餐食 · {{ draft.content?.visitAt || '时间待补' }}</p><p v-else>{{ draft.content?.checkInDate || '入住待补' }} 至 {{ draft.content?.checkOutDate || '离店待补' }} · {{ draft.content?.roomCount || '房数待补' }}</p><footer v-if="draft.state === 'SUBMITTED'">已关联 {{ draft.linkedOrder?.orderType }} 订单 {{ draft.linkedOrder?.orderId }}</footer><template v-else><footer>停止编辑约 800ms 后串行保存；失败或未知会暂停且保留页面内容。</footer><button class="ghost" :disabled="Boolean(draftEditor)" @click="openDraft(draft)">继续编辑</button></template></article>
+        <article v-for="draft in [...workspace.foodDrafts, ...workspace.stayDrafts]" :key="draft.id"><header><span>{{ draftTypeLabel(draft.draftType) }}草稿</span><b>{{ draft.state === 'SUBMITTED' ? '已提交' : '编辑中' }}</b></header><h2>保存版本 {{ draft.version }}</h2><p v-if="draft.draftType === 'FOOD'">{{ draft.content?.items?.length || 0 }} 种餐食 · {{ draft.content?.visitAt || '时间待补' }}</p><p v-else>{{ draft.content?.checkInDate || '入住待补' }} 至 {{ draft.content?.checkOutDate || '离店待补' }} · {{ draft.content?.roomCount || '房数待补' }}</p><footer v-if="draft.state === 'SUBMITTED'">已关联 {{ orderTypeLabel(draft.linkedOrder?.orderType) }} {{ draft.linkedOrder?.orderId }}</footer><template v-else><footer>停止编辑片刻后依次保存；失败或未知会暂停并保留页面内容。</footer><button class="ghost" :disabled="Boolean(draftEditor)" @click="openDraft(draft)">继续编辑</button></template></article>
         <p v-if="!workspace.foodDrafts.length && !workspace.stayDrafts.length" class="v3-state">还没有食宿草稿。</p>
         <form v-if="draftEditor" class="v3-draft-editor" @submit.prevent @input="scheduleDraftSave">
-          <header><div><p class="eyebrow">{{ draftEditor.draftType }} 草稿</p><h2>编辑版本 {{ draftEditor.version }}</h2></div><button type="button" class="ghost" @click="closeDraft">关闭</button></header>
-          <template v-if="draftEditor.draftType === 'FOOD'"><p>店铺与 {{ draftEditor.content.items.length }} 个餐食项保持原草稿选择，不在编辑时跨店换绑。</p><label v-for="item in draftEditor.content.items" :key="item.foodItemId">餐食 {{ item.foodItemId }} 份数<input v-model.number="item.quantity" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>到店时间<input v-model="draftEditor.content.visitAt" type="datetime-local" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>人数<input v-model.number="draftEditor.content.peopleCount" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label></template>
-          <template v-else><p>房型保持原草稿选择：{{ draftEditor.content.roomTypeId }}</p><label>入住日期<input v-model="draftEditor.content.checkInDate" type="date" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>离店日期<input v-model="draftEditor.content.checkOutDate" type="date" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>房间数<input v-model.number="draftEditor.content.roomCount" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>人数<input v-model.number="draftEditor.content.peopleCount" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label></template>
+          <header><div><p class="eyebrow">{{ draftTypeLabel(draftEditor.draftType) }}草稿</p><h2>编辑版本 {{ draftEditor.version }}</h2></div><button type="button" class="ghost" @click="closeDraft">关闭</button></header>
+          <template v-if="draftEditor.draftType === 'FOOD'"><p>店铺与 {{ draftEditor.content.items.length }} 个餐食项保持原草稿选择，不在编辑时跨店更换。</p><label v-for="(item, index) in draftEditor.content.items" :key="item.foodItemId">餐食 {{ index + 1 }} 份数<input v-model.number="item.quantity" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>到店时间<input v-model="draftEditor.content.visitAt" type="datetime-local" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>人数<input v-model.number="draftEditor.content.peopleCount" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label></template>
+          <template v-else><p>原房型保持不变；这里只调整日期、房间数与人数。</p><label>入住日期<input v-model="draftEditor.content.checkInDate" type="date" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>离店日期<input v-model="draftEditor.content.checkOutDate" type="date" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>房间数<input v-model.number="draftEditor.content.roomCount" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>人数<input v-model.number="draftEditor.content.peopleCount" type="number" min="1" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label></template>
           <label>联系人<input v-model="draftEditor.content.contactName" maxlength="80" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>联系电话<input v-model="draftEditor.content.contactPhone" maxlength="32" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></label><label>备注<textarea v-model="draftEditor.content.note" maxlength="500" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt)"></textarea></label>
           <p :class="{ 'v3-error': draftSave.paused }">{{ draftSave.status }}</p><button v-if="draftSave.paused" type="button" class="primary" :disabled="draftSave.saving" @click="continueDraftSave">{{ draftSave.unknown ? '继续保存（先核对原结果）' : '重新尝试保存' }}</button>
-          <div class="v3-draft-submit" @input.stop><button type="button" class="ghost" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt) || draftSave.saving || draftSave.paused || draftSave.savedRevision !== draftSave.editRevision" @click="quoteCurrentDraft">按已保存版本核价</button><template v-if="draftSubmit.quote"><p v-if="draftSubmit.oldQuote">旧报价：¥{{ draftSubmit.oldQuote.totalAmount }} {{ draftSubmit.oldQuote.currency }}</p><p>当前报价：¥{{ draftSubmit.quote.totalAmount }} {{ draftSubmit.quote.currency }} · {{ draftSubmit.quote.notice }}</p><button type="button" class="primary" :disabled="draftSubmit.submitting" @click="submitCurrentDraft">{{ draftSubmit.submitting ? '提交中…' : draftSubmit.attempt ? '用同一请求键重试提交' : draftSubmit.oldQuote ? '确认新报价并提交' : '确认该报价并提交' }}</button></template><p v-if="draftSubmit.status">{{ draftSubmit.status }}</p></div>
+          <div class="v3-draft-submit" @input.stop><button type="button" class="ghost" :disabled="draftSubmit.submitting || Boolean(draftSubmit.attempt) || draftSave.saving || draftSave.paused || draftSave.savedRevision !== draftSave.editRevision" @click="quoteCurrentDraft">按已保存版本核价</button><template v-if="draftSubmit.quote"><p v-if="draftSubmit.oldQuote">旧报价：¥{{ draftSubmit.oldQuote.totalAmount }} {{ draftSubmit.oldQuote.currency }}</p><p>当前报价：¥{{ draftSubmit.quote.totalAmount }} {{ draftSubmit.quote.currency }} · {{ draftSubmit.quote.notice }}</p><button type="button" class="primary" :disabled="draftSubmit.submitting" @click="submitCurrentDraft">{{ draftSubmit.submitting ? '提交中…' : draftSubmit.attempt ? '继续核对这次提交' : draftSubmit.oldQuote ? '确认新报价并提交' : '确认该报价并提交' }}</button></template><p v-if="draftSubmit.status">{{ draftSubmit.status }}</p></div>
         </form>
       </section>
-      <section v-else-if="active === 'itineraries'" class="v3-list"><article v-for="trip in workspace.itineraries" :key="trip.id"><header><span>已保存行程</span><b>v{{ trip.version }}</b></header><h2>{{ trip.content?.title }}</h2><p>{{ trip.content?.days?.length || 0 }} 天 · {{ trip.content?.travelDate || '日期待定' }} · {{ trip.content?.peopleCount || '人数待定' }}</p><footer>{{ trip.updatedAt }}</footer></article><p v-if="!workspace.itineraries.length" class="v3-state">还没有已保存行程。</p></section>
-      <section v-else class="v3-list"><article v-for="record in workspace.legacyRecords" :key="record.id"><header><span>合法旧记录</span><b>只读</b></header><h2>{{ record.title || record.name || record.id }}</h2><p>{{ record.message || record.summary || '该记录保留原归属，不会自动映射 visitorId。' }}</p></article><p v-if="!workspace.legacyRecords.length" class="v3-state">没有可归属到当前账号的旧记录。</p></section>
+      <section v-else-if="active === 'itineraries'" class="v3-list"><article v-for="trip in workspace.itineraries" :key="trip.id"><header><span>已保存行程</span><b>保存版本 {{ trip.version }}</b></header><h2>{{ trip.content?.title }}</h2><p>{{ trip.content?.days?.length || 0 }} 天 · {{ trip.content?.travelDate || '日期待定' }} · {{ trip.content?.peopleCount || '人数待定' }}</p><footer>{{ trip.updatedAt }}</footer></article><p v-if="!workspace.itineraries.length" class="v3-state">还没有已保存行程。</p></section>
+      <section v-else class="v3-list"><article v-for="record in workspace.legacyRecords" :key="record.id"><header><span>合法旧记录</span><b>只读</b></header><h2>{{ record.title || record.name || record.id }}</h2><p>{{ record.message || record.summary || '该记录保留原归属，不会自动认领到当前账号。' }}</p></article><p v-if="!workspace.legacyRecords.length" class="v3-state">没有可归属到当前账号的旧记录。</p></section>
     </template>
     <p v-if="message" class="v3-error" role="status">{{ message }}</p>
   </main>
