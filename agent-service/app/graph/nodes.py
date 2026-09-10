@@ -257,6 +257,23 @@ def _flatten_catalog(target_type: str, rows: list[object]) -> list[tuple[Recomme
     return result[:20]
 
 
+async def _search_service_catalog(target_type: str, user_text: str) -> list[object]:
+    """先按原句检索；自然语言未命中时退回该类公开目录的代表关键词。"""
+    client = TourismV3Client()
+    rows = list(await client.search_catalog(target_type, user_text or "乌东"))
+    if rows:
+        return rows
+    fallback_keywords = {
+        "FOOD": "苗家",
+        "STAY": "民宿",
+        "PRODUCT": "乌东",
+        "PLACE": "寨",
+        "ROUTE_GUIDE": "乌东",
+    }
+    fallback = fallback_keywords.get(target_type)
+    return list(await client.search_catalog(target_type, fallback)) if fallback else []
+
+
 def _candidate_plan(context: RunContext, target_type: str, rows: list[object]) -> CandidatePlan | AssistantCardV3 | None:
     selected = context.request.selected_target
     if selected is None or target_type not in {"FOOD", "STAY"}:
@@ -337,7 +354,7 @@ async def service_recommender(state: WorkflowState, runtime: Any) -> dict[str, o
     target_type = _target_type(context)
     started = monotonic()
     try:
-        rows = list(await TourismV3Client().search_catalog(target_type, context.request.user_text or "乌东"))
+        rows = await _search_service_catalog(target_type, context.request.user_text)
         bundle = await _retrieve(context)
         summary = _summary("CATALOG", "SEARCH_CATALOG", len(rows), started)
         planned = _candidate_plan(context, target_type, rows)

@@ -4,7 +4,7 @@
   <view wx:if="{{status === 'ready'}}" class="workspace">
     <view class="workspace-head"><view><view class="eyebrow">多智能体编排</view><view class="section-title">山水、寨、茶与人</view></view><text>{{busy ? '正在' + (stageLabels[activeStage] || '整理建议') : '资料演示模式'}}</text></view>
     <view wx:if="{{dialogue.length}}" class="dialogue"><view wx:for="{{dialogue}}" wx:key="index" class="message {{item.role === 'user' ? 'user' : ''}}"><text>{{item.role === 'user' ? '你' : '乌东向导'}}</text><view>{{item.content}}</view></view></view>
-    <view class="quick"><button data-text="周末两位，安排两天一夜的苗族文化茶旅" disabled="{{busy}}" bindtap="sendPrompt">两天一夜茶旅</button><button data-text="推荐适合亲子的苗绣体验" disabled="{{busy}}" bindtap="sendPrompt">亲子苗绣</button><button data-text="介绍一下乌东的茶旅体验" disabled="{{busy}}" bindtap="sendPrompt">认识乌东茶旅</button></view>
+    <view class="quick"><button data-text="周末两位，安排两天一夜的苗族文化茶旅" disabled="{{busy}}" bindtap="sendPrompt">两天一夜茶旅</button><button data-text="推荐适合亲子的苗绣体验" disabled="{{busy}}" bindtap="sendPrompt">亲子苗绣</button><button data-text="介绍一下乌东的茶旅体验" disabled="{{busy}}" bindtap="sendPrompt">认识乌东茶旅</button><button data-text="推荐乌东苗家酸汤鱼和适合两人的用餐选择" disabled="{{busy}}" bindtap="sendPrompt">找苗家酸汤鱼</button><button data-text="推荐乌东适合两人小住的民宿房型" disabled="{{busy}}" bindtap="sendPrompt">找两人小住</button></view>
     <textarea value="{{prompt}}" maxlength="2000" placeholder="例如：周末两位，想体验苗族文化和茶旅" bindinput="input"/>
     <button class="primary" disabled="{{busy || !prompt}}" bindtap="sendPrompt">{{busy ? '正在编排…' : '为我安排乌东之行'}}</button>
     <view class="phases"><text wx:for="{{stagePhases}}" wx:key="id" class="{{activeStage === item.id ? 'active' : ''}}">{{item.label}}</text></view>
