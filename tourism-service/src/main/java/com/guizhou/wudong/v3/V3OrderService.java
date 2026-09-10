@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -62,7 +61,12 @@ public class V3OrderService {
         Contact contact = contact(body);
         String expectedFingerprint = V3Support.digest(body, "expectedQuoteFingerprint");
         String sourceThreadId = V3Support.optionalUuid(body, "sourceThreadId");
-        return create(accountId, requestKey, "CREATE_PRODUCT_ORDER", "PRODUCT_ORDER", body,
+        Map<String, Object> normalizedRequest = V3Support.map(
+                "productId", selection.get("productId"), "quantity", selection.get("quantity"),
+                "pickupPoint", selection.get("pickupPoint"), "contactName", contact.name(),
+                "contactPhone", contact.phone(), "note", contact.note(), "sourceThreadId", sourceThreadId,
+                "expectedQuoteFingerprint", expectedFingerprint);
+        return create(accountId, requestKey, "CREATE_PRODUCT_ORDER", "PRODUCT_ORDER", normalizedRequest,
                 () -> productQuote(selection, true), quote -> {
                     String id = UUID.randomUUID().toString();
                     PriceLine line = quote.lines().getFirst();
@@ -86,7 +90,12 @@ public class V3OrderService {
         Contact contact = contact(body);
         String expectedFingerprint = V3Support.digest(body, "expectedQuoteFingerprint");
         String sourceThreadId = V3Support.optionalUuid(body, "sourceThreadId");
-        return create(accountId, requestKey, "CREATE_FOOD_ORDER", "FOOD_ORDER", body,
+        Map<String, Object> normalizedRequest = V3Support.map(
+                "merchantId", selection.get("merchantId"), "items", selection.get("items"),
+                "visitAt", selection.get("visitAt"), "peopleCount", selection.get("peopleCount"),
+                "contactName", contact.name(), "contactPhone", contact.phone(), "note", contact.note(),
+                "sourceThreadId", sourceThreadId, "expectedQuoteFingerprint", expectedFingerprint);
+        return create(accountId, requestKey, "CREATE_FOOD_ORDER", "FOOD_ORDER", normalizedRequest,
                 () -> foodQuote(selection, true), quote -> {
                     String id = UUID.randomUUID().toString();
                     jdbc.update("""
@@ -119,7 +128,13 @@ public class V3OrderService {
         Contact contact = contact(body);
         String expectedFingerprint = V3Support.digest(body, "expectedQuoteFingerprint");
         String sourceThreadId = V3Support.optionalUuid(body, "sourceThreadId");
-        return create(accountId, requestKey, "CREATE_STAY_BOOKING", "STAY_BOOKING", body,
+        Map<String, Object> normalizedRequest = V3Support.map(
+                "roomTypeId", selection.get("roomTypeId"), "checkInDate", selection.get("checkInDate"),
+                "checkOutDate", selection.get("checkOutDate"), "roomCount", selection.get("roomCount"),
+                "peopleCount", selection.get("peopleCount"), "contactName", contact.name(),
+                "contactPhone", contact.phone(), "note", contact.note(), "sourceThreadId", sourceThreadId,
+                "expectedQuoteFingerprint", expectedFingerprint);
+        return create(accountId, requestKey, "CREATE_STAY_BOOKING", "STAY_BOOKING", normalizedRequest,
                 () -> stayQuote(selection, true), quote -> {
                     String id = UUID.randomUUID().toString();
                     PriceLine line = quote.lines().getFirst();
@@ -410,11 +425,14 @@ public class V3OrderService {
     }
 
     private CreateResult create(String accountId, String requestKey, String operationType, String resourceType,
-                                Map<String, Object> requestBody, QuoteSupplier quoteSupplier,
+                                Map<String, Object> normalizedRequest, QuoteSupplier quoteSupplier,
                                 OrderWriter writer, String expectedFingerprint) {
         V3Support.uuid(requestKey, "Idempotency-Key");
+        requireVerifiableSourceThread((String) normalizedRequest.get("sourceThreadId"));
         String digest = V3Support.sha256(V3Support.map("contractVersion", V3Support.CONTRACT,
-                "operationType", operationType, "request", requestBody));
+                "accountId", accountId, "operationType", operationType, "requestKey", requestKey,
+                "target", V3Support.map("resourceType", resourceType, "resourceId", null),
+                "request", normalizedRequest));
         Map<String, Object> existing = transaction.execute(status -> reserve(accountId, requestKey, operationType,
                 resourceType, null, digest));
         if (existing != null && "SUCCEEDED".equals(existing.get("state"))) {
@@ -614,9 +632,9 @@ public class V3OrderService {
             }
             normalized.add(V3Support.map("foodItemId", id, "quantity", V3Support.positiveInt(item, "quantity")));
         }
-        LocalDateTime visitAt = V3Support.dateTime(body, "visitAt");
+        V3Support.dateTime(body, "visitAt");
         return V3Support.map("merchantId", merchantId, "items", normalized,
-                "visitAt", visitAt.toString(), "peopleCount", V3Support.positiveInt(body, "peopleCount"));
+                "visitAt", body.get("visitAt"), "peopleCount", V3Support.positiveInt(body, "peopleCount"));
     }
 
     private Map<String, Object> staySelection(Map<String, Object> body) {
@@ -676,6 +694,13 @@ public class V3OrderService {
     private Contact contact(Map<String, Object> body) {
         return new Contact(V3Support.requiredText(body, "contactName", 1, 80), V3Support.phone(body),
                 V3Support.optionalText(body, "note", 500));
+    }
+
+    private static void requireVerifiableSourceThread(String sourceThreadId) {
+        if (sourceThreadId != null) {
+            throw new ApiRequestException(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_STATE_UNAVAILABLE",
+                    "来源会话归属暂时无法确认");
+        }
     }
 
     private Map<String, Object> adminOrder(String kind, String id) {

@@ -562,16 +562,17 @@ public class V3KnowledgeService {
     private void completeKeyword(String taskId) {
         try {
             Boolean claimed = transaction.execute(status -> {
-                Map<String, Object> task = jdbc.queryForMap("SELECT * FROM knowledge_publish_task WHERE id=? FOR UPDATE", taskId);
-                Map<String, Object> document = lockedDocument(task.get("document_id").toString());
+                PublicationLock locked = lockPublication(taskId);
+                if (locked == null || locked.document() == null) {
+                    return false;
+                }
+                Map<String, Object> document = locked.document();
+                Map<String, Object> task = locked.task();
                 if (!taskId.equals(document.get("current_task_id")) || !"PENDING".equals(task.get("status"))) {
                     return false;
                 }
                 if (Instant.now().isAfter(timestamp(task.get("deadline_at")))) {
-                    jdbc.update("UPDATE knowledge_publish_task SET status='FAILED',error_code='BUILD_DEADLINE_EXCEEDED',"
-                            + "error_message='知识发布已超过截止时间',finished_at=CURRENT_TIMESTAMP WHERE id=?", taskId);
-                    jdbc.update("UPDATE knowledge_document SET current_task_id=NULL,row_version=row_version+1 WHERE id=? AND current_task_id=?",
-                            document.get("id"), taskId);
+                    failCurrentPublication(locked, "BUILD_DEADLINE_EXCEEDED", "知识发布已超过截止时间");
                     return false;
                 }
                 return jdbc.update("UPDATE knowledge_publish_task SET status='RUNNING',started_at=CURRENT_TIMESTAMP WHERE id=? AND status='PENDING'",
@@ -581,10 +582,17 @@ public class V3KnowledgeService {
                 return;
             }
             transaction.executeWithoutResult(status -> {
-                Map<String, Object> task = jdbc.queryForMap("SELECT * FROM knowledge_publish_task WHERE id=? FOR UPDATE", taskId);
-                Map<String, Object> document = lockedDocument(task.get("document_id").toString());
-                if (!taskId.equals(document.get("current_task_id")) || !"RUNNING".equals(task.get("status"))
-                        || Instant.now().isAfter(timestamp(task.get("deadline_at")))) {
+                PublicationLock locked = lockPublication(taskId);
+                if (locked == null || locked.document() == null) {
+                    return;
+                }
+                Map<String, Object> document = locked.document();
+                Map<String, Object> task = locked.task();
+                if (!taskId.equals(document.get("current_task_id")) || !"RUNNING".equals(task.get("status"))) {
+                    return;
+                }
+                if (Instant.now().isAfter(timestamp(task.get("deadline_at")))) {
+                    failCurrentPublication(locked, "BUILD_DEADLINE_EXCEEDED", "知识发布已超过截止时间");
                     return;
                 }
                 Map<String, Object> receipt = V3Support.map("receiptType", "KEYWORD_READY", "taskId", taskId,
@@ -609,17 +617,13 @@ public class V3KnowledgeService {
         } catch (Exception exception) {
             try {
                 transaction.executeWithoutResult(status -> {
-                    Map<String, Object> task = jdbc.queryForList("SELECT * FROM knowledge_publish_task WHERE id=? FOR UPDATE", taskId)
-                            .stream().findFirst().orElse(null);
-                    if (task == null || !Set.of("PENDING", "RUNNING").contains(task.get("status"))) {
+                    PublicationLock locked = lockPublication(taskId);
+                    if (locked == null || locked.document() == null
+                            || !taskId.equals(locked.document().get("current_task_id"))
+                            || !Set.of("PENDING", "RUNNING").contains(locked.task().get("status"))) {
                         return;
                     }
-                    jdbc.update("""
-                            UPDATE knowledge_publish_task SET status='FAILED',error_code='VECTOR_BUILD_UNAVAILABLE',
-                              error_message='知识构建暂时不可用',finished_at=CURRENT_TIMESTAMP WHERE id=?
-                            """, taskId);
-                    jdbc.update("UPDATE knowledge_document SET current_task_id=NULL,row_version=row_version+1 WHERE id=? AND current_task_id=?",
-                            task.get("document_id"), taskId);
+                    failCurrentPublication(locked, "VECTOR_BUILD_UNAVAILABLE", "知识构建暂时不可用");
                 });
             } catch (Exception ignored) {
                 // 后台任务失败不输出敏感底层异常，任务期限扫描仍可收口。
@@ -821,6 +825,44 @@ public class V3KnowledgeService {
                 """, code, message, taskId);
     }
 
+    private PublicationLock lockPublication(String taskId) {
+        Map<String, Object> reference = jdbc.queryForList(
+                        "SELECT document_id FROM knowledge_publish_task WHERE id=?", taskId)
+                .stream().findFirst().orElse(null);
+        if (reference == null) {
+            return null;
+        }
+        String documentId = reference.get("document_id").toString();
+        Map<String, Object> document = jdbc.queryForList(
+                        "SELECT * FROM knowledge_document WHERE id=? FOR UPDATE", documentId)
+                .stream().findFirst().orElse(null);
+        Map<String, Object> task = jdbc.queryForList(
+                        "SELECT * FROM knowledge_publish_task WHERE id=? FOR UPDATE", taskId)
+                .stream().findFirst().orElse(null);
+        if (task == null || !documentId.equals(task.get("document_id").toString())) {
+            return null;
+        }
+        return new PublicationLock(document, task);
+    }
+
+    private void failCurrentPublication(PublicationLock locked, String code, String message) {
+        Map<String, Object> document = locked.document();
+        Map<String, Object> task = locked.task();
+        String taskId = task.get("id").toString();
+        String originalStatus = task.get("status").toString();
+        int taskUpdate = jdbc.update("""
+                UPDATE knowledge_publish_task SET status='FAILED',error_code=?,error_message=?,finished_at=CURRENT_TIMESTAMP
+                WHERE id=? AND status=?
+                """, code, message, taskId, originalStatus);
+        int documentUpdate = jdbc.update("""
+                UPDATE knowledge_document SET current_task_id=NULL,row_version=row_version+1
+                WHERE id=? AND current_task_id=?
+                """, document.get("id"), taskId);
+        if (taskUpdate != 1 || documentUpdate != 1) {
+            throw publishUnavailable();
+        }
+    }
+
     private Map<String, Object> lockedDocument(String id) {
         V3Support.uuid(id, "id");
         Map<String, Object> row = jdbc.queryForList("SELECT * FROM knowledge_document WHERE id=? FOR UPDATE", id)
@@ -1020,6 +1062,9 @@ public class V3KnowledgeService {
         static PublishStage error(HttpStatus status, String code, String message, Object details) {
             return new PublishStage(0, status, code, message, details);
         }
+    }
+
+    private record PublicationLock(Map<String, Object> document, Map<String, Object> task) {
     }
 
     private record ScoredEvidence(Map<String, Object> row, Map<String, Object> evidence, int score, int titleHits) {
