@@ -21,6 +21,8 @@ const error = ref('')
 const productKeyword = ref('')
 const productTag = ref('')
 const merchantKeyword = ref('')
+const stayKeyword = ref('')
+const stayPeople = ref('')
 const selectedProduct = ref(null)
 const productDetailRef = ref(null)
 const selectedMerchant = ref(null)
@@ -72,6 +74,16 @@ const basketItems = computed(() => foods.value
   .map(item => ({ foodItemId: item.id, quantity: Number(basket[item.id]), resource: item })))
 const basketPortions = computed(() => basketItems.value.reduce((total, item) => total + item.quantity, 0))
 const roomTotal = computed(() => state.stay.reduce((total, property) => total + (property.roomTypes?.length || 0), 0))
+const visibleStays = computed(() => {
+  const keyword = stayKeyword.value.trim().toLocaleLowerCase('zh-CN')
+  const people = Number(stayPeople.value)
+  return state.stay.filter(property => {
+    const searchable = [property.name, property.description, property.locationText, property.merchantName, ...(property.tags || []), ...(property.roomTypes || []).flatMap(room => [room.name, room.description])]
+      .filter(value => typeof value === 'string').join(' ').toLocaleLowerCase('zh-CN')
+    const hasSuitableRoom = !people || (property.roomTypes || []).some(room => Number(room.maxGuestsPerRoom) >= people)
+    return (!keyword || searchable.includes(keyword)) && hasSuitableRoom
+  })
+})
 const drawablePlaces = computed(() => (state.map?.places || []).filter(place => place.schematicPosition))
 const selectedRoutePlaces = computed(() => selectedRouteIds.value
   .map(id => (state.map?.places || []).find(place => place.id === id))
@@ -351,7 +363,9 @@ watch(() => props.section, () => {
 
     <section v-else-if="section === 'stay'" class="v3-stay-list">
       <header class="v3-count-strip"><p class="eyebrow">山居目录</p><strong>{{ state.stay.length }} 家住宿 · {{ roomTotal }} 种房型</strong><span>数量来自当前已发布目录；房价与容量均按演示信息展示，不代表实时房态。</span></header>
-      <article v-for="property in state.stay" :key="property.id" class="v3-resource-card v3-stay-card"><SafeImage :src="imageOf(property, 'stay')" :alt="`${property.name}资料图片`" :label="property.name" loading="lazy" /><div><p class="eyebrow">{{ property.locationText || property.merchantName }}</p><h2>{{ property.name }}</h2><p>{{ property.description }}</p><div class="v3-tag-row"><span v-for="tag in property.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(property) }}</p><button class="ghost" type="button" @click="selectedStayId = selectedStayId === property.id ? '' : property.id">{{ selectedStayId === property.id ? '收起房型' : `查看 ${property.roomTypes?.length || 0} 种房型` }}</button></div><section v-if="selectedStayId === property.id" class="v3-room-grid"><article v-for="room in property.roomTypes || []" :key="room.id"><SafeImage v-if="imageOf(room, 'stay')" :src="imageOf(room, 'stay')" :alt="`${room.name}房型资料图片`" :label="room.name" loading="lazy" /><div><p v-if="!imageOf(room, 'stay')" class="v3-room-image-note">住宿配图见上方，房型以文字资料为准。</p><h3>{{ room.name }}</h3><p>{{ room.description }}</p><p><b>每间演示容量 {{ room.maxGuestsPerRoom }} 人</b></p><p class="v3-source-note">{{ catalogNote(room) }}</p><p v-if="price(room)" class="v3-price">¥{{ price(room).amount }} / 间夜<small>{{ price(room).kind }} · {{ price(room).label }}</small></p><p v-else class="v3-muted">暂无演示价</p><button class="primary" type="button" :disabled="!room.orderable" @click="checkoutStay(property, room)">{{ room.orderable ? '选择此房型' : '当前仅供查看' }}</button></div></article></section></article>
+      <section class="v3-stay-tools"><label><span>找山居</span><input v-model="stayKeyword" type="search" placeholder="民宿名、位置、特色或房型"></label><label><span>入住人数</span><select v-model="stayPeople"><option value="">不限</option><option v-for="count in [1, 2, 3, 4, 5, 6]" :key="count" :value="count">{{ count }} 人</option></select></label><p>{{ stayKeyword || stayPeople ? `匹配 ${visibleStays.length} / ${state.stay.length} 家住宿` : '可按关键词或单间容纳人数筛选' }}</p></section>
+      <article v-for="property in visibleStays" :key="property.id" class="v3-resource-card v3-stay-card"><SafeImage :src="imageOf(property, 'stay')" :alt="`${property.name}资料图片`" :label="property.name" loading="lazy" /><div><p class="eyebrow">{{ property.locationText || property.merchantName }}</p><h2>{{ property.name }}</h2><p>{{ property.description }}</p><div class="v3-tag-row"><span v-for="tag in property.tags || []" :key="tag">{{ tag }}</span></div><p class="v3-source-note">{{ catalogNote(property) }}</p><button class="ghost" type="button" @click="selectedStayId = selectedStayId === property.id ? '' : property.id">{{ selectedStayId === property.id ? '收起房型' : `查看 ${property.roomTypes?.length || 0} 种房型` }}</button></div><section v-if="selectedStayId === property.id" class="v3-room-grid"><article v-for="room in property.roomTypes || []" :key="room.id"><SafeImage v-if="imageOf(room, 'stay')" :src="imageOf(room, 'stay')" :alt="`${room.name}房型资料图片`" :label="room.name" loading="lazy" /><div><p v-if="!imageOf(room, 'stay')" class="v3-room-image-note">住宿配图见上方，房型以文字资料为准。</p><h3>{{ room.name }}</h3><p>{{ room.description }}</p><p><b>每间演示容量 {{ room.maxGuestsPerRoom }} 人</b></p><p class="v3-source-note">{{ catalogNote(room) }}</p><p v-if="price(room)" class="v3-price">¥{{ price(room).amount }} / 间夜<small>{{ price(room).kind }} · {{ price(room).label }}</small></p><p v-else class="v3-muted">暂无演示价</p><button class="primary" type="button" :disabled="!room.orderable" @click="checkoutStay(property, room)">{{ room.orderable ? '选择此房型' : '当前仅供查看' }}</button></div></article></section></article>
+      <p v-if="state.stay.length && !visibleStays.length" class="v3-state">没有符合当前关键词或单间人数条件的住宿，试试放宽筛选。</p>
       <p v-if="!state.stay.length" class="v3-state">当前没有已发布住宿。</p>
     </section>
 
