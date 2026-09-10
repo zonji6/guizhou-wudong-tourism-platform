@@ -2321,6 +2321,14 @@ button:disabled {
 .v3-post-form, .v3-order-form, .v3-contact-form, .v3-auth-card, .v3-admin-login form { display: grid; gap: .9rem; }
 .v3-order-form fieldset, .v3-contact-form fieldset { display: contents; margin: 0; padding: 0; border: 0; }
 .v3-post-form { position: sticky; top: 6rem; }
+.v3-route-picker { display: grid; gap: .55rem; margin: 0; padding: 0; border: 0; }
+.v3-route-picker legend { color: #315f4b; font-weight: 700; font-size: .86rem; }
+.v3-route-picker p { margin: 0; color: #718077; font-size: .76rem; line-height: 1.55; }
+.v3-route-picker > div { display: flex; flex-wrap: wrap; gap: .4rem; }
+.v3-route-picker button { display: inline-flex; align-items: center; gap: .35rem; padding: .36rem .52rem; border: 1px solid #d5dfd5; border-radius: 999px; color: #315f4b; background: #fff; cursor: pointer; font: inherit; font-size: .75rem; }
+.v3-route-picker button.active { color: #fff; border-color: #397f7a; background: #397f7a; }
+.v3-route-picker i { display: grid; width: 1.1rem; height: 1.1rem; place-items: center; border-radius: 50%; color: inherit; background: rgba(49, 95, 75, .1); font-size: .64rem; font-style: normal; }
+.v3-route-picker button.active i { background: rgba(255, 255, 255, .24); }
 .v3-post-form label, .v3-order-form label, .v3-contact-form label, .v3-auth-card label, .v3-admin-login label { display: grid; gap: .4rem; color: #315f4b; font-weight: 650; }
 .v3-post-form input, .v3-post-form textarea, .v3-post-form select, .v3-order-form input, .v3-contact-form input, .v3-contact-form textarea, .v3-auth-card input, .v3-admin-login input { width: 100%; box-sizing: border-box; padding: .8rem; border: 1px solid #d8d8cc; border-radius: .55rem; color: #1f302b; background: #fff; }
 .v3-selection-lines p { display: flex; justify-content: space-between; padding: .65rem 0; border-bottom: 1px solid #e8e5dc; }
