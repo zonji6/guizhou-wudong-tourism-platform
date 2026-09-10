@@ -76,7 +76,7 @@ def select_agent(state: WorkflowState, runtime: Any) -> dict[str, object]:
     } or request.selected_target is not None:
         return {"agent_type": "SERVICE_RECOMMENDER"}
     text = request.user_text.lower()
-    if any(word in text for word in ("行程", "几天", "路线安排", "怎么玩", "慢游")):
+    if any(word in text for word in ("行程", "几天", "两天", "一夜", "一日", "路线安排", "安排", "怎么玩", "慢游")):
         return {"agent_type": "ITINERARY_PLANNER"}
     if any(word in text for word in ("商品", "特产", "餐", "美食", "住", "民宿", "地点", "景点", "攻略")):
         return {"agent_type": "SERVICE_RECOMMENDER"}
