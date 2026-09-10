@@ -2351,6 +2351,28 @@ button:disabled {
 .v3-admin-main { max-width: 1100px; width: 100%; box-sizing: border-box; margin: 0 auto; padding: 2.5rem; }
 .v3-admin-login > form, .v3-admin-login > aside { padding: 1.4rem; background: #fff; border-radius: 1rem; }
 .v3-admin-list dl { display: grid; grid-template-columns: auto 1fr; gap: .35rem .8rem; }
+.v3-admin-aside-note { margin: -1rem 0 .4rem; color: rgba(223, 233, 224, .72); font-size: .78rem; line-height: 1.7; }
+.v3-admin-heading { max-width: 50rem; margin-bottom: 1.4rem; }
+.v3-admin-heading h1, .v3-section-heading h2 { margin: .25rem 0 .55rem; color: #294c50; }
+.v3-admin-heading > p:last-child, .v3-section-heading > p:last-child { color: #65776f; line-height: 1.75; }
+.v3-admin-dashboard, .v3-admin-orders, .v3-admin-catalog { display: grid; gap: 1.2rem; }
+.v3-admin-hero { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: clamp(1.4rem, 4vw, 2.5rem); overflow: hidden; color: #fdf9ef; background: radial-gradient(circle at 88% 10%, rgba(247, 223, 157, .3), transparent 30%), linear-gradient(135deg, #315f4b, #206c6a 65%, #5b8c7d); border-radius: 1.6rem .55rem 1.6rem .7rem; box-shadow: 0 1rem 2rem rgba(40, 85, 71, .16); }
+.v3-admin-hero h2 { max-width: 34rem; margin: .25rem 0 .7rem; color: #fffdf8; font-size: clamp(1.6rem, 3vw, 2.5rem); }
+.v3-admin-hero p { max-width: 37rem; margin: 0; color: rgba(255,255,255,.78); line-height: 1.75; }
+.v3-admin-hero span { align-self: end; padding: 1rem; border: 1px solid rgba(255,255,255,.35); border-radius: 50% 50% 45% 55%; color: #f6dd9f; font-family: STSong, serif; font-size: 1.15rem; line-height: 1.5; text-align: center; transform: rotate(-8deg); }
+.v3-admin-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.v3-admin-metrics article, .v3-admin-pulse, .v3-admin-catalog-grid article, .v3-admin-order { padding: 1.1rem; background: #fffdf8; border: 1px solid rgba(71,91,75,.13); border-radius: 1rem .55rem 1rem .65rem; }
+.v3-admin-metrics small, .v3-admin-catalog-grid article > small { color: #668377; }
+.v3-admin-metrics strong, .v3-admin-catalog-grid article > strong { display: block; margin: .35rem 0; color: #315f4b; font-family: STSong, serif; font-size: 2.2rem; }
+.v3-admin-metrics p, .v3-admin-catalog-grid article > p { margin: 0; color: #718077; font-size: .78rem; }
+.v3-admin-pulse > header, .v3-admin-order header, .v3-admin-order footer { display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+.v3-admin-pulse > header h2 { margin: .2rem 0; color: #294c50; }
+.v3-admin-pulse > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: 1rem; }
+.v3-admin-pulse article { display: grid; gap: .2rem; padding: .9rem; background: #eef5ed; border-radius: .75rem; }
+.v3-admin-pulse b { color: #c6734d; font-size: 1.7rem; }.v3-admin-pulse span { color: #315f4b; font-weight: 700; }.v3-admin-pulse small { color: #718077; }
+.v3-section-heading { margin-bottom: .15rem; }.v3-admin-orders { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }.v3-admin-orders > header { grid-column: 1 / -1; }
+.v3-admin-order { display: grid; gap: .55rem; }.v3-admin-order header span { color: #b55e3e; font-size: .8rem; }.v3-admin-order header b { padding: .2rem .5rem; color: #315f4b; background: #e8f0e8; border-radius: 999px; font-size: .72rem; }.v3-admin-order h3,.v3-admin-order p { margin: 0; }.v3-admin-order p,.v3-admin-order footer { color: #718077; font-size: .8rem; }.v3-admin-order footer { margin-top: .4rem; }.v3-admin-order footer > span { font-size: .75rem; }
+.v3-admin-catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem; }.v3-admin-catalog-grid h3 { margin: 0 0 .4rem; color: #294c50; }.v3-admin-catalog-grid ul { display: grid; gap: .35rem; margin: .6rem 0; padding-left: 1.1rem; color: #526762; font-size: .84rem; }
 .v3-text-link { display: inline-block; margin: .75rem 0 0 .85rem; color: #315f4b; }
 .v3-draft-submit { display: grid; gap: .65rem; margin-top: 1.1rem; padding-top: 1.1rem; border-top: 1px dashed rgba(181, 94, 62, .35); }
 
@@ -2446,6 +2468,7 @@ button:disabled {
   .v3-admin-shell { grid-template-columns: 1fr; }
   .v3-admin-aside { min-height: auto; }
   .v3-admin-main { padding: 1.2rem; }
+  .v3-admin-metrics, .v3-admin-pulse > div, .v3-admin-catalog-grid { grid-template-columns: 1fr; }
   .v3-catalog-tools label, .v3-detail-sheet, .v3-stay-card { grid-template-columns: 1fr; }
   .v3-detail-sheet > .safe-image { height: 16rem; min-height: 0; }
   .v3-merchant-list > button { grid-template-columns: 4rem 1fr; }

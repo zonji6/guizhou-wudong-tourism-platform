@@ -89,6 +89,24 @@ export async function loadAdminKnowledge() {
   return { sources: expectList(sources, '知识来源'), documents: expectList(documents, '知识文档') }
 }
 
+export async function loadAdminOperations() {
+  const catalogKinds = ['merchants', 'products', 'foods', 'stays', 'room-types', 'places']
+  const orderKinds = ['products', 'foods', 'stays']
+  const entries = await Promise.all([
+    ...catalogKinds.map(async kind => [`catalog:${kind}`, expectList(await request(`/api/admin/${kind}`, adminRequestOptions()), `${kind}目录`)]),
+    ...orderKinds.map(async kind => [`orders:${kind}`, expectList(await request(`/api/admin/orders/${kind}`, adminRequestOptions()), `${kind}订单`)]),
+    request('/api/posts', adminRequestOptions()).then(value => ['posts', expectList(value, '社区内容')])
+  ])
+  return Object.fromEntries(entries)
+}
+
+export async function updateAdminOrderStatus(kind, order, status) {
+  return expectObject(await request(`/api/admin/orders/${kind}/${encodeURIComponent(order.id)}/status`, adminRequestOptions({
+    method: 'POST',
+    body: JSON.stringify({ expectedStatus: order.status, status })
+  })), '订单状态回执')
+}
+
 export async function publishKnowledge(document) {
   return expectObject(await request(`/api/admin/knowledge-documents/${encodeURIComponent(document.id)}/publications`, adminRequestOptions({
     method: 'POST',
