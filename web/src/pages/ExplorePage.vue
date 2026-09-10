@@ -23,7 +23,7 @@ const moduleIntros = {
 }
 const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
 const productMetadataTags = new Set(['商品', '演示数据', '资料待核验', '资料参考', '待核验'])
-const resourceMetadataTags = new Set(['商品', '餐食', '住宿', '乌东', '演示数据', '资料待核验', '资料参考', '待核验', '资料菜单项', '资料候选', '共享示意图'])
+const resourceMetadataTags = new Set(['商品', '餐食', '餐食主体', '住宿', '乌东', '演示数据', '资料待核验', '资料参考', '待核验', '资料菜单项', '资料候选', '共享示意图'])
 const state = reactive({ product: [], merchants: [], stay: [], posts: [], map: null })
 const loading = ref(false)
 const error = ref('')
