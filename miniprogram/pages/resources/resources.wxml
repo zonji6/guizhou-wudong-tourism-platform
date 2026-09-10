@@ -65,16 +65,17 @@
 
   <block wx:else>
     <view class="map-head"><view class="eyebrow">水彩示意</view><view class="section-title">乌东地点与慢游路线</view><view class="muted">{{map.notice}}</view></view>
-    <scroll-view wx:if="{{routes.length}}" class="subfilters" scroll-x><view wx:for="{{routes}}" wx:key="id" class="subfilter {{selectedRouteId === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="selectRoute">{{item.title || '寨中慢游'}}</view></scroll-view>
+    <scroll-view class="subfilters" scroll-x><view class="subfilter {{selectedRouteId === 'CUSTOM' ? 'active' : ''}}" bindtap="startCustomRoute">自选路线</view><view wx:for="{{routes}}" wx:key="id" class="subfilter {{selectedRouteId === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="selectRoute">{{item.title || '寨中慢游'}}</view></scroll-view>
     <view wx:else class="state">暂无公开示意路线，仍可查看地点。</view>
     <view class="map-canvas">
       <view wx:for="{{routeSegments}}" wx:key="id" class="map-line" style="{{item.style}}"></view>
-      <block wx:for="{{map.places}}" wx:key="id"><view wx:if="{{item.drawable}}" class="map-pin" style="left:{{item.left}}%;top:{{item.top}}%;"><text></text>{{item.name}}</view></block>
+      <block wx:for="{{map.places}}" wx:key="id"><view wx:if="{{item.drawable}}" class="map-pin {{item.customOrder ? 'selected' : ''}}" style="left:{{item.left}}%;top:{{item.top}}%;" data-id="{{item.id}}" bindtap="toggleCustomRoute"><text>{{item.customOrder || ''}}</text>{{item.name}}</view></block>
     </view>
-    <view wx:if="{{routeSteps.length}}" class="route-steps"><view class="section-title">路线顺序</view><view wx:for="{{routeSteps}}" wx:key="viewKey" class="route-step"><text>{{item.sequence}}</text><view><view>{{item.placeName}}</view><view class="muted">{{item.displayNote}}</view></view></view></view>
+    <view wx:if="{{routeSteps.length}}" class="route-steps"><view class="section-title">{{selectedRouteId === 'CUSTOM' ? '我的自选顺序' : '路线顺序'}}</view><view wx:for="{{routeSteps}}" wx:key="viewKey" class="route-step"><text>{{item.sequence}}</text><view><view>{{item.placeName}}</view><view class="muted">{{item.displayNote}}</view></view></view><button wx:if="{{selectedRouteId === 'CUSTOM'}}" class="ghost" bindtap="clearCustomRoute">清空自选路线</button></view>
+    <view wx:if="{{routeMessage}}" class="count-note">{{routeMessage}}</view>
     <view class="place" wx:for="{{map.places}}" wx:key="id">
       <image wx:if="{{item.displayImageUrl}}" class="place-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
-      <view class="card-title">{{item.name}}</view><view class="muted">{{item.category}} · {{item.description}}</view><view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view><text wx:if="{{!item.drawable}}">仅文字节点，未绘制位置</text><button class="ghost" data-kind="travel" data-id="{{item.id}}" bindtap="openDetail">查看地点</button>
+      <view class="card-title">{{item.name}}</view><view class="muted">{{item.category}} · {{item.description}}</view><view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view><text wx:if="{{!item.drawable}}">仅文字节点，未绘制位置</text><button class="ghost" data-id="{{item.id}}" bindtap="toggleCustomRoute">{{item.customOrder ? '路线第 ' + item.customOrder + ' 站' : '加入自选路线'}}</button><button class="ghost" data-kind="travel" data-id="{{item.id}}" bindtap="openDetail">查看地点</button>
     </view>
   </block>
 </view>

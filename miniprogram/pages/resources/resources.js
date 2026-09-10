@@ -60,7 +60,7 @@ function routeProjection(map, route) {
   const steps = (route?.routeNodes || []).map((node, index) => {
     const place = node.placeId ? placeById.get(node.placeId) : null
     const drawable = node.drawable === true && Boolean(place?.drawable)
-    return { ...node, viewKey: `${node.sequence}-${index}`, place, drawable, displayNote: node.note || (drawable ? '已绘入水彩示意图' : '仅作文字节点') }
+    return { ...node, placeName: node.placeName || place?.name || '未命名地点', viewKey: `${node.sequence}-${index}`, place, drawable, displayNote: node.note || (drawable ? '已绘入水彩示意图' : '仅作文字节点') }
   })
   const points = steps.filter(step => step.drawable).map(step => ({ x: step.place.left, y: step.place.top }))
   const segments = []
@@ -77,13 +77,22 @@ function routeProjection(map, route) {
   return { steps, segments }
 }
 
+function mapWithCustomSelection(map, customRouteIds) {
+  if (!map) return map
+  return { ...map, places: (map.places || []).map(place => ({ ...place, customOrder: customRouteIds.indexOf(place.id) + 1 })) }
+}
+
+function customRouteProjection(map, customRouteIds) {
+  return routeProjection(map, { routeNodes: customRouteIds.map((placeId, index) => ({ sequence: index + 1, placeId, drawable: true })) })
+}
+
 Page({
   data: {
     active: 'product', tabs,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [],
     merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, foodCategory: 'ALL', foodCategories,
     stays: [], stayCount: 0, roomTypeCount: 0,
-    map: null, routes: [], selectedRouteId: '', routeSteps: [], routeSegments: [],
+    map: null, routes: [], selectedRouteId: '', customRouteIds: [], routeSteps: [], routeSegments: [], routeMessage: '',
     loading: false, error: ''
   },
   onShow() {
@@ -105,11 +114,11 @@ Page({
     this.setData({ loading: true, error: '' })
     if (active === 'travel') {
       Promise.all([request('/api/places'), request('/api/posts?type=ROUTE_GUIDE')]).then(([result, posts]) => {
-        const map = { ...result, places: (result?.places || []).map(placeView) }
+        const map = mapWithCustomSelection({ ...result, places: (result?.places || []).map(placeView) }, [])
         const routes = (posts || []).filter(post => post.postType === 'ROUTE_GUIDE')
         const selectedRouteId = routes[0]?.id || ''
         const projection = routeProjection(map, routes[0])
-        this.setData({ map, routes, selectedRouteId, routeSteps: projection.steps, routeSegments: projection.segments })
+        this.setData({ map, routes, selectedRouteId, customRouteIds: [], routeSteps: projection.steps, routeSegments: projection.segments, routeMessage: '' })
       }).catch(reason => this.setData({ error: reason?.message || '地点与路线暂时无法读取。' })).finally(() => this.setData({ loading: false }))
       return
     }
@@ -207,8 +216,30 @@ Page({
     const selectedRouteId = event.currentTarget.dataset.id
     const route = this.data.routes.find(item => item.id === selectedRouteId)
     if (!route) return
-    const projection = routeProjection(this.data.map, route)
-    this.setData({ selectedRouteId, routeSteps: projection.steps, routeSegments: projection.segments })
+    const map = mapWithCustomSelection(this.data.map, [])
+    const projection = routeProjection(map, route)
+    this.setData({ map, selectedRouteId, customRouteIds: [], routeSteps: projection.steps, routeSegments: projection.segments, routeMessage: '' })
+  },
+  startCustomRoute() {
+    const customRouteIds = []
+    const map = mapWithCustomSelection(this.data.map, customRouteIds)
+    const projection = customRouteProjection(map, customRouteIds)
+    this.setData({ map, selectedRouteId: 'CUSTOM', customRouteIds, routeSteps: projection.steps, routeSegments: projection.segments, routeMessage: '已切换到自选路线，点击地图节点或地点卡片开始编排。' })
+  },
+  toggleCustomRoute(event) {
+    const placeId = event.currentTarget.dataset.id
+    if (!placeId || !this.data.map) return
+    const customRouteIds = this.data.customRouteIds.slice()
+    const index = customRouteIds.indexOf(placeId)
+    if (index >= 0) customRouteIds.splice(index, 1)
+    else if (customRouteIds.length < 12) customRouteIds.push(placeId)
+    else { this.setData({ routeMessage: '一条自选示意路线最多保留 12 个公开地点。' }); return }
+    const map = mapWithCustomSelection(this.data.map, customRouteIds)
+    const projection = customRouteProjection(map, customRouteIds)
+    this.setData({ map, selectedRouteId: 'CUSTOM', customRouteIds, routeSteps: projection.steps, routeSegments: projection.segments, routeMessage: customRouteIds.length ? `已编排 ${customRouteIds.length} 个公开地点，编号即游览顺序。` : '已清空自选路线。' })
+  },
+  clearCustomRoute() {
+    this.startCustomRoute()
   },
   openDetail(event) {
     const kind = event.currentTarget.dataset.kind
