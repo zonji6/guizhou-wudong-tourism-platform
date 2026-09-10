@@ -22,6 +22,7 @@ const moduleIntros = {
   community: { title: '把山里的片刻，写进手账', description: '文化资料与寨里分享并列呈现，让阅读成为旅行开始前的一次相遇。' }
 }
 const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
+const productMetadataTags = new Set(['商品', '演示数据', '资料待核验', '资料参考', '待核验'])
 const state = reactive({ product: [], merchants: [], stay: [], posts: [], map: null })
 const loading = ref(false)
 const error = ref('')
@@ -55,7 +56,8 @@ let foodRequestSequence = 0
 
 const activeTab = computed(() => tabs.find(tab => tab.id === props.section) || tabs[0])
 const activeIntro = computed(() => moduleIntros[props.section] || moduleIntros.product)
-const productTags = computed(() => [...new Set(state.product.flatMap(item => Array.isArray(item.tags) ? item.tags : []))])
+const productTags = computed(() => [...new Set(state.product.flatMap(item => Array.isArray(item.tags) ? item.tags : []))]
+  .filter(tag => !productMetadataTags.has(tag)))
 const visibleProducts = computed(() => {
   const keyword = productKeyword.value.trim().toLocaleLowerCase('zh-CN')
   return state.product.filter(item => {

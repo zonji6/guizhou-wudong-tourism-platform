@@ -25,6 +25,7 @@ const foodCategories = [
 ]
 
 const foodTypeLabels = { DISH: '菜品', DRINK: '饮品', SET: '套餐' }
+const productMetadataTags = new Set(['商品', '演示数据', '资料待核验', '资料参考', '待核验'])
 
 function priceView(item) {
   if (item?.demoPrice) return { amount: item.demoPrice.amount, note: item.demoPrice.simulationNote, kind: '演示价' }
@@ -138,7 +139,9 @@ Page({
     request(paths[active]).then(result => {
       if (active === 'product') {
         const products = (result || []).map(productView)
-        const tags = [...new Set(products.reduce((all, item) => all.concat(item.tags || []), []))].sort((left, right) => left.localeCompare(right, 'zh-CN'))
+        const tags = [...new Set(products.reduce((all, item) => all.concat(item.tags || []), []))]
+          .filter(tag => !productMetadataTags.has(tag))
+          .sort((left, right) => left.localeCompare(right, 'zh-CN'))
         this.setData({ products, visibleProducts: products, productTags: tags, productSummary: `当前 ${products.length} 项公开商品` })
       }
       if (active === 'food') {
