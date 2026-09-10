@@ -1,23 +1,23 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: wudong-mysql
+    container_name: wudong-mysql-3307
     environment:
       MYSQL_DATABASE: wudong_tourism
       MYSQL_USER: wudong
       MYSQL_PASSWORD: wudong_demo
       MYSQL_ROOT_PASSWORD: root_demo_only
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3307:3306"
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - wudong_mysql_data:/var/lib/mysql
   redis-stack:
     image: redis/redis-stack-server:latest
-    container_name: wudong-redis-stack
+    container_name: wudong-redis-6379
     ports:
-      - "6379:6379"
-      - "8001:8001"
+      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:8001:8001"
     volumes:
       - wudong_redis_data:/data
 volumes:

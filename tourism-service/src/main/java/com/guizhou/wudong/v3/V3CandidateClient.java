@@ -26,7 +26,7 @@ public class V3CandidateClient {
     private final HttpClient httpClient;
 
     public V3CandidateClient(ObjectMapper objectMapper,
-                             @Value("${wudong.internal.ai-base-url:http://127.0.0.1:8000}") String baseUrl,
+                             @Value("${wudong.internal.ai-base-url:http://127.0.0.1:8002}") String baseUrl,
                              @Value("${wudong.internal.java-to-ai-credential-file:}") String credentialFile) {
         this.objectMapper = objectMapper;
         this.baseUrl = baseUrl;

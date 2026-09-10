@@ -5,7 +5,7 @@ spring:
   application:
     name: guizhou-wudong-tourism-service
   datasource:
-    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/wudong_tourism?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3307/wudong_tourism?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
     username: ${MYSQL_USER:wudong}
     password: ${MYSQL_PASSWORD:wudong_demo}
   flyway:
@@ -40,7 +40,7 @@ wudong:
   internal:
     ai-to-java-credential-file: ${AI_TO_JAVA_CREDENTIAL_FILE:}
     java-to-ai-credential-file: ${JAVA_TO_AI_CREDENTIAL_FILE:}
-    ai-base-url: ${AI_BASE_URL:http://127.0.0.1:8000}
+    ai-base-url: ${AI_BASE_URL:http://127.0.0.1:8002}
   anonymous:
     idle-ttl-seconds: 86400
     carrier-max-age-seconds: 604800
@@ -48,3 +48,5 @@ wudong:
     retrieval-mode: ${KNOWLEDGE_RETRIEVAL_MODE:KEYWORD_DEMO}
     max-results: 10
   admin-init: ${WUDONG_ADMIN_INIT:false}
+  admin-username: ${WUDONG_ADMIN_USERNAME:wudong_admin}
+  admin-password-file: ${WUDONG_ADMIN_PASSWORD_FILE:}

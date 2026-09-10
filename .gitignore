@@ -6,6 +6,10 @@
 **/dist/
 **/.venv/
 **/__pycache__/
+.demo-logs/
+.demo-secrets/
+.playwright-cli/
+**/*.egg-info/
 *.pyc
 .idea/
 .vscode/

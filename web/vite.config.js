@@ -38,14 +38,14 @@ export default defineConfig({
         changeOrigin: false
       },
       '/ai/ws/user': {
-        target: 'ws://127.0.0.1:8000',
+        target: 'ws://127.0.0.1:8002',
         ws: true,
         changeOrigin: false,
         rewrite: () => '/ws/web/user',
         configure: proxy => configureAiProxy(proxy, false)
       },
       '/ai/ws/anonymous': {
-        target: 'ws://127.0.0.1:8000',
+        target: 'ws://127.0.0.1:8002',
         ws: true,
         changeOrigin: false,
         rewrite: () => '/ws/web/anonymous',
