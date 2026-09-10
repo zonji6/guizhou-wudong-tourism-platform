@@ -3,6 +3,7 @@ from __future__ import annotations
 from time import monotonic
 from typing import Any, Literal
 
+from app.config import get_settings
 from app.graph.context import RunContext
 from app.graph.state import CandidatePlan, ProposedResult, WorkflowState
 from app.llm.deepseek_client import DeepSeekUnavailable, answer_from_evidence, compose_itinerary
@@ -404,7 +405,11 @@ async def service_recommender(state: WorkflowState, runtime: Any) -> dict[str, o
                         card_version="3.0",
                         type="service_recommendation",
                         title="乌东公开服务推荐",
-                        summary="以下内容来自当前公开目录；演示价格不代表正式报价。",
+                        summary=(
+                            "资料编排模式（未调用模型）：以下内容来自当前公开目录；演示价格不代表正式报价。"
+                            if not get_settings().deepseek_api_key
+                            else "以下内容来自当前公开目录；演示价格不代表正式报价。"
+                        ),
                         references=bundle.references,
                         actions=actions[:20],
                         data=ServiceRecommendationData(
