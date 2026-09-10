@@ -258,19 +258,21 @@ def _flatten_catalog(target_type: str, rows: list[object]) -> list[tuple[Recomme
 
 
 async def _search_service_catalog(target_type: str, user_text: str) -> list[object]:
-    """先按原句检索；自然语言未命中时退回该类公开目录的代表关键词。"""
+    """先按原句检索；自然语言未命中时优先保留其中明确的在地主题词。"""
     client = TourismV3Client()
     rows = list(await client.search_catalog(target_type, user_text or "乌东"))
     if rows:
         return rows
     fallback_keywords = {
-        "FOOD": "苗家",
-        "STAY": "民宿",
-        "PRODUCT": "乌东",
-        "PLACE": "寨",
-        "ROUTE_GUIDE": "乌东",
+        "FOOD": ("酸汤鱼", "鸡稀饭", "腊肉", "苗家"),
+        "STAY": ("民宿",),
+        "PRODUCT": ("苗绣", "蜡染", "银饰", "银球茶", "乌东"),
+        "PLACE": ("水碾", "风雨桥", "芦笙", "寨"),
+        "ROUTE_GUIDE": ("茶旅", "乌东"),
     }
-    fallback = fallback_keywords.get(target_type)
+    fallback = next((keyword for keyword in fallback_keywords.get(target_type, ()) if keyword in user_text), None)
+    if fallback is None:
+        fallback = fallback_keywords.get(target_type, (None,))[-1]
     return list(await client.search_catalog(target_type, fallback)) if fallback else []
 
 
@@ -406,7 +408,7 @@ async def service_recommender(state: WorkflowState, runtime: Any) -> dict[str, o
                         references=bundle.references,
                         actions=actions[:20],
                         data=ServiceRecommendationData(
-                            items=[item for item, _ in flattened],
+                            items=[item for item, _ in flattened[:8]],
                             retrieval_mode=bundle.mode,
                             notice="目录价格仅供展示，正式提交前由 Java 重新核价。",
                         ),
