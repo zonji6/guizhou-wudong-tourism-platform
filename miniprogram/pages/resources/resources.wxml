@@ -78,7 +78,7 @@
     <view wx:if="{{!routes.length}}" class="state">暂无公开示意路线，仍可查看地点。</view>
     <view class="map-canvas">
       <view wx:for="{{routeSegments}}" wx:key="id" class="map-line" style="{{item.style}}"></view>
-      <block wx:for="{{map.places}}" wx:key="id"><view wx:if="{{item.drawable}}" class="map-pin {{item.customOrder ? 'selected' : ''}}" style="left:{{item.left}}%;top:{{item.top}}%;" data-id="{{item.id}}" bindtap="toggleCustomRoute"><text>{{item.customOrder || ''}}</text>{{item.name}}</view></block>
+      <block wx:for="{{map.places}}" wx:key="id"><view wx:if="{{item.drawable}}" class="map-pin {{item.customOrder ? 'selected' : ''}}" style="left:{{item.left}}%;top:{{item.top}}%;" data-id="{{item.id}}" bindtap="toggleCustomRoute"><text class="map-pin-label">{{item.name}}</text><text class="map-pin-marker">{{item.customOrder || ''}}</text></view></block>
     </view>
     <view wx:if="{{routeSteps.length}}" class="route-steps"><view class="section-title">{{selectedRouteId === 'CUSTOM' ? '我的自选顺序' : '路线顺序'}}</view><view wx:for="{{routeSteps}}" wx:key="viewKey" class="route-step"><text>{{item.sequence}}</text><view><view>{{item.placeName}}</view><view class="muted">{{item.displayNote}}</view></view></view><button wx:if="{{selectedRouteId === 'CUSTOM'}}" class="ghost" bindtap="clearCustomRoute">清空自选路线</button></view>
     <view wx:if="{{routeMessage}}" class="count-note">{{routeMessage}}</view>

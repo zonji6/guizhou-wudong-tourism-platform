@@ -61,7 +61,9 @@ function placeView(place) {
   const y = Number(place.schematicPosition?.y)
   const drawable = Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1
   const displayImageUrl = placeMediaUrl(place.id)
-  return { ...place, displayImageUrl, imageNote: displayImageUrl ? '原始资料参考图，公开使用范围待确认' : '', left: drawable ? x * 100 : null, top: drawable ? y * 100 : null, drawable }
+  const displayX = Math.min(.86, Math.max(.15, x))
+  const displayY = Math.min(.86, Math.max(.14, y))
+  return { ...place, displayImageUrl, imageNote: displayImageUrl ? '原始资料参考图，公开使用范围待确认' : '', left: drawable ? displayX * 100 : null, top: drawable ? displayY * 100 : null, drawable }
 }
 
 function routeProjection(map, route) {
