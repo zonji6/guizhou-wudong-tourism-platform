@@ -10,3 +10,11 @@
 - tests：`NOT_RUN_BY_TASK_RULE`；browser/miniprogram-runtime/database/network/runtime：`NOT_EXECUTED`。
 
 主控制目录中的同名记录保留完整逐项独立证据、依赖恢复方式与用户验收限制；本镜像仅用于让集成工作树的任务状态与永久验收可追溯对应。
+
+```yaml
+task_id: TASK-032
+task_revision: task-r1
+verdict: PASS
+artifact: commit:09408070f72c155f056216ad2560a77d0db8fc65
+runtime: NOT_EXECUTED
+```

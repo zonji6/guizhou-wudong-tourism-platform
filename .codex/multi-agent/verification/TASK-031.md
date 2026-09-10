@@ -10,3 +10,11 @@
 - tests：`NOT_RUN_BY_TASK_RULE`；database/network/runtime：`NOT_EXECUTED`。
 
 主控制目录中的同名记录保留完整逐项证据和用户验收限制；本镜像仅用于让集成工作树的任务状态与已完成的永久独立验收可追溯对应。
+
+```yaml
+task_id: TASK-031
+task_revision: task-r1
+verdict: PASS
+artifact: commit:6ffb3a52b205a8e0a759df2d221fc60f5e746cf9
+runtime: NOT_EXECUTED
+```
