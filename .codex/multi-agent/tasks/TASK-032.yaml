@@ -48,9 +48,12 @@ permission_expiry:
   - task_state: STALE
 environment_isolation:
   worktree: D:\AI_Project\Codex_project\乌冬\.worktrees\content-experience
-task_state: ACTIVE
-dispatch_state: ACKNOWLEDGED
-proceed: true
+task_state: VERIFYING
+dispatch_state: RETURNED
+proceed: false
+artifact_revision: 09408070f72c155f056216ad2560a77d0db8fc65
+receipt: web_build_exit0,node_check_PASS,wxml_binding_PASS,wxml_tag_balance_PASS,media_mapping_PASS,menu_scroll_guard_PASS,diff_scope_PASS,worktree_clean
+implementation_evidence_fingerprint: sha256:4d9ace89210dff9ccd01259b3c4063378f4443bbe59f5c86ad4d3504b8d7dde2
 enforcement:
   write_scope: WORKTREE_ISOLATED
   shared_interface: PROCESS_GOVERNED
