@@ -8,7 +8,7 @@
       <view wx:if="{{postType === 'ROUTE_GUIDE'}}" class="field"><text>标题</text><input value="{{title}}" data-field="title" bindinput="input"/></view>
       <view class="field"><text>正文</text><textarea value="{{content}}" data-field="content" bindinput="input"/></view>
       <view class="field"><text>标签</text><input value="{{tags}}" placeholder="村寨生活" data-field="tags" bindinput="input"/></view>
-      <block wx:if="{{postType === 'ROUTE_GUIDE'}}"><view class="field"><text>路线说明</text><input value="{{routeSummary}}" data-field="routeSummary" bindinput="input"/></view><picker range="{{places}}" range-key="name" bindchange="placeChange"><view class="field">公开地点 <text>{{placeId ? '已选择' : '请选择地点'}}</text></view></picker><view class="muted">演示中每篇新攻略提交一个公开地点节点。</view></block>
+      <block wx:if="{{postType === 'ROUTE_GUIDE'}}"><view class="field"><text>路线说明</text><input value="{{routeSummary}}" data-field="routeSummary" bindinput="input"/></view><view class="route-picker"><view class="field"><text>公开地点（最多 12 个）</text><text>{{routePlaceIds.length ? '已选 ' + routePlaceIds.length + ' 个' : '点击地点加入路线'}}</text></view><view class="route-place-list"><view wx:for="{{routePlaces}}" wx:key="id" class="route-place {{item.routeOrder ? 'active' : ''}}" data-id="{{item.id}}" bindtap="toggleRoutePlace"><text>{{item.routeOrder || '+'}}</text>{{item.name}}</view></view></view><view class="muted">编号就是发布后的水彩示意顺序，再次点击可移除；不提供真实导航。</view></block>
       <button class="primary" loading="{{loading}}" bindtap="submit">发布</button>
     </block>
   </view>
