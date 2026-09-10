@@ -20,6 +20,7 @@ const loading = ref(false)
 const error = ref('')
 const productKeyword = ref('')
 const productTag = ref('')
+const merchantKeyword = ref('')
 const selectedProduct = ref(null)
 const productDetailRef = ref(null)
 const selectedMerchant = ref(null)
@@ -53,6 +54,15 @@ const visibleProducts = computed(() => {
       .toLocaleLowerCase('zh-CN')
     return matchesTag && (!keyword || searchable.includes(keyword))
   })
+})
+const visibleMerchants = computed(() => {
+  const keyword = merchantKeyword.value.trim().toLocaleLowerCase('zh-CN')
+  if (!keyword) return state.merchants
+  return state.merchants.filter(merchant => [merchant.name, merchant.description, ...(merchant.tags || [])]
+    .filter(value => typeof value === 'string')
+    .join(' ')
+    .toLocaleLowerCase('zh-CN')
+    .includes(keyword))
 })
 const foodTypes = computed(() => [...new Set(foods.value.map(item => item.itemType).filter(type => foodTypeLabels[type]))])
 const visibleFoods = computed(() => foods.value.filter(item => !foodType.value || item.itemType === foodType.value))
@@ -311,7 +321,7 @@ watch(() => props.section, () => {
     </template>
 
     <section v-else-if="section === 'food'" class="v3-food-layout">
-      <aside class="v3-merchant-list"><p class="eyebrow">按店选餐</p><h2>先选一家店</h2><button v-for="merchant in state.merchants" :key="merchant.id" type="button" :class="{ active: selectedMerchant?.id === merchant.id }" @click="chooseMerchant(merchant)"><SafeImage :src="imageOf(merchant, 'food')" :alt="`${merchant.name}资料图片`" :label="merchant.name" loading="lazy" /><span><b>{{ merchant.name }}</b><small>{{ merchant.description }}</small></span></button><p v-if="!state.merchants.length">当前没有已发布餐食店铺。</p></aside>
+      <aside class="v3-merchant-list"><p class="eyebrow">按店选餐</p><h2>先选一家店</h2><label class="v3-merchant-search"><span>找一家店</span><input v-model="merchantKeyword" type="search" placeholder="输入店名、菜品或标签"></label><p v-if="state.merchants.length" class="v3-merchant-count">{{ merchantKeyword ? `匹配 ${visibleMerchants.length} / ${state.merchants.length} 家` : `当前 ${state.merchants.length} 家公开店铺` }}</p><button v-for="merchant in visibleMerchants" :key="merchant.id" type="button" :class="{ active: selectedMerchant?.id === merchant.id }" @click="chooseMerchant(merchant)"><SafeImage :src="imageOf(merchant, 'food')" :alt="`${merchant.name}资料图片`" :label="merchant.name" loading="lazy" /><span><b>{{ merchant.name }}</b><small>{{ merchant.description }}</small></span></button><p v-if="state.merchants.length && !visibleMerchants.length" class="v3-muted">没有匹配的店铺，试试清空关键词。</p><p v-if="!state.merchants.length">当前没有已发布餐食店铺。</p></aside>
       <div ref="foodMenuRef" class="v3-menu">
         <header><div><p class="eyebrow">同店多菜</p><h2>{{ selectedMerchant?.name || '选择店铺后查看菜单' }}</h2><p v-if="selectedMerchant" class="v3-source-note">{{ catalogNote(selectedMerchant) }}</p></div><button v-if="basketItems.length" class="primary" type="button" @click="checkoutFood">{{ basketItems.length }} 种 · {{ basketPortions }} 份 · 去填写到店信息</button></header>
         <div v-if="foodTypes.length" class="v3-filter-chips"><button type="button" :class="{ active: !foodType }" @click="foodType = ''">全部</button><button v-for="type in foodTypes" :key="type" type="button" :class="{ active: foodType === type }" @click="foodType = type">{{ foodTypeLabels[type] }}</button></div>
