@@ -87,7 +87,12 @@ const visibleStays = computed(() => {
   })
 })
 const drawablePlaces = computed(() => (state.map?.places || []).filter(place => place.schematicPosition))
-const communityTags = computed(() => [...new Set(state.posts.flatMap(post => Array.isArray(post.tags) ? post.tags : []))])
+const communityTags = computed(() => Object.entries(state.posts
+  .flatMap(post => Array.isArray(post.tags) ? post.tags : [])
+  .reduce((counts, tag) => ({ ...counts, [tag]: (counts[tag] || 0) + 1 }), {}))
+  .sort(([leftTag, leftCount], [rightTag, rightCount]) => rightCount - leftCount || leftTag.localeCompare(rightTag, 'zh-CN'))
+  .slice(0, 12)
+  .map(([tag]) => tag))
 const visiblePosts = computed(() => state.posts.filter(post => (!postFilter.value || post.postType === postFilter.value) && (!postTag.value || (post.tags || []).includes(postTag.value))))
 const selectedRoutePlaces = computed(() => selectedRouteIds.value
   .map(id => (state.map?.places || []).find(place => place.id === id))
