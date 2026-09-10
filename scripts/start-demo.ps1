@@ -151,6 +151,12 @@ if (-not (Test-Path -LiteralPath $mediaSentinel) -and (Test-Path -LiteralPath $m
     }
 }
 
+$contentMediaScript = Join-Path $projectRoot 'scripts\prepare-content-media.ps1'
+if (-not (Test-Path (Join-Path $projectRoot 'web\public\images\wudong-content\image1.jpg'))) {
+    try { & $contentMediaScript }
+    catch { Write-Warning $_.Exception.Message }
+}
+
 if (-not (Test-Path (Join-Path $pythonPath '.env'))) {
     Write-Host '提示：未发现 agent-service/.env。目录和下单仍可演示；配置 DeepSeek Key 后再演示 AI。' -ForegroundColor Yellow
 }
