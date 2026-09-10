@@ -1,5 +1,6 @@
 const { CONTRACT_VERSION } = require('../../utils/api')
-const { authState, ensureAnonymousMiniSession, randomUuid } = require('../../utils/auth')
+const { request } = require('../../utils/api')
+const { authState, ensureAnonymousMiniSession, randomUuid, userOptions } = require('../../utils/auth')
 
 const ASSISTANT_CONTRACT = 'assistant-card-v3-draft-r1'
 const EVENT_CONTRACT = 'assistant-event-v3-draft-r1'
@@ -18,7 +19,7 @@ function validSession(frame) {
 Page({
   data: {
     account: null, status: 'idle', message: '', prompt: '周末两位，想在乌东体验苗族文化和茶旅，请安排两天一夜的慢游建议。',
-    busy: false, threadId: '', checkpointRevision: null, activeStage: '', card: null, dialogue: [], stageLabels, stagePhases
+    busy: false, threadId: '', checkpointRevision: null, activeStage: '', card: null, dialogue: [], stageLabels, stagePhases, savingItinerary: false
   },
   onShow() { this._closing = false; this.getTabBar()?.setData({ selected: 2 }); this.setData({ account: authState().account, status: 'idle', message: '', busy: false, card: null, dialogue: [] }) },
   onHide() { this.closeSocket('page_hidden') },
@@ -66,6 +67,25 @@ Page({
     const clientRequestId = await randomUuid()
     this.setData({ prompt: text, card: null, busy: true, activeStage: 'UNDERSTANDING', message: '乌东向导正在读取你的需求。', dialogue: [...this.data.dialogue.slice(-3), { role: 'user', content: text }] })
     this.socket.send({ data: JSON.stringify({ type: 'generate', assistantContractVersion: ASSISTANT_CONTRACT, tourismContractVersion: CONTRACT_VERSION, clientRequestId, threadId: this.data.threadId, expectedCheckpointRevision: this.data.checkpointRevision, userText: text, pageAction: null, selectedTarget: null, baseResource: null, conditions: emptyConditions(), retrievalMode: 'KEYWORD_DEMO' }) })
+  },
+  async saveItinerary() {
+    if (this.data.savingItinerary) return
+    if (!authState().account) { this.setData({ message: '匿名预览不能保存个人行程；请先到“我的”登录后重新生成。' }); return }
+    const candidate = this.data.card?.data?.candidate
+    if (!candidate?.candidateRef) { this.setData({ message: '当前行程候选无法确认，请重新生成后再保存。' }); return }
+    const base = candidate.baseResource
+    const updating = candidate.adoptionAction === 'UPDATE' && base?.resourceId && Number.isInteger(base.resourceVersion)
+    if (candidate.adoptionAction !== 'CREATE' && !updating) { this.setData({ message: '此行程候选缺少可确认的保存版本，请重新生成。' }); return }
+    this.setData({ savingItinerary: true, message: '正在保存到“我的”…' })
+    try {
+      const requestKey = await randomUuid()
+      const path = updating ? `/api/me/itineraries/${encodeURIComponent(base.resourceId)}/adoptions` : '/api/me/itineraries/adoptions'
+      const data = updating ? { candidateRef: candidate.candidateRef, expectedVersion: base.resourceVersion } : { candidateRef: candidate.candidateRef }
+      await request(path, userOptions({ method: 'POST', idempotencyKey: requestKey, data }))
+      this.setData({ message: '行程已保存到“我的”，可在订单页继续调整。' })
+    } catch (reason) {
+      this.setData({ message: reason?.message || '保存行程失败。' })
+    } finally { this.setData({ savingItinerary: false }) }
   },
   retry() { this.sendPrompt() },
   toProfile() { wx.switchTab({ url: '/pages/profile/profile' }) },
