@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { anonymousWebSocketUrl, CONTRACT_VERSION, userWebSocketUrl } from '../services/api'
 import { anonymousWebState, authState, ensureAnonymousWebSession } from '../services/authSession'
+import { adoptItinerary } from '../services/tourismApi'
 
 const ASSISTANT_CONTRACT = 'assistant-card-v3-draft-r1'
 const EVENT_CONTRACT = 'assistant-event-v3-draft-r1'
@@ -19,6 +20,7 @@ const busy = ref(false)
 const activeStage = ref('')
 const card = ref(null)
 const conversation = ref([])
+const savingItinerary = ref(false)
 let socket = null
 let leaving = false
 let terminalFrame = false
@@ -186,8 +188,29 @@ function cancelRun() {
 
 function askSuggestion(text) { prompt.value = text; sendPrompt(text) }
 
-function followAction(action) {
+async function followAction(action) {
   if (action?.action === 'RETRY') return sendPrompt()
+  if (action?.action === 'SAVE_ITINERARY') {
+    if (!userMode.value) {
+      message.value = '免登录预览不能保存个人行程；请先到“我的”登录后，再由账号向导重新生成并确认。'
+      return
+    }
+    const candidate = card.value?.data?.candidate
+    if (!candidate || action.candidateRef?.candidateId !== candidate.candidateRef?.candidateId) {
+      message.value = '当前行程候选无法确认，请重新生成后再保存。'
+      return
+    }
+    savingItinerary.value = true
+    try {
+      await adoptItinerary(candidate)
+      message.value = '行程已保存到“我的”，你可以继续查看和调整。'
+    } catch (reason) {
+      message.value = reason?.message || '保存行程失败。'
+    } finally {
+      savingItinerary.value = false
+    }
+    return
+  }
   const destination = { PRODUCT: '/explore/product', FOOD: '/explore/food', STAY: '/explore/stay', PLACE: '/explore/travel', ROUTE_GUIDE: '/explore/travel' }[action?.targetType]
   if (destination) location.hash = destination
   else message.value = userMode.value ? '请到“我的”查看并确认已生成的个人成果。' : '登录后可把这份方案保存到“我的”；当前仅为免登录预览。'
@@ -212,7 +235,7 @@ onBeforeUnmount(() => { leaving = true; closeSocket() })
         <section v-if="card.type === 'itinerary'" class="v3-guide-days"><article v-for="day in card.data?.content?.days || []" :key="day.day"><b>第 {{ day.day }} 天 · {{ day.theme || '慢游乌东' }}</b><ol><li v-for="stop in day.stops || []" :key="stop.sequence"><span>{{ stop.sequence }}</span><div><strong>{{ stop.title }}</strong><small v-if="stop.note">{{ stop.note }}</small></div></li></ol></article><p>{{ card.data?.notice }}</p></section>
         <section v-else-if="card.type === 'service_recommendation'" class="v3-guide-recommendations"><article v-for="item in card.data?.items || []" :key="item.targetId"><div><h3>{{ item.targetName }}</h3><p>{{ item.summary }}</p><span v-for="tag in item.tags || []" :key="tag">{{ tag }}</span></div><b v-if="item.demoPrice">¥{{ item.demoPrice.amount }}<small>演示价</small></b></article><p>{{ card.data?.notice }}</p></section>
         <p v-else-if="card.type === 'knowledge_answer'" class="v3-guide-answer">{{ card.data?.answer }}</p><p v-else-if="card.type === 'clarifying_question'" class="v3-guide-answer">还需要：{{ (card.data?.requiredFields || []).join('、') }}。补充后可再次生成。</p><dl v-else-if="card.type === 'pending_booking'" class="v3-guide-proposal"><dt>本轮方案</dt><dd>{{ card.data?.candidate?.candidateType === 'FOOD_DRAFT' ? '同店多菜到店方案' : '住宿入住方案' }}</dd><dt>人数</dt><dd>{{ card.data?.proposal?.peopleCount || '待补充' }}</dd><dt>说明</dt><dd>{{ card.data?.notice }}</dd></dl>
-        <div v-if="actions.length" class="v3-guide-card-actions"><button v-for="action in actions" :key="`${action.action}-${action.label}`" type="button" class="ghost" @click="followAction(action)">{{ action.label }}</button></div><details v-if="references.length" class="v3-guide-references"><summary>参考了 {{ references.length }} 条乌东资料</summary><ul><li v-for="reference in references" :key="reference.detailPath">{{ reference.sourceTitle }}</li></ul></details>
+        <div v-if="actions.length" class="v3-guide-card-actions"><button v-for="action in actions" :key="`${action.action}-${action.label}`" type="button" class="ghost" :disabled="savingItinerary" @click="followAction(action)">{{ savingItinerary && action.action === 'SAVE_ITINERARY' ? '正在保存…' : action.label }}</button></div><details v-if="references.length" class="v3-guide-references"><summary>参考了 {{ references.length }} 条乌东资料</summary><ul><li v-for="reference in references" :key="reference.detailPath">{{ reference.sourceTitle }}</li></ul></details>
       </article>
     </section>
     <section class="v3-guide-links"><a href="#/explore/product"><span>01</span><b>先看看商品</b><small>公开目录无需登录</small></a><a href="#/explore/food"><span>02</span><b>同店选餐</b><small>核价前需要登录</small></a><a href="#/explore/travel"><span>03</span><b>查看示意路线</b><small>不作为真实导航</small></a></section>

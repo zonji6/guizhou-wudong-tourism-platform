@@ -89,6 +89,19 @@ export async function loadAdminKnowledge() {
   return { sources: expectList(sources, '知识来源'), documents: expectList(documents, '知识文档') }
 }
 
+export async function adoptItinerary(candidate, requestKey = newRequestKey()) {
+  if (!candidate?.candidateRef) throw new Error('当前行程候选不可保存。')
+  const base = candidate.baseResource
+  const isUpdate = candidate.adoptionAction === 'UPDATE' && base?.resourceId && Number.isInteger(base.resourceVersion)
+  const path = isUpdate
+    ? `/api/me/itineraries/${encodeURIComponent(base.resourceId)}/adoptions`
+    : '/api/me/itineraries/adoptions'
+  const body = isUpdate
+    ? { candidateRef: candidate.candidateRef, expectedVersion: base.resourceVersion }
+    : { candidateRef: candidate.candidateRef }
+  return expectObject(await request(path, userRequestOptions({ method: 'POST', idempotencyKey: requestKey, body: JSON.stringify(body) })), '行程保存回执')
+}
+
 export async function loadAdminOperations() {
   const catalogKinds = ['merchants', 'products', 'foods', 'stays', 'room-types', 'places']
   const orderKinds = ['products', 'foods', 'stays']
