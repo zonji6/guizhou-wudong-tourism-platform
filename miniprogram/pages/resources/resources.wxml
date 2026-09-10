@@ -14,6 +14,7 @@
       <view class="subfilter {{!productTag ? 'active' : ''}}" data-tag="" bindtap="selectProductTag">全部</view>
       <view wx:for="{{productTags}}" wx:key="*this" class="subfilter {{productTag === item ? 'active' : ''}}" data-tag="{{item}}" bindtap="selectProductTag">{{item}}</view>
     </scroll-view>
+    <view class="count-note">{{productSummary}}</view>
     <view wx:for="{{visibleProducts}}" wx:key="id" class="resource-card">
       <image wx:if="{{item.displayImageUrl}}" class="card-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
       <view wx:else class="card-image image-empty">图片暂缺</view>
@@ -68,7 +69,7 @@
   <block wx:else>
     <view class="map-head"><view class="eyebrow">水彩示意</view><view class="section-title">乌东地点与慢游路线</view><view class="muted">{{map.notice}}</view></view>
     <scroll-view class="subfilters" scroll-x><view class="subfilter {{selectedRouteId === 'CUSTOM' ? 'active' : ''}}" bindtap="startCustomRoute">自选路线</view><view wx:for="{{routes}}" wx:key="id" class="subfilter {{selectedRouteId === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="selectRoute">{{item.title || '寨中慢游'}}</view></scroll-view>
-    <view wx:else class="state">暂无公开示意路线，仍可查看地点。</view>
+    <view wx:if="{{!routes.length}}" class="state">暂无公开示意路线，仍可查看地点。</view>
     <view class="map-canvas">
       <view wx:for="{{routeSegments}}" wx:key="id" class="map-line" style="{{item.style}}"></view>
       <block wx:for="{{map.places}}" wx:key="id"><view wx:if="{{item.drawable}}" class="map-pin {{item.customOrder ? 'selected' : ''}}" style="left:{{item.left}}%;top:{{item.top}}%;" data-id="{{item.id}}" bindtap="toggleCustomRoute"><text>{{item.customOrder || ''}}</text>{{item.name}}</view></block>

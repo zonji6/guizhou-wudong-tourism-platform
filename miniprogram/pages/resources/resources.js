@@ -89,7 +89,7 @@ function customRouteProjection(map, customRouteIds) {
 Page({
   data: {
     active: 'product', tabs,
-    products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [],
+    products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [], productSummary: '',
     merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, foodCategory: 'ALL', foodCategories,
     stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '',
     map: null, routes: [], selectedRouteId: '', customRouteIds: [], routeSteps: [], routeSegments: [], routeMessage: '',
@@ -127,7 +127,7 @@ Page({
       if (active === 'product') {
         const products = (result || []).map(productView)
         const tags = [...new Set(products.reduce((all, item) => all.concat(item.tags || []), []))].sort((left, right) => left.localeCompare(right, 'zh-CN'))
-        this.setData({ products, visibleProducts: products, productTags: tags })
+        this.setData({ products, visibleProducts: products, productTags: tags, productSummary: `当前 ${products.length} 项公开商品` })
       }
       if (active === 'food') {
         const merchants = (result || []).map(item => withImage(item, 'food'))
@@ -154,7 +154,11 @@ Page({
       const text = [item.name, item.description, item.merchantName, ...(item.tags || [])].filter(Boolean).join(' ').toLocaleLowerCase()
       return matchesTag && (!query || text.includes(query))
     })
-    this.setData({ visibleProducts })
+    const conditions = [query ? '关键词' : '', tag || ''].filter(Boolean)
+    this.setData({
+      visibleProducts,
+      productSummary: conditions.length ? `匹配 ${visibleProducts.length} / ${this.data.products.length} 项（${conditions.join('，')}）` : `当前 ${this.data.products.length} 项公开商品`
+    })
   },
   merchantSearch(event) {
     const merchantQuery = event.detail.value
