@@ -1,0 +1,22 @@
+record_type: coordinator_clarification
+date: 2026-09-11
+task_id: TASK-032
+artifact_revision: 09408070f72c155f056216ad2560a77d0db8fc65
+scope: 媒体白名单仅补足稳定村寨地点，不改变体验实现范围、接口或其他映射。
+reason: TASK-032 r1 的地点封面枚举只列出五个新增地标，遗漏了 V6 前向转换的稳定地点 430...002；该枚举不能被解释为禁止村寨节点的来源配图。
+effective_place_mapping:
+  43000000-0000-0000-0000-000000000002: image192
+  43000000-0000-0000-0000-000000000101: image204
+  43000000-0000-0000-0000-000000000102: image213
+  43000000-0000-0000-0000-000000000103: image219
+  43000000-0000-0000-0000-000000000104: image223
+  43000000-0000-0000-0000-000000000105: image208
+unchanged_article_mapping:
+  45000000-0000-0000-0000-000000000101: image193
+  45000000-0000-0000-0000-000000000102: image194
+  45000000-0000-0000-0000-000000000103: image196
+  45000000-0000-0000-0000-000000000104: image201
+evidence:
+  - TASK-031 V6 lines 276-289 forward-update the stable village node to image192.
+  - image-manifest entry image192 is attached to the 乌东村/乌东苗寨 source paragraph.
+verification_instruction: 验证代理应按此六地点映射独立验收；这不免除其他实际语义或范围问题的拒收义务。
