@@ -90,7 +90,7 @@ Page({
   data: {
     active: 'product', tabs,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [], productSummary: '',
-    merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, highlightedFoodId: '', foodHint: '', foodCategory: 'ALL', foodCategories,
+    merchants: [], visibleMerchants: [], foodStartingMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, highlightedFoodId: '', foodHint: '', foodCategory: 'ALL', foodCategories,
     stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '', highlightedStayId: '', stayHint: '',
     map: null, routes: [], selectedRouteId: '', customRouteIds: [], routeSteps: [], routeSegments: [], routeMessage: '',
     loading: false, error: ''
@@ -135,7 +135,7 @@ Page({
       }
       if (active === 'food') {
         const merchants = (result || []).map(item => withImage(item, 'food'))
-        this.setData({ merchants, visibleMerchants: merchants, merchantSummary: `当前 ${merchants.length} 家公开店铺` }, () => this.applyPendingFoodFocus())
+        this.setData({ merchants, visibleMerchants: merchants, foodStartingMerchants: merchants.slice(0, 3).map(item => ({ ...item, guideTags: (item.tags || []).slice(0, 2).join(' · ') || '乌东餐食资料' })), merchantSummary: `当前 ${merchants.length} 家公开店铺` }, () => this.applyPendingFoodFocus())
       }
       if (active === 'stay') {
         const stays = (result || []).map(stayView)
@@ -171,7 +171,7 @@ Page({
       const text = [item.name, item.description, ...(item.tags || [])].filter(Boolean).join(' ').toLocaleLowerCase()
       return !query || text.includes(query)
     })
-    this.setData({ merchantQuery, visibleMerchants, merchantSummary: query ? `匹配 ${visibleMerchants.length} / ${this.data.merchants.length} 家` : `当前 ${this.data.merchants.length} 家公开店铺` })
+    this.setData({ merchantQuery, visibleMerchants, foodStartingMerchants: visibleMerchants.slice(0, 3).map(item => ({ ...item, guideTags: (item.tags || []).slice(0, 2).join(' · ') || '乌东餐食资料' })), merchantSummary: query ? `匹配 ${visibleMerchants.length} / ${this.data.merchants.length} 家` : `当前 ${this.data.merchants.length} 家公开店铺` })
   },
   staySearch(event) {
     this.setData({ stayQuery: event.detail.value }, () => this.applyStayFilters())

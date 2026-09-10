@@ -34,6 +34,10 @@
     <view class="section-title">先选一家店</view>
     <view class="search-box"><input value="{{merchantQuery}}" placeholder="搜索店名、菜品或标签" bindinput="merchantSearch"/></view>
     <view class="count-note">{{merchantSummary}}</view>
+    <view wx:if="{{!selectedMerchant && !merchantQuery && foodStartingMerchants.length}}" class="food-start">
+      <view class="eyebrow">从一口风味开始</view><view class="section-title">先挑一家想坐下来的店</view><view class="muted">同店多菜会汇总为一张到店订单；选店后再查看菜单和调整份数。</view><view class="food-start-note">不跨店合单 · 演示价格以现场核对为准</view>
+      <view wx:for="{{foodStartingMerchants}}" wx:key="id" class="food-start-item" data-id="{{item.id}}" bindtap="chooseMerchant"><image wx:if="{{item.displayImageUrl}}" src="{{item.displayImageUrl}}" mode="aspectFill"/><view><view class="card-title">{{item.name}}</view><view class="muted">{{item.guideTags}}</view></view><text>看菜单 →</text></view>
+    </view>
     <view class="merchant {{selectedMerchant && selectedMerchant.id === item.id ? 'active' : ''}}" wx:for="{{visibleMerchants}}" wx:key="id" data-id="{{item.id}}" bindtap="chooseMerchant">
       <image wx:if="{{item.displayImageUrl}}" class="merchant-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
       <view><view class="card-title">{{item.name}}</view><view class="muted">{{item.description}}</view><view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view></view>
