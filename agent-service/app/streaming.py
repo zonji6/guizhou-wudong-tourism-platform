@@ -163,7 +163,6 @@ def _candidate_record(
     )
     action = "UPDATE" if request.base_resource is not None else "CREATE"
     material = {
-        "contractVersion": TOURISM_CONTRACT_VERSION,
         "candidateRef": reference.model_dump(mode="json", by_alias=True),
         "candidateType": plan.candidate_type,
         "adoptionAction": action,

@@ -19,6 +19,7 @@ import java.net.URISyntaxException;
 import java.sql.Timestamp;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -324,7 +325,7 @@ public class V3KnowledgeService {
         if (limit < 1 || limit > 10) {
             V3Support.bad("limit 必须在 1 到 10 之间");
         }
-        List<String> tokens = List.of(normalize(keywords).split("(?U)\\s+"));
+        List<String> tokens = keywordTokens(keywords);
         List<ScoredEvidence> scored = new ArrayList<>();
         for (Map<String, Object> row : eligibleRows()) {
             Map<String, Object> snapshot = readJson(row.get("live_snapshot"));
@@ -957,6 +958,21 @@ public class V3KnowledgeService {
         return Normalizer.normalize(value, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
     }
 
+    private static List<String> keywordTokens(String value) {
+        String normalized = normalize(value).replaceAll("\\s+", "");
+        List<String> tokens = new ArrayList<>();
+        if (!normalized.isEmpty()) {
+            tokens.add(normalized);
+        }
+        for (int index = 0; index + 1 < normalized.length(); index++) {
+            String pair = normalized.substring(index, index + 2);
+            if (pair.codePoints().anyMatch(Character::isIdeographic)) {
+                tokens.add(pair);
+            }
+        }
+        return tokens.stream().distinct().toList();
+    }
+
     private static Instant parseInstant(Object value, String field) {
         if (!(value instanceof String text)) {
             V3Support.bad("字段 " + field + " 必须是 UTC 时间字符串");
@@ -972,7 +988,13 @@ public class V3KnowledgeService {
     }
 
     private static Instant timestamp(Object value) {
-        return value instanceof Timestamp timestamp ? timestamp.toInstant() : Instant.parse(value.toString());
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toInstant();
+        }
+        if (value instanceof LocalDateTime dateTime) {
+            return dateTime.toInstant(java.time.ZoneOffset.UTC);
+        }
+        return Instant.parse(value.toString());
     }
 
     private String json(Object value) {

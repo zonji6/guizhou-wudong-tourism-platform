@@ -18,7 +18,7 @@ from app.tools.tourism_v3_contracts import (
     ErrorEnvelope,
     FoodItem,
     KeywordSearchResult,
-    MapPlacesResult,
+    Place,
     Product,
     RouteGuide,
     RunSummaryRequest,
@@ -108,7 +108,7 @@ class TourismV3Client:
             "PRODUCT": ("/internal/agent/products/search", list[Product]),
             "FOOD": ("/internal/agent/foods/search", list[FoodItem]),
             "STAY": ("/internal/agent/stays/search", list[StayProperty]),
-            "PLACE": ("/internal/agent/places/search", MapPlacesResult),
+            "PLACE": ("/internal/agent/places/search", list[Place]),
             "ROUTE_GUIDE": ("/internal/agent/route-guides/search", list[RouteGuide]),
         }
         path, response_type = routes[target_type]
@@ -118,7 +118,7 @@ class TourismV3Client:
             response_type,
             params={"keywords": keywords[:200] or "乌东", "limit": min(max(limit, 1), 10)},
         )
-        return result.places if isinstance(result, MapPlacesResult) else result
+        return result
 
     async def search_keyword_knowledge(self, keywords: str, limit: int = 10) -> KeywordSearchResult:
         return await self._request(

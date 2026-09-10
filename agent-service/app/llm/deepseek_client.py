@@ -14,6 +14,10 @@ class DeepSeekUnavailable(RuntimeError):
     code = "MODEL_UNAVAILABLE"
 
 
+def _has_configured_model() -> bool:
+    return bool(get_settings().deepseek_api_key)
+
+
 def _client() -> AsyncOpenAI:
     settings = get_settings()
     if not settings.deepseek_api_key:
@@ -46,6 +50,11 @@ async def _json_completion(system: str, payload: dict[str, object], *, max_token
 async def answer_from_evidence(user_text: str, evidence: list[KnowledgeEvidence]) -> str:
     if not evidence:
         raise DeepSeekUnavailable("没有可用知识证据")
+    if not _has_configured_model():
+        excerpts = [f"《{item.title}》：{item.content.strip()}" for item in evidence[:3] if item.content.strip()]
+        if not excerpts:
+            raise DeepSeekUnavailable("没有可展示的知识证据")
+        return "资料编排模式（未调用模型）：以下内容仅根据当前已发布资料整理。\n\n" + "\n\n".join(excerpts)
     payload = {
         "question": user_text,
         "evidence": [
@@ -79,6 +88,8 @@ async def compose_itinerary(
     evidence: list[KnowledgeEvidence],
 ) -> ItineraryContent:
     allowed = {(item.target_type, item.target_id): item for item in targets}
+    if not _has_configured_model():
+        return _itinerary_from_published_material(conditions, targets, evidence)
     payload = {
         "request": user_text,
         "conditions": conditions.model_dump(mode="json", by_alias=True),
@@ -146,6 +157,51 @@ async def compose_itinerary(
         raise DeepSeekUnavailable("DeepSeek 行程结构不完整")
     return ItineraryContent(
         title=title,
+        travel_date=conditions.travel_date,
+        people_count=conditions.people_count,
+        days=days,
+    )
+
+
+def _itinerary_from_published_material(
+    conditions: ConfirmedConditionsV3,
+    targets: list[PublicTarget],
+    evidence: list[KnowledgeEvidence],
+) -> ItineraryContent:
+    """本机未配置模型时，只编排已发布地点和资料，不生成新地方事实。"""
+    first_day = targets[:3]
+    second_day = targets[3:6]
+
+    def stops_for(items: list[PublicTarget], fallback_title: str) -> list[ItineraryStop]:
+        stops = [
+            ItineraryStop(
+                sequence=index,
+                target_type=item.target_type,
+                target_id=item.target_id,
+                title=item.target_name,
+                note="已发布资料中的示意节点；开放状态、步行条件与实际路线请当天确认。",
+            )
+            for index, item in enumerate(items, 1)
+        ]
+        if stops:
+            return stops
+        source = evidence[0] if evidence else None
+        return [
+            ItineraryStop(
+                sequence=1,
+                target_type=None,
+                target_id=None,
+                title=fallback_title,
+                note=("；".join(source.usage_limitations) if source else "暂无可核验的地点资料，请先查看公开资料后再安排。"),
+            )
+        ]
+
+    days = [
+        ItineraryDay(day=1, theme="沿溪读寨 · 资料示意", stops=stops_for(first_day, "阅读乌东已发布资料")),
+        ItineraryDay(day=2, theme="茶与日常 · 资料示意", stops=stops_for(second_day, "继续查阅乌东茶旅资料")),
+    ]
+    return ItineraryContent(
+        title="乌东资料编排 · 两日慢游（未调用模型）",
         travel_date=conditions.travel_date,
         people_count=conditions.people_count,
         days=days,

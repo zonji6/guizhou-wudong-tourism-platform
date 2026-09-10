@@ -87,11 +87,11 @@ export async function ensureAnonymousWebSession() {
   if (anonymousWebState.anonymousGeneration > 0) {
     const requestId = uuid()
     try {
-      await request('/api/anonymous/web/cookie-sync', {
+      const data = await request('/api/anonymous/web/cookie-sync', {
         method: 'POST', csrfToken: anonymousWebState.csrfToken,
         body: JSON.stringify({ anonymousRequestId: requestId, expectedAnonymousGeneration: anonymousWebState.anonymousGeneration })
       })
-      return anonymousWebState
+      return acceptAnonymousWeb(requestId, data)
     } catch (reason) {
       if (!['AUTH_REQUIRED', 'ANONYMOUS_REQUIRED', 'ANONYMOUS_EXPIRED', 'ANONYMOUS_REVOKED', 'RESOURCE_NOT_FOUND'].includes(reason?.code)) throw reason
     }

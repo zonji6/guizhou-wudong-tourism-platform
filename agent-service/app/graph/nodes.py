@@ -412,6 +412,8 @@ async def itinerary_planner(state: WorkflowState, runtime: Any) -> dict[str, obj
     started = monotonic()
     try:
         rows = list(await TourismV3Client().search_catalog("PLACE", context.request.user_text or "乌东"))
+        if not rows:
+            rows = list(await TourismV3Client().search_catalog("PLACE", "演示"))
         targets = [
             PublicTarget(target_type="PLACE", target_id=item.id, target_name=item.name)
             for item in rows
