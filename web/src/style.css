@@ -2323,7 +2323,7 @@ button:disabled {
 .v3-map-canvas { position: relative; min-height: 430px; margin: 1.5rem 0; overflow: hidden; background: radial-gradient(circle at 30% 30%, rgba(198, 115, 77, .18), transparent 22%), radial-gradient(circle at 70% 65%, rgba(69, 119, 88, .22), transparent 26%), linear-gradient(145deg, #edf1e7, #f7eedc); border: 1px solid rgba(49, 95, 75, .2); border-radius: 52% 43% 48% 45% / 42% 51% 45% 55%; }
 .v3-map-pin { position: absolute; display: grid; justify-items: center; width: 8rem; transform: translate(-50%, -50%); color: #173f36; font-size: .8rem; font-weight: 700; text-align: center; }
 .v3-map-pin i { width: 1rem; height: 1rem; margin-bottom: .25rem; background: #c6734d; border: 3px solid #fff9ec; border-radius: 50%; box-shadow: 0 2px 12px rgba(49, 95, 75, .28); }
-.v3-place-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; }
+.v3-place-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
 .v3-place-list article, .v3-post, .v3-list article, .v3-admin-list article { padding: 1.15rem; background: #fffdf8; border: 1px solid rgba(71, 91, 75, .13); border-radius: 1rem; }
 .v3-place-list article { display: grid; gap: .35rem; }
 .v3-place-list span, .v3-list header span, .v3-admin-list header span { color: #b55e3e; font-size: .8rem; }
@@ -2490,6 +2490,10 @@ button:disabled {
 .v3-post-copy { white-space: pre-wrap; line-height: 1.85; }
 .v3-post footer { margin-top: 1rem; color: #795236; font-size: .78rem; }
 
+@media (max-width: 980px) {
+  .v3-place-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 760px) {
   .v3-topbar nav { display: flex; gap: .8rem; font-size: .78rem; }
   .v3-explore, .v3-my-page, .v3-checkout, .v3-guide-page { padding-top: 6rem; }
@@ -2513,6 +2517,7 @@ button:disabled {
   .v3-stay-card > .safe-image { height: 15rem; min-height: 0; }
   .v3-count-strip { grid-template-columns: auto 1fr; }
   .v3-room-grid { grid-template-columns: 1fr; }
+  .v3-place-list { grid-template-columns: 1fr; }
   .v3-map-canvas { min-height: 360px; }
   .v3-route-sequence { display: grid; }
 }
