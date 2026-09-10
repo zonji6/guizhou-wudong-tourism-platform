@@ -91,7 +91,7 @@ Page({
     active: 'product', tabs,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [],
     merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, foodCategory: 'ALL', foodCategories,
-    stays: [], stayCount: 0, roomTypeCount: 0,
+    stays: [], visibleStays: [], stayQuery: '', stayPeople: '', stayCount: 0, roomTypeCount: 0, staySummary: '',
     map: null, routes: [], selectedRouteId: '', customRouteIds: [], routeSteps: [], routeSegments: [], routeMessage: '',
     loading: false, error: ''
   },
@@ -135,7 +135,8 @@ Page({
       }
       if (active === 'stay') {
         const stays = (result || []).map(stayView)
-        this.setData({ stays, stayCount: stays.length, roomTypeCount: stays.reduce((total, item) => total + item.roomTypes.length, 0) })
+        const roomTypeCount = stays.reduce((total, item) => total + item.roomTypes.length, 0)
+        this.setData({ stays, visibleStays: stays, stayCount: stays.length, roomTypeCount, staySummary: `当前公开 ${stays.length} 家住宿，共 ${roomTypeCount} 个房型` })
       }
     }).catch(reason => this.setData({ error: reason?.message || '内容暂时无法读取。' })).finally(() => this.setData({ loading: false }))
   },
@@ -163,6 +164,25 @@ Page({
       return !query || text.includes(query)
     })
     this.setData({ merchantQuery, visibleMerchants, merchantSummary: query ? `匹配 ${visibleMerchants.length} / ${this.data.merchants.length} 家` : `当前 ${this.data.merchants.length} 家公开店铺` })
+  },
+  staySearch(event) {
+    this.setData({ stayQuery: event.detail.value }, () => this.applyStayFilters())
+  },
+  stayPeopleChange(event) {
+    this.setData({ stayPeople: event.detail.value }, () => this.applyStayFilters())
+  },
+  applyStayFilters() {
+    const query = this.data.stayQuery.trim().toLocaleLowerCase()
+    const people = Number(this.data.stayPeople)
+    const requestedPeople = Number.isInteger(people) && people > 0 ? people : 0
+    const visibleStays = this.data.stays.filter(stay => {
+      const text = [stay.name, stay.description, stay.locationText, stay.merchantName, ...(stay.tags || []), ...(stay.roomTypes || []).flatMap(room => [room.name, room.description])].filter(Boolean).join(' ').toLocaleLowerCase()
+      const keywordMatches = !query || text.includes(query)
+      const capacityMatches = !requestedPeople || (stay.roomTypes || []).some(room => Number(room.maxGuestsPerRoom) >= requestedPeople)
+      return keywordMatches && capacityMatches
+    })
+    const conditions = [query ? '关键词' : '', requestedPeople ? `${requestedPeople} 人/间` : ''].filter(Boolean)
+    this.setData({ visibleStays, staySummary: conditions.length ? `匹配 ${visibleStays.length} / ${this.data.stayCount} 家（${conditions.join('，')}）` : `当前公开 ${this.data.stayCount} 家住宿，共 ${this.data.roomTypeCount} 个房型` })
   },
   chooseMerchant(event) {
     const merchant = this.data.merchants.find(item => item.id === event.currentTarget.dataset.id)

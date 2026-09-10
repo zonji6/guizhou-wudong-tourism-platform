@@ -52,15 +52,17 @@
   </block>
 
   <block wx:elif="{{active === 'stay'}}">
-    <view class="count-note">当前公开 {{stayCount}} 家住宿，共 {{roomTypeCount}} 个房型；容量和价格均为演示信息，不代表实时房态。</view>
-    <view wx:for="{{stays}}" wx:key="id" class="resource-card">
+    <view class="search-box"><input value="{{stayQuery}}" placeholder="搜索住宿、房型、位置或标签" bindinput="staySearch"/></view>
+    <view class="stay-people"><text>单间入住人数</text><input type="number" min="1" max="6" value="{{stayPeople}}" placeholder="不限" bindinput="stayPeopleChange"/><text>人</text></view>
+    <view class="count-note">{{staySummary}}；容量和价格均为演示信息，不代表实时房态。</view>
+    <view wx:for="{{visibleStays}}" wx:key="id" class="resource-card">
       <image wx:if="{{item.displayImageUrl}}" class="card-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
       <view wx:else class="card-image image-empty">图片暂缺</view>
       <view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view><view class="eyebrow">{{item.locationText || item.merchantName}}</view><view class="card-title">{{item.name}}</view><view class="muted">{{item.description}}</view>
       <view class="room-summary">{{item.roomTypes.length}} 个公开房型</view>
       <button class="primary" data-kind="stay" data-id="{{item.id}}" bindtap="openDetail">查看住宿与房型</button>
     </view>
-    <view wx:if="{{!stays.length}}" class="state">当前没有已发布住宿。</view>
+    <view wx:if="{{stays.length && !visibleStays.length}}" class="state">没有符合条件的住宿，试试清空关键词或人数。</view><view wx:if="{{!stays.length}}" class="state">当前没有已发布住宿。</view>
   </block>
 
   <block wx:else>
