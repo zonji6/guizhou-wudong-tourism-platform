@@ -35,7 +35,8 @@ import java.util.regex.Pattern;
 public final class V3Support {
     public static final String CONTRACT = "tourism-api-v3-draft-r3";
     public static final String NOTICE = "本机模拟核价，不代表真实报价、库存、餐位或房态。";
-    private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
+    // 目录资料使用稳定的 UUID 形状 ID；它们不一定携带随机 UUID 的版本／变体位。
+    private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
     private static final Pattern DIGEST_PATTERN = Pattern.compile("^sha256:[0-9a-f]{64}$");
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,32}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^(?=.*[0-9])[0-9 +()\\-]{1,32}$");
