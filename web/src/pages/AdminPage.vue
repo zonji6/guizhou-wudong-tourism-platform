@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { authState, login, logout, prepareAuth, refresh } from '../services/authSession'
-import { createAdminCatalog, loadAdminKnowledge, loadAdminOperations, patchAdminCatalog, publishKnowledge, updateAdminCatalogStatus, updateAdminOrderStatus } from '../services/tourismApi'
+import { createAdminCatalog, createKnowledgeDocument, createKnowledgeSource, loadAdminKnowledge, loadAdminOperations, patchAdminCatalog, publishKnowledge, updateAdminCatalogStatus, updateAdminOrderStatus, updateKnowledgeDocument, updateKnowledgeSource } from '../services/tourismApi'
 
 const form = reactive({ username: '', password: '' })
 const data = reactive({ sources: [], documents: [], operations: {} })
@@ -11,10 +11,18 @@ const message = ref('')
 const publishingId = ref('')
 const statusUpdating = ref('')
 const catalogSaving = ref(false)
+const knowledgeSaving = ref(false)
 const selectedCatalogKind = ref('')
 const selectedCatalogItem = ref(null)
 const expandedCatalogGroups = reactive({})
+const selectedKnowledgeDocument = ref(null)
+const selectedKnowledgeSource = ref(null)
+const knowledgeDocumentEditorOpen = ref(false)
+const knowledgeSourceEditorOpen = ref(false)
+const sourceBindingIds = ref([])
 const catalogForm = reactive({ parentId: '', name: '', description: '', tags: '', imageUrl: '', contactPhone: '', pickupPoint: '', visitTimeText: '', locationText: '', itemType: 'DISH', maxGuestsPerRoom: 1, priceAmount: '', priceNote: '', category: '', schematicX: '', schematicY: '' })
+const knowledgeForm = reactive({ candidateCode: '', title: '', content: '', tags: '', region: '贵州雷山乌东苗寨', periodText: '资料整理时期待核验', evidenceCategory: '资料整理', usageLimitations: '演示资料，需以现场与权威资料复核', demoData: true })
+const sourceForm = reactive({ sourceKey: '', title: '', url: '', publisher: '', sourceKind: '资料整理', publicationDateText: '', readAt: '', locator: '', readStatus: 'SEARCH_SNIPPET_ONLY' })
 
 const count = key => Array.isArray(data.operations[key]) ? data.operations[key].length : 0
 const allOrders = computed(() => ['products', 'foods', 'stays'].flatMap(kind => (data.operations[`orders:${kind}`] || []).map(order => ({ ...order, kind }))))
@@ -58,6 +66,38 @@ function visibleCatalogItems(group) {
   return expandedCatalogGroups[group.key] ? items : items.slice(0, 4)
 }
 function toggleCatalogGroup(key) { expandedCatalogGroups[key] = !expandedCatalogGroups[key] }
+function splitTags(value) { return String(value || '').split(/[，,]/).map(item => item.trim()).filter(Boolean) }
+function openKnowledgeCreate() {
+  knowledgeDocumentEditorOpen.value = true
+  selectedKnowledgeDocument.value = null
+  sourceBindingIds.value = []
+  Object.assign(knowledgeForm, { candidateCode: '', title: '', content: '', tags: '', region: '贵州雷山乌东苗寨', periodText: '资料整理时期待核验', evidenceCategory: '资料整理', usageLimitations: '演示资料，需以现场与权威资料复核', demoData: true })
+}
+function openKnowledgeDocument(document) {
+  knowledgeDocumentEditorOpen.value = true
+  const draft = document.draft || {}
+  selectedKnowledgeDocument.value = document
+  sourceBindingIds.value = (draft.sourceSnapshots || []).map(item => item.sourceId).filter(Boolean)
+  Object.assign(knowledgeForm, { candidateCode: document.candidateCode || '', title: draft.title || '', content: draft.content || '', tags: (draft.tags || []).join('，'), region: draft.region || '', periodText: draft.periodText || '', evidenceCategory: draft.evidenceCategory || '', usageLimitations: (draft.usageLimitations || []).join('，'), demoData: draft.demoData !== false })
+}
+function sourcePayload() {
+  const reviewed = ['FULL_TEXT_REVIEWED', 'ARCHIVED_COPY_REVIEWED'].includes(sourceForm.readStatus)
+  if (reviewed && !sourceForm.readAt) throw new Error('已审读来源需填写 ISO 格式的阅读时间。')
+  return { sourceKey: sourceForm.sourceKey.trim(), title: sourceForm.title.trim(), url: sourceForm.url.trim() || null, publisher: sourceForm.publisher.trim() || null, sourceKind: sourceForm.sourceKind.trim(), publicationDateText: sourceForm.publicationDateText.trim() || null, readAt: reviewed ? sourceForm.readAt.trim() : null, locator: sourceForm.locator.trim() || null, readStatus: sourceForm.readStatus }
+}
+function openSourceCreate() {
+  knowledgeSourceEditorOpen.value = true
+  selectedKnowledgeSource.value = null
+  Object.assign(sourceForm, { sourceKey: '', title: '', url: '', publisher: '', sourceKind: '资料整理', publicationDateText: '', readAt: '', locator: '', readStatus: 'SEARCH_SNIPPET_ONLY' })
+}
+function openKnowledgeSource(source) {
+  knowledgeSourceEditorOpen.value = true
+  selectedKnowledgeSource.value = source
+  Object.assign(sourceForm, { sourceKey: source.sourceKey || '', title: source.title || '', url: source.url || '', publisher: source.publisher || '', sourceKind: source.sourceKind || '', publicationDateText: source.publicationDateText || '', readAt: source.readAt || '', locator: source.locator || '', readStatus: source.readStatus || 'SEARCH_SNIPPET_ONLY' })
+}
+function knowledgePayload() {
+  return { candidateCode: knowledgeForm.candidateCode.trim(), draft: { title: knowledgeForm.title.trim(), content: knowledgeForm.content.trim(), tags: splitTags(knowledgeForm.tags), region: knowledgeForm.region.trim() || null, periodText: knowledgeForm.periodText.trim() || null, evidenceCategory: knowledgeForm.evidenceCategory.trim() || null, usageLimitations: splitTags(knowledgeForm.usageLimitations), demoData: Boolean(knowledgeForm.demoData), sourceBindings: data.sources.filter(source => sourceBindingIds.value.includes(source.id)).map(source => ({ sourceId: source.id, expectedSourceVersion: source.version })) } }
+}
 function catalogTags() { return catalogForm.tags.split(/[，,]/).map(value => value.trim()).filter(Boolean) }
 function priceUnit(kind) { return kind === 'products' ? 'ITEM' : kind === 'foods' ? 'PORTION' : 'ROOM_NIGHT' }
 function demoPrice(kind) {
@@ -99,6 +139,16 @@ async function reload() {
 }
 async function signOut() { busy.value = true; try { await logout('admin'); data.sources = []; data.documents = []; data.operations = {}; message.value = '后台会话已由服务端撤销。' } catch (reason) { message.value = `${reason?.message || '退出结果未知。'} 未冒充服务端已撤销。` } finally { busy.value = false } }
 async function publish(document) { publishingId.value = document.id; message.value = ''; try { const result = await publishKnowledge(document); const task = result.task || result; await reload(); message.value = `发布任务 ${task.taskId || ''}：${task.status || '已受理'}${result.replayed ? '（安全重放）' : ''}` } catch (reason) { message.value = reason?.message || '发布请求失败。' } finally { publishingId.value = '' } }
+async function saveKnowledgeDocument() {
+  const existing = Boolean(selectedKnowledgeDocument.value)
+  knowledgeSaving.value = true; message.value = ''
+  try { const saved = existing ? await updateKnowledgeDocument(selectedKnowledgeDocument.value, knowledgePayload()) : await createKnowledgeDocument(knowledgePayload()); await reload(); openKnowledgeDocument(saved); message.value = existing ? '知识草稿已保存。' : '知识草稿已创建，发布前仍可修改。' } catch (reason) { message.value = reason?.message || '知识草稿保存失败。' } finally { knowledgeSaving.value = false }
+}
+async function saveKnowledgeSource() {
+  const existing = Boolean(selectedKnowledgeSource.value)
+  knowledgeSaving.value = true; message.value = ''
+  try { const saved = existing ? await updateKnowledgeSource(selectedKnowledgeSource.value, sourcePayload()) : await createKnowledgeSource(sourcePayload()); await reload(); openKnowledgeSource(saved); message.value = existing ? '知识来源已保存。' : '知识来源已创建。' } catch (reason) { message.value = reason?.message || '知识来源保存失败。' } finally { knowledgeSaving.value = false }
+}
 async function advanceOrder(order) { const action = orderAction(order); if (!action) return; statusUpdating.value = `${order.kind}:${order.id}`; message.value = ''; try { await updateAdminOrderStatus(order.kind, order, action[0]); await reload(); message.value = `订单已更新为“${action[1]}”。` } catch (reason) { message.value = reason?.message || '订单状态更新失败。' } finally { statusUpdating.value = '' } }
 async function saveCatalogItem() {
   const item = selectedCatalogItem.value; const kind = selectedCatalogKind.value
@@ -166,8 +216,16 @@ onMounted(() => prepareAuth('admin').catch(reason => { message.value = reason?.m
               </form>
             </section>
           </section>
-          <section v-else-if="tab === 'documents'" class="v3-admin-list"><header class="v3-section-heading"><p class="eyebrow">RAG 知识</p><h2>草稿、生效版本与发布任务</h2></header><article v-for="document in data.documents" :key="document.id"><header><span>{{ document.visibility }}</span><b>行版本 {{ document.version }} · 草稿修订 {{ document.draftRevision }}</b></header><h2>{{ document.draft?.title || document.liveSnapshot?.title || '未命名知识' }}</h2><p>{{ document.draft?.content }}</p><dl><dt>当前任务</dt><dd>{{ document.currentTaskId || '无' }}</dd><dt>生效快照</dt><dd>{{ document.liveSnapshot ? `修订 ${document.liveSnapshot.draftRevision}` : '尚未发布' }}</dd></dl><button class="primary" :disabled="!document.editable || publishingId" @click="publish(document)">{{ publishingId === document.id ? '正在请求…' : document.editable ? '发起发布任务' : '发布进行中，不可编辑' }}</button></article><p v-if="!data.documents.length" class="v3-state">还没有知识文档。</p></section>
-          <section v-else class="v3-admin-list"><header class="v3-section-heading"><p class="eyebrow">资料脉络</p><h2>来源主档</h2></header><article v-for="source in data.sources" :key="source.id"><header><span>{{ source.readStatus }}</span><b>来源版本 {{ source.version }}</b></header><h2>{{ source.title }}</h2><p>{{ source.publisher || '发布方待补' }} · {{ source.sourceKind }}</p><footer>{{ source.locator || '定位信息待补' }}</footer></article><p v-if="!data.sources.length" class="v3-state">还没有知识来源。</p></section>
+          <section v-else-if="tab === 'documents'" class="v3-admin-list">
+            <header class="v3-section-heading"><div><p class="eyebrow">RAG 知识</p><h2>草稿、生效版本与发布任务</h2></div><button class="primary" type="button" @click="openKnowledgeCreate">新建知识草稿</button></header>
+            <section v-if="knowledgeDocumentEditorOpen" class="v3-knowledge-editor"><header><div><p class="eyebrow">{{ selectedKnowledgeDocument ? '编辑知识草稿' : '新建知识草稿' }}</p><h2>{{ selectedKnowledgeDocument?.draft?.title || '先记录一条可追溯的资料' }}</h2></div><button class="ghost" type="button" @click="knowledgeDocumentEditorOpen = false">收起</button></header><form @submit.prevent="saveKnowledgeDocument"><label>候选编号<input v-model="knowledgeForm.candidateCode" maxlength="40" pattern="[A-Za-z0-9_-]+" required></label><label>标题<input v-model="knowledgeForm.title" maxlength="120" required></label><label class="wide">正文<textarea v-model="knowledgeForm.content" maxlength="30000" required></textarea></label><label>标签（逗号分隔）<input v-model="knowledgeForm.tags" maxlength="400"></label><label>地域范围<input v-model="knowledgeForm.region" maxlength="200"></label><label>时间范围<input v-model="knowledgeForm.periodText" maxlength="200"></label><label>证据类别<input v-model="knowledgeForm.evidenceCategory" maxlength="200" required></label><label class="wide">使用限制（逗号分隔）<input v-model="knowledgeForm.usageLimitations" maxlength="1200"></label><label class="v3-check"><input v-model="knowledgeForm.demoData" type="checkbox">演示资料（保留明确标识）</label><fieldset class="v3-source-bindings"><legend>引用来源版本</legend><p>发布时会冻结所选来源的当前版本；未选择来源的草稿不能作为完整公开知识发布。</p><label v-for="source in data.sources" :key="source.id" class="v3-check"><input v-model="sourceBindingIds" type="checkbox" :value="source.id">{{ source.title }} · v{{ source.version }}</label></fieldset><footer><button class="primary" :disabled="knowledgeSaving">{{ knowledgeSaving ? '保存中…' : selectedKnowledgeDocument ? '保存草稿' : '创建草稿' }}</button></footer></form></section>
+            <article v-for="document in data.documents" :key="document.id"><header><span>{{ document.visibility }}</span><b>行版本 {{ document.version }} · 草稿修订 {{ document.draftRevision }}</b></header><h2>{{ document.draft?.title || document.liveSnapshot?.title || '未命名知识' }}</h2><p>{{ document.draft?.content }}</p><dl><dt>当前任务</dt><dd>{{ document.currentTaskId || '无' }}</dd><dt>生效快照</dt><dd>{{ document.liveSnapshot ? `修订 ${document.liveSnapshot.draftRevision}` : '尚未发布' }}</dd></dl><footer><button class="ghost" type="button" :disabled="!document.editable" @click="openKnowledgeDocument(document)">编辑草稿</button><button class="primary" :disabled="!document.editable || publishingId" @click="publish(document)">{{ publishingId === document.id ? '正在请求…' : document.editable ? '发起发布任务' : '发布进行中，不可编辑' }}</button></footer></article><p v-if="!data.documents.length" class="v3-state">还没有知识文档。</p>
+          </section>
+          <section v-else class="v3-admin-list">
+            <header class="v3-section-heading"><div><p class="eyebrow">资料脉络</p><h2>来源主档</h2></div><button class="primary" type="button" @click="openSourceCreate">新建来源</button></header>
+            <section v-if="knowledgeSourceEditorOpen" class="v3-knowledge-editor"><header><div><p class="eyebrow">{{ selectedKnowledgeSource ? '编辑来源主档' : '新建来源主档' }}</p><h2>{{ selectedKnowledgeSource?.title || '记录可追溯资料来源' }}</h2></div><button class="ghost" type="button" @click="knowledgeSourceEditorOpen = false">收起</button></header><form @submit.prevent="saveKnowledgeSource"><label>来源编号<input v-model="sourceForm.sourceKey" maxlength="40" pattern="[A-Za-z0-9_-]+" required></label><label>标题<input v-model="sourceForm.title" maxlength="200" required></label><label class="wide">公开链接（可留空）<input v-model="sourceForm.url" type="url" maxlength="2048"></label><label>发布方<input v-model="sourceForm.publisher" maxlength="200"></label><label>来源类型<input v-model="sourceForm.sourceKind" maxlength="80" required></label><label>发布日期文本<input v-model="sourceForm.publicationDateText" maxlength="80"></label><label>资料定位<input v-model="sourceForm.locator" maxlength="300"></label><label>审读状态<select v-model="sourceForm.readStatus"><option value="UNREVIEWED">未审读</option><option value="SEARCH_SNIPPET_ONLY">摘要检索</option><option value="FULL_TEXT_REVIEWED">全文审读</option><option value="ARCHIVED_COPY_REVIEWED">存档副本审读</option></select></label><label v-if="['FULL_TEXT_REVIEWED', 'ARCHIVED_COPY_REVIEWED'].includes(sourceForm.readStatus)" class="wide">审读时间（ISO 格式）<input v-model="sourceForm.readAt" placeholder="2026-09-11T08:00:00Z"></label><footer><button class="primary" :disabled="knowledgeSaving">{{ knowledgeSaving ? '保存中…' : selectedKnowledgeSource ? '保存来源' : '创建来源' }}</button></footer></form></section>
+            <article v-for="source in data.sources" :key="source.id"><header><span>{{ source.readStatus }}</span><b>来源版本 {{ source.version }}</b></header><h2>{{ source.title }}</h2><p>{{ source.publisher || '发布方待补' }} · {{ source.sourceKind }}</p><footer><small>{{ source.locator || '定位信息待补' }}</small><button class="ghost" type="button" @click="openKnowledgeSource(source)">编辑来源</button></footer></article><p v-if="!data.sources.length" class="v3-state">还没有知识来源。</p>
+          </section>
         </template>
       </template>
       <p v-if="message" class="v3-error" role="status">{{ message }}</p>

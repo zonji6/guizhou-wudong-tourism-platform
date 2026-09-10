@@ -89,6 +89,26 @@ export async function loadAdminKnowledge() {
   return { sources: expectList(sources, '知识来源'), documents: expectList(documents, '知识文档') }
 }
 
+export async function createKnowledgeSource(body) {
+  return expectObject(await request('/api/admin/knowledge-sources', adminRequestOptions({ method: 'POST', body: JSON.stringify(body) })), '知识来源创建回执')
+}
+
+export async function updateKnowledgeSource(source, body) {
+  return expectObject(await request(`/api/admin/knowledge-sources/${encodeURIComponent(source.id)}`, adminRequestOptions({
+    method: 'PUT', body: JSON.stringify({ ...body, expectedVersion: source.version })
+  })), '知识来源保存回执')
+}
+
+export async function createKnowledgeDocument(body) {
+  return expectObject(await request('/api/admin/knowledge-documents', adminRequestOptions({ method: 'POST', body: JSON.stringify(body) })), '知识草稿创建回执')
+}
+
+export async function updateKnowledgeDocument(document, body) {
+  return expectObject(await request(`/api/admin/knowledge-documents/${encodeURIComponent(document.id)}/draft`, adminRequestOptions({
+    method: 'PUT', body: JSON.stringify({ ...body, expectedVersion: document.version })
+  })), '知识草稿保存回执')
+}
+
 export async function adoptItinerary(candidate, requestKey = newRequestKey()) {
   if (!candidate?.candidateRef) throw new Error('当前行程候选不可保存。')
   const base = candidate.baseResource
