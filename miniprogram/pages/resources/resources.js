@@ -81,7 +81,7 @@ Page({
   data: {
     active: 'product', tabs,
     products: [], visibleProducts: [], productQuery: '', productTag: '', productTags: [],
-    merchants: [], foods: [], visibleFoods: [], selectedMerchant: null, foodCategory: 'ALL', foodCategories,
+    merchants: [], visibleMerchants: [], merchantQuery: '', merchantSummary: '', foods: [], visibleFoods: [], selectedMerchant: null, foodCategory: 'ALL', foodCategories,
     stays: [], stayCount: 0, roomTypeCount: 0,
     map: null, routes: [], selectedRouteId: '', routeSteps: [], routeSegments: [],
     loading: false, error: ''
@@ -120,7 +120,10 @@ Page({
         const tags = [...new Set(products.reduce((all, item) => all.concat(item.tags || []), []))].sort((left, right) => left.localeCompare(right, 'zh-CN'))
         this.setData({ products, visibleProducts: products, productTags: tags })
       }
-      if (active === 'food') this.setData({ merchants: (result || []).map(item => withImage(item, 'food')) })
+      if (active === 'food') {
+        const merchants = (result || []).map(item => withImage(item, 'food'))
+        this.setData({ merchants, visibleMerchants: merchants, merchantSummary: `当前 ${merchants.length} 家公开店铺` })
+      }
       if (active === 'stay') {
         const stays = (result || []).map(stayView)
         this.setData({ stays, stayCount: stays.length, roomTypeCount: stays.reduce((total, item) => total + item.roomTypes.length, 0) })
@@ -142,6 +145,15 @@ Page({
       return matchesTag && (!query || text.includes(query))
     })
     this.setData({ visibleProducts })
+  },
+  merchantSearch(event) {
+    const merchantQuery = event.detail.value
+    const query = merchantQuery.trim().toLocaleLowerCase()
+    const visibleMerchants = this.data.merchants.filter(item => {
+      const text = [item.name, item.description, ...(item.tags || [])].filter(Boolean).join(' ').toLocaleLowerCase()
+      return !query || text.includes(query)
+    })
+    this.setData({ merchantQuery, visibleMerchants, merchantSummary: query ? `匹配 ${visibleMerchants.length} / ${this.data.merchants.length} 家` : `当前 ${this.data.merchants.length} 家公开店铺` })
   },
   chooseMerchant(event) {
     const merchant = this.data.merchants.find(item => item.id === event.currentTarget.dataset.id)

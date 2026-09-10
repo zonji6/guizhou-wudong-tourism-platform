@@ -31,10 +31,13 @@
 
   <block wx:elif="{{active === 'food'}}">
     <view class="section-title">先选一家店</view>
-    <view class="merchant {{selectedMerchant && selectedMerchant.id === item.id ? 'active' : ''}}" wx:for="{{merchants}}" wx:key="id" data-id="{{item.id}}" bindtap="chooseMerchant">
+    <view class="search-box"><input value="{{merchantQuery}}" placeholder="搜索店名、菜品或标签" bindinput="merchantSearch"/></view>
+    <view class="count-note">{{merchantSummary}}</view>
+    <view class="merchant {{selectedMerchant && selectedMerchant.id === item.id ? 'active' : ''}}" wx:for="{{visibleMerchants}}" wx:key="id" data-id="{{item.id}}" bindtap="chooseMerchant">
       <image wx:if="{{item.displayImageUrl}}" class="merchant-image" src="{{item.displayImageUrl}}" mode="aspectFill"/>
       <view><view class="card-title">{{item.name}}</view><view class="muted">{{item.description}}</view><view class="image-note" wx:if="{{item.imageNote}}">{{item.imageNote}}</view></view>
     </view>
+    <view wx:if="{{merchants.length && !visibleMerchants.length}}" class="state">没有匹配的店铺，试试清空关键词。</view>
     <view id="food-menu" wx:if="{{selectedMerchant}}" class="menu">
       <view class="eyebrow">同店多菜</view><view class="section-title">{{selectedMerchant.name}}</view>
       <scroll-view class="subfilters" scroll-x><view wx:for="{{foodCategories}}" wx:key="id" class="subfilter {{foodCategory === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="selectFoodCategory">{{item.name}}</view></scroll-view>
